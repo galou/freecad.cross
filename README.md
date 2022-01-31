@@ -1,79 +1,26 @@
-# FreeCAD Workbench-Starterkit
+# ROS Workbench
 
-## Compatibility (important)
-:exclamation: **Don't use this repo if you care about py2-support and support of freecad < 0.18. If so please have a look at the traditional workbench structure.**
+This is an early-stage FreeCAD workbench to deal with ROS (Robot Operating System).
 
-## Motivation and usage
-This is a template for a FreeCAD workbench / module. As python-packaging and packaging for FreeCAD is not an easy task, this repository should give an overview of the things learned so far. If all you want is to create an extension for FreeCAD (module, additional gui-stuff, workbench), simple copy this repo and start replacing things.
+## Compatibility
 
-To try the latest release of this template:
-```bash
-# Install this template
-pip install freecad.workbench_starterkit
-
-# Uninstall (to remove this template)
-pip uninstall freecad.workbench_starterkit 
-```
-
-**Note:** There are currently two FreeCAD workbench styles. The origin workbench type is called "legacy-workbench". In addition the "namespace-workbench" is now an optional (and preffered) way to extend the FreeCAD. (See [Glossary terms used in this discussion](#glossary-terms-used-in-this-discussion-that-may-lead-to-confusion)). For more discussion about the motivation behind the "namespace-workbench" see [Motivation for namespace-workbenches](#motivation-for-namespace-workbenches).
-
-## Structure of a namespace-workbench:
-
-### Initialization Files
-
-- `init_gui.py`: mandatory for modules adding new functionality to the GUI.
-- `__init__.py`: entry function for non-gui FreeCAD and python. Called when you import your package: `from freecad import my_package`
-
-Both of these initialization files are called when the FreeCAD-gui is launched. Launching `freecadcmd` or importing FreeCAD (`import freead`) will call the `__init__.py` file. (*The python import will not yet work on every system, but we are working towards a standardization*).
-
-### Structure
-This is the minimal structure of a namespace-package to add a workbench to FreeCAD.
-
-```
-freecad/
-└── workbench_starterkit/
-    ├── __init__.py
-    └── init_gui.py
-```
-
-**Note:** `init_gui.py` are called at startup of FreeCAD.  
-:exclamation: **Do not put very time-intensive code in these files to reduce the start-up time.**
+Compatible with FreeCAD v0.19 (earlier version with the local coordinate system feature). Compatible with ROS2 (for now).
 
 
-## Naming of FreeCAD modules
+## Features
 
-Several names are needed:
-- **repository-name**  
-  The name of the repository AKA `freecad.repository_name`  
-  eg.: `freecad.workbench_starterkit`
+None yet.
 
-- **distribution-name**  
-  This name is set in the [setup.py](setup.py)  
-  eg.: `name='freecad.workbench_starterkit'`
+## Installation
 
-- **package-name**  
-  The name of the package which can be imported from python.  
-  **Notes:** it's possible that there are several packages in one repository with only one `setup.py`. You **simply specify all packages and modules** in the `packages` section of the `setup.py`.  
-  This name **must not contain** any python operator symbols like "-".  
-  If the repository contains only one pthon-package it makes sense to choose the same names for the repository-name, python-package and the pypi-package.  
-  eg.: `freecad.workbench_starterkit`
-
-
-## Rules
-
-**The "freecad" namespace is not allowed to be used directly.**  
-This means it is not allowed to set any variables in the `__init__.py` of freecad. (But as with python3 this `__init__.py` should not exist anyway, this isn't a problem.) Further it's not allowed to add variables to the freecad-namespace directly. This can introduce name-clashes.  
-
-Examples:  
-:x: `freecad.myVariable = 10`  
-:+1: `freecad.app.myVariable = 10`
+You're on your own for now.
 
 
 ## Testing your module/workbench
 
 If you want to work on your extension you have the following options:
 
-- Start FreeCAD from the root-directory you are working in (eg. freecad.workbench_starterkit)
+- Start FreeCAD from the root-directory you are working in (eg. freecad.workbench_ros)
 - Simply link the extension to a location where python can find it.
 - `pip install -e .` adds the root-directory to easy_install.path.
 
@@ -83,24 +30,8 @@ Currently FreeCAD has several ways to install packages:
 1. [Freecad Addon Manager][AddonManager] 
 2. [freecad-pluginloader][pluginloader]  
 
-With `pip` and `pypi` a third option is introduced. In addition, utilizing `pip` also provides powerful possibilities to install third party dependencies.
+With `pip` and `pypi` a third option is introduced. In addition, utilizing `pip` also provides powerful possibilities to install third party dependencies. This option is not available yet.
 
-### setup file
-
-The `setup.py` file located in the main directory is a minimal example to get an extension installed. There we are using `setuptools`. If you need advanced options to install your package, please have a look at the [setuptools docs][setuptools].
-
-### versions
-
-It's common practice to include a version-string in the python-package. The version should then be imported to the root-`__init__.py` to use it like this:
-
-```python
-import freecad.workbench_starterkit
-freecad.workbench_starterkit.__version__
-```
-
-In the setup.py we do not have access to the library itself, so the `__version__` must be imported without the assumption that the package is installed. This can be done by running the file directly with `exec`.  
-
-:exclamation:**TODO**: Is there any better way to do this?
 
 ### resources
 
@@ -111,13 +42,6 @@ To tell `setuptools` to use the `MANIFEST.in` add this line to the setup functio
 setup(..., include_package_data=True)
 ```
 
-### dependencies
-
-you can specify required packages by setting the `install_requires` in the setup-function of the `setup.py`
-
-```python
-setup(..., install_requires=['required_package'], ...)
-```
 
 ### install local
 

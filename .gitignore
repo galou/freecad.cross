@@ -46,6 +46,9 @@ coverage.xml
 *,cover
 .hypothesis/
 
+# Linters
+.mypy_cache
+
 # Translations
 *.mo
 *.pot

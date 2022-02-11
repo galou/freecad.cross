@@ -1,6 +1,7 @@
-from setuptools import setup
 import os
-# from freecad.workbench_starterkit.version import __version__
+
+from setuptools import setup
+
 # name: this is the name of the distribution.
 # Packages using the same name here cannot be installed together
 
@@ -17,7 +18,7 @@ setup(name='freecad.workbench_ros',
       maintainer='galou',
       maintainer_email='gael.ecorchard@cvut.cz',
       url='https://github.com/galou/freecad.workbench_ros',
-      description='A workbench to work with RO',
+      description='A workbench to work with ROS',
       install_requires=[],
       include_package_data=True)
 

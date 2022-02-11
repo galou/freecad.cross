@@ -6,6 +6,8 @@ import FreeCAD as fc
 
 from . import ICONPATH
 from . import urdf_export_command
+from . import box_from_bounding_box
+from . import sphere_from_bounding_box
 
 
 class RosWorkbench(fcgui.Workbench):
@@ -13,7 +15,7 @@ class RosWorkbench(fcgui.Workbench):
 
     MenuText = 'ROS workbench'
     ToolTip = 'ROS-related workbench'
-    Icon = str(ICONPATH.joinpath('template_resource.svg'))
+    Icon = str(ICONPATH.joinpath('ros_9dotslogo_color.svg'))
 
     def GetClassName(self):
         return 'Gui::PythonWorkbench'
@@ -26,6 +28,8 @@ class RosWorkbench(fcgui.Workbench):
         """
         commands = [
             'UrdfExport',  # Defined in ./urdf_export_command.py.
+            'BoxFromBoundingBox',  # Defined in ./box_from_bounding_box.py.
+            'SphereFromBoundingBox',  # Defined in ./sphere_from_bounding_box.py.
             ]
         self.appendToolbar('ROS', commands)
         self.appendMenu('ROS', commands)

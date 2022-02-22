@@ -23,7 +23,7 @@ def xml_comment(comment: str) -> str:
     return f'<!-- {comment.replace("--", "⸗⸗")} -->'
 
 
-class UrdfExportCommand:
+class _UrdfExportCommand:
     def GetResources(self):
         return {'Pixmap': 'urdf_export',
                 'MenuText': QtCore.QT_TRANSLATE_NOOP('workbench_ros', 'Export to URDF'),  # TODO: translatable
@@ -62,4 +62,4 @@ class UrdfExportCommand:
         return _supported_object_selected()
 
 
-fcgui.addCommand('UrdfExport', UrdfExportCommand())
+fcgui.addCommand('UrdfExport', _UrdfExportCommand())

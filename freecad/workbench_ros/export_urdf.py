@@ -2,7 +2,7 @@ import math
 from typing import Any, Iterable, Tuple
 import xml.etree.ElementTree as et
 
-import FreeCAD as app
+import FreeCAD as fc
 
 import numpy as np
 
@@ -73,7 +73,7 @@ def urdf_from_quaternion(q) -> Rpy:
     return euler_from_matrix(quaternion_matrix(q))
 
 
-def urdf_origin_xml_from_placement(p: app.Placement) -> et.Element:
+def urdf_origin_xml_from_placement(p: fc.Placement) -> et.Element:
     """Return an xml element 'origin'."""
     rpy = urdf_from_quaternion(p.Rotation.Q)
     pattern = '<origin xyz="{v.x:.6} {v.y:.6} {v.z:.6}" rpy="{r[0]} {r[1]} {r[2]}" />'
@@ -92,7 +92,7 @@ def urdf_geometry_xml_box(length_x: float, length_y: float, length_z: float) -> 
     return geometry
 
 
-def urdf_box_placement_from_fc(box: 'PrimitivePy') -> app.Placement:
+def urdf_box_placement_from_fc(box: 'PrimitivePy') -> fc.Placement:
     """Return the FreeCAD placement of the box center.
 
     Return the placement of the box center for a FreeCAD box with the placement
@@ -101,8 +101,8 @@ def urdf_box_placement_from_fc(box: 'PrimitivePy') -> app.Placement:
     """
     if (not hasattr(box, 'TypeId')) and (box.TypeId != 'Part::Box'):
         raise RuntimeError("Argument must be a 'Part::Box'")
-    offset = box.Placement.Rotation.multVec(app.Vector(box.Length.Value, box.Width.Value, box.Height.Value) / 2.0)
-    center_placement = app.Placement(box.Placement)
+    offset = box.Placement.Rotation.multVec(fc.Vector(box.Length.Value, box.Width.Value, box.Height.Value) / 2.0)
+    center_placement = fc.Placement(box.Placement)
     center_placement.Base += offset
     return center_placement
 
@@ -131,7 +131,7 @@ def urdf_geometry_xml_cylinder(radius: float, length: float) -> et.Element:
     return geometry
 
 
-def urdf_cylinder_placement_from_fc(cyl: 'PrimitivePy') -> app.Placement:
+def urdf_cylinder_placement_from_fc(cyl: 'PrimitivePy') -> fc.Placement:
     """Return the FreeCAD placement of the cylinder center.
 
     Return the placement of the cylinder center for a FreeCAD cylinder with the
@@ -140,8 +140,8 @@ def urdf_cylinder_placement_from_fc(cyl: 'PrimitivePy') -> app.Placement:
     """
     if (not hasattr(cyl, 'TypeId')) and (cyl.TypeId != 'Part::Cylinder'):
         raise RuntimeError("Argument must be a 'Part::Cylinder'")
-    offset = cyl.Placement.Rotation.multVec(app.Vector(0.0, 0.0, cyl.Height.Value / 2.0))
-    center_placement = app.Placement(cyl.Placement)
+    offset = cyl.Placement.Rotation.multVec(fc.Vector(0.0, 0.0, cyl.Height.Value / 2.0))
+    center_placement = fc.Placement(cyl.Placement)
     center_placement.Base += offset
     return center_placement
 

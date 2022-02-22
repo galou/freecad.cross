@@ -1,13 +1,14 @@
 import os
 
-import FreeCADGui as fcgui
-
 import FreeCAD as fc
 
-from . import ICONPATH
-from . import urdf_export_command
+import FreeCADGui as fcgui
+
 from . import box_from_bounding_box
+from . import command_new_robot
+from . import command_urdf_export
 from . import sphere_from_bounding_box
+from .utils import ICONPATH
 
 
 class RosWorkbench(fcgui.Workbench):
@@ -27,7 +28,8 @@ class RosWorkbench(fcgui.Workbench):
 
         """
         commands = [
-            'UrdfExport',  # Defined in ./urdf_export_command.py.
+            'NewRobot',  # Defined in ./command_new_robot.py
+            'UrdfExport',  # Defined in ./command_urdf_export.py.
             'BoxFromBoundingBox',  # Defined in ./box_from_bounding_box.py.
             'SphereFromBoundingBox',  # Defined in ./sphere_from_bounding_box.py.
             ]

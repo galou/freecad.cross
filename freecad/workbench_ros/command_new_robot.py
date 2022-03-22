@@ -1,18 +1,16 @@
-import os
-
 import FreeCAD as fc
 
 import FreeCADGui as fcgui
 
 from PySide import QtCore  # FreeCAD's PySide!
 
-from .utils import ICONPATH
+from .utils import ICON_PATH
 
 
 class _NewRobotCommand:
     """The command definition to create a new Robot object."""
     def GetResources(self):
-        return {'Pixmap': str(ICONPATH.joinpath('ros_9dotslogo_color.svg')),
+        return {'Pixmap': str(ICON_PATH.joinpath('ros_9dotslogo_color.svg')),
                 'MenuText': QtCore.QT_TRANSLATE_NOOP("workbench_ros", 'New Robot'),
                 'Accel': 'N, R',
                 'ToolTip': QtCore.QT_TRANSLATE_NOOP('workbench_ros', 'Create a Robot container.')}
@@ -24,8 +22,9 @@ class _NewRobotCommand:
     def Activated(self):
         fc.activeDocument().openTransaction('Create Robot')
         fcgui.doCommand('')
-        fcgui.addModule("freecad.workbench_ros")
-        fcgui.doCommand("robot = freecad.workbench_ros.makeRobot('Robot')")
+        fcgui.addModule('freecad.workbench_ros.robot')
+        fcgui.doCommand("_robot = freecad.workbench_ros.robot.makeRobot('Robot')")
+        fcgui.doCommand('FreeCADGui.ActiveDocument.setEdit(_robot.Name)')
 
 
 fcgui.addCommand('NewRobot', _NewRobotCommand())

@@ -3,14 +3,15 @@ import FreeCADGui as fcgui
 
 from PySide import QtCore  # FreeCAD's PySide!
 
-from .dialogs import error_dialog
+from .utils import error
+from .utils import tr
 
 
 class BoxFromBoundingBox:
     def GetResources(self):
         return {'Pixmap': 'box_from_bbox',
-                'MenuText': QtCore.QT_TRANSLATE_NOOP('workbench_ros', 'Box from bounding box'),  # TODO: translatable
-                'ToolTip': QtCore.QT_TRANSLATE_NOOP('workbench_ros', 'Add a Part::Cube corresponding to the bounding box of the selected objects'),
+                'MenuText': tr('Box from bounding box'),
+                'ToolTip': tr('Add a Part::Cube corresponding to the bounding box of the selected objects'),
                 }
 
     def Activated(self):
@@ -38,7 +39,7 @@ class BoxFromBoundingBox:
             box.Placement.Base.y = bbox.YMin
             box.Placement.Base.z = bbox.ZMin
         if not is_one_object_compatible:
-            error_dialog('No compatible object selected')
+            error(tr('No compatible object selected'), gui=True)
 
     def IsActive(self):
         return (fc.activeDocument() is not None)

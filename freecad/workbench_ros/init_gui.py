@@ -5,10 +5,11 @@ import FreeCAD as fc
 import FreeCADGui as fcgui
 
 from . import box_from_bounding_box
+from . import command_new_link
 from . import command_new_robot
 from . import command_urdf_export
 from . import sphere_from_bounding_box
-from .utils import ICONPATH
+from .utils import ICON_PATH
 
 
 class RosWorkbench(fcgui.Workbench):
@@ -16,7 +17,7 @@ class RosWorkbench(fcgui.Workbench):
 
     MenuText = 'ROS workbench'
     ToolTip = 'ROS-related workbench'
-    Icon = str(ICONPATH.joinpath('ros_9dotslogo_color.svg'))
+    Icon = str(ICON_PATH.joinpath('ros_9dotslogo_color.svg'))
 
     def GetClassName(self):
         return 'Gui::PythonWorkbench'
@@ -29,14 +30,15 @@ class RosWorkbench(fcgui.Workbench):
         """
         commands = [
             'NewRobot',  # Defined in ./command_new_robot.py
-            'UrdfExport',  # Defined in ./command_urdf_export.py.
+            'NewLink',  # Defined in ./command_new_link.py
             'BoxFromBoundingBox',  # Defined in ./box_from_bounding_box.py.
             'SphereFromBoundingBox',  # Defined in ./sphere_from_bounding_box.py.
+            'UrdfExport',  # Defined in ./command_urdf_export.py.
             ]
         self.appendToolbar('ROS', commands)
         self.appendMenu('ROS', commands)
 
-        fcgui.addIconPath(str(ICONPATH))
+        fcgui.addIconPath(str(ICON_PATH))
         # fcgui.addLanguagePath(joinDir("Resources/translations"))
 
     def Activated(self):

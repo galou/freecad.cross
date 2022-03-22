@@ -1,1 +1,1 @@
-recursive-include freecad/workbench_ros/resources *
+recursive-include resources *

@@ -1,4 +1,6 @@
+import copy
 import xml.etree.ElementTree as et
+from xml.dom import minidom
 
 import FreeCAD as fc
 import FreeCADGui as fcgui
@@ -6,21 +8,19 @@ import FreeCADGui as fcgui
 from PySide import QtGui  # FreeCAD's PySide!
 from PySide import QtCore  # FreeCAD's PySide!
 
-from .export_urdf import urdf_collision_xml_from_box
-from .export_urdf import urdf_collision_xml_from_sphere
-from .export_urdf import urdf_collision_xml_from_cylinder
+from .export_urdf import urdf_collision_from_box
+from .export_urdf import urdf_collision_from_cylinder
+from .export_urdf import urdf_collision_from_object
+from .export_urdf import urdf_collision_from_sphere
+from .utils import valid_filename
+from .utils import xml_comment
 
 
 def _supported_object_selected():
     for obj in fcgui.Selection.getSelection():
-        if (hasattr(obj, 'TypeId')
-                and (obj.TypeId in ['Part::Box', 'Part::Sphere', 'Part::Cylinder'])):
+        if hasattr(obj, 'Placement'):
             return True
     return False
-
-
-def xml_comment(comment: str) -> str:
-    return f'<!-- {comment.replace("--", "⸗⸗")} -->'
 
 
 class _UrdfExportCommand:
@@ -31,25 +31,46 @@ class _UrdfExportCommand:
                 }
 
     def Activated(self):
+        def set_package_name() -> None:
+            nonlocal txt
+            txt = original_txt.replace('$package_name$', package_name_lineedit.text())
+            txt_view.setPlainText(txt)
+
         txt = ''
+        has_mesh = False
         for obj in fcgui.Selection.getSelection():
             if not hasattr(obj, 'TypeId'):
                 # For now, only objects with 'TypeId' are supported.
                 continue
             xml: Optional[et.ElementTree] = None
             if obj.TypeId == 'Part::Box':
-                xml = urdf_collision_xml_from_box(obj)
+                xml = urdf_collision_from_box(obj)
             elif obj.TypeId == 'Part::Sphere':
-                xml = urdf_collision_xml_from_sphere(obj)
+                xml = urdf_collision_from_sphere(obj)
             elif obj.TypeId == 'Part::Cylinder':
-                xml = urdf_collision_xml_from_cylinder(obj)
+                xml = urdf_collision_from_cylinder(obj)
+            elif hasattr(obj, 'Placement'):
+                has_mesh = True
+                mesh_name = valid_filename(obj.Label) if hasattr(obj, 'Label') else 'mesh.dae'
+                package_name = '$package_name$'  # Will be replaced later by the GUI.
+                xml = urdf_collision_from_object(
+                    obj,
+                    mesh_name=valid_filename(obj.Label) + '.dae',
+                    package_name=package_name,
+                )
             if xml:
-                txt += xml_comment(obj.Label)
-                txt += et.tostring(xml).decode('utf-8').replace('<', '\n<') + '\n\n'
+                txt += et.tostring(xml).decode('utf-8')
+        fc.Console.PrintMessage(txt)
         if txt:
+            # txt = minidom.parseString(txt).toprettyxml(indent='  ', encoding='utf-8').decode('utf-8')
+            original_txt = copy.copy(txt)
             main_win = fcgui.getMainWindow()
             dialog = QtGui.QDialog(main_win, QtCore.Qt.Tool)
             layout = QtGui.QVBoxLayout(dialog)
+            if has_mesh:
+                package_name_lineedit = QtGui.QLineEdit('$package_name$')
+                package_name_lineedit.editingFinished.connect(lambda: set_package_name())
+                layout.addWidget(package_name_lineedit)
             txt_view = QtGui.QPlainTextEdit(txt)
             txt_view.setReadOnly(True)
             txt_view.setMinimumWidth(main_win.width() // 2)

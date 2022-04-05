@@ -25,7 +25,7 @@ def _existing_link(link: DO, o: DO) -> Optional[DO]:
 
 
 def _add_links_lod(link: DO, objects: List[DO], lod: str) -> List[DO]:
-    """Add a level of detail to a Ros::Link.
+    """Add a level of detail as a link to a Ros::Link.
 
     Return the full list of linked objects (existing + created).
 
@@ -47,10 +47,6 @@ def _add_links_lod(link: DO, objects: List[DO], lod: str) -> List[DO]:
         name = f'{lod}_{link.Name}000'
         lod_link = doc.addObject('App::Link', name)
         lod_link.Label = name
-        # TODO: set lod_link.LinkPlacement:
-        # - Get the path of o in the assembly in the form Assembly.object0
-        # - Get the placement of o with Assembly.getSubObject(path, retType=3),
-        #   cf. https://forum.freecadweb.org/viewtopic.php?f=22&t=65851&p=572213#p569083
         # print(f'Adding link {lod_link.Name} to {o.Name} into {link.Name}')
         if len(o.Parents) != 1:
             warn(f'Wrong object type. {o.Name}.Parents has more than one entry')
@@ -58,7 +54,7 @@ def _add_links_lod(link: DO, objects: List[DO], lod: str) -> List[DO]:
         if o.Parents:
             parent, subname = o.Parents[0]
             link_placement = parent.getSubObject(subname, retType=3)
-        lod_link.LinkPlacement = link_placement
+            lod_link.LinkPlacement = link_placement
         lod_link.setLink(o)
         lod_link.adjustRelativeLinks(link)
         link.addObject(lod_link)

@@ -102,6 +102,17 @@ def makeLink(name):
     Link(obj)
 
     if fc.GuiUp:
+        import FreeCADGui as fcgui
+
         _ViewProviderLink(obj.ViewObject)
+
+        # Make `obj` part of the selected `Ros::Robot`.
+        sel = fcgui.Selection.getSelection()
+        if sel:
+            candidate = sel[0]
+            if hasattr(candidate, 'Type') and candidate.Type == 'Ros::Robot':
+                obj.adjustRelativeLinks(candidate)
+                candidate.addObject(obj)
+
     return obj
 

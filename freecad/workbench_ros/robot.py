@@ -25,7 +25,7 @@ def _existing_link(link: DO, o: DO) -> Optional[DO]:
 
 
 def _add_links_lod(link: DO, objects: List[DO], lod: str) -> List[DO]:
-    """Add a level of detail as a link to a Ros::Link.
+    """Add a level of detail as links to real, visual or collision elements.
 
     Return the full list of linked objects (existing + created).
 
@@ -38,7 +38,7 @@ def _add_links_lod(link: DO, objects: List[DO], lod: str) -> List[DO]:
     """
     doc = link.Document
     old_and_new_objects: List[DO] = []
-    for o in objects:
+    for i, o in enumerate(objects):
         link_to_o = _existing_link(link, o)
         if link_to_o is not None:
             # print(f' {o.Name} is already linked')
@@ -50,11 +50,8 @@ def _add_links_lod(link: DO, objects: List[DO], lod: str) -> List[DO]:
         # print(f'Adding link {lod_link.Name} to {o.Name} into {link.Name}')
         if len(o.Parents) != 1:
             warn(f'Wrong object type. {o.Name}.Parents has more than one entry')
-        link_placement = fc.Placement()
-        if o.Parents:
-            parent, subname = o.Parents[0]
-            link_placement = parent.getSubObject(subname, retType=3)
-            lod_link.LinkPlacement = link_placement
+        link_placement = link.Proxy.get_link_placement(lod, i) or fc.Placement()
+        lod_link.LinkPlacement = link_placement
         lod_link.setLink(o)
         lod_link.adjustRelativeLinks(link)
         link.addObject(lod_link)
@@ -94,22 +91,6 @@ class Robot:
 
     def execute(self, obj):
         self.reset_group()
-
-    def onBeforeChange(self, feature: DO, prop: str) -> None:
-        print(f'Robot::onBeforeChange({feature.Name}, {prop})')
-        if not hasattr(self, 'robot'):
-            # Implementation note: happens but how is it possible?
-            print('self has no "robot"') # DEBUG
-            return
-        # if prop in ['Group', 'ShowReal', 'ShowVisual', 'ShowCollision']:
-        #     self.reset_group()
-
-        try:
-            self.previous_show_real = self.robot.ShowReal
-            self.previous_show_visual = self.robot.ShowVisual
-            self.previous_show_collision = self.robot.ShowCollision
-        except AttributeError:
-            pass
 
     def onChanged(self, feature: DO, prop: str) -> None:
         print(f'Robot::onChanged({feature.Name}, {prop})')

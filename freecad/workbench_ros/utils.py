@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 import string
-from typing import List
+from typing import Any, List
 
 import FreeCAD as fc
 
@@ -94,11 +94,27 @@ def get_links(l: List[fc.DocumentObject]) -> List[fc.DocumentObject]:
     """Return only the objects that are Ros::Link instances."""
     return [o for o in l if hasattr(o, 'Type') and o.Type == 'Ros::Link']
 
-def get_path(obj: fc.DocumentObject) -> str:
-    """Return the path to an object in the form parent0.parent1.....object.
 
-    The object must belong to an "assembly", i.e. all parents of objects must
-    be 'App::Part' or 'App::Link' to a 'App::Part'.
+def hasallattr(obj: Any, attrs: List[str]):
+    """Return True if object has all attributes."""
+    for attr in attrs:
+        if not hasattr(obj, attr):
+            return False
+    return True
 
-    """
 
+def get_placement(obj: fc.DocumentObject) -> fc.Placement:
+    """Return the object's placement."""
+    if not isinstance(obj, fc.DocumentObject):
+        raise RuntimeError('Not a DocumentObject')
+    if obj.TypeId == 'App::Link':
+        if not obj.Parents:
+            # A link to nothing.
+            return obj.LinkPlacement
+        parent, subname = obj.Parents[0]
+        return parent.getSubObject(subname, retType=3)
+    else:
+        if hasattr(obj, 'getGlobalPlacement'):
+            return obj.getGlobalPlacement()
+        elif hasattr(obj, 'Placement'):
+            return obj.Placement

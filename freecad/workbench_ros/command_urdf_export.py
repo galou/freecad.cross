@@ -1,4 +1,5 @@
 import copy
+from typing import Optional
 import xml.etree.ElementTree as et
 from xml.dom import minidom
 
@@ -12,6 +13,10 @@ from .export_urdf import urdf_collision_from_box
 from .export_urdf import urdf_collision_from_cylinder
 from .export_urdf import urdf_collision_from_object
 from .export_urdf import urdf_collision_from_sphere
+from .utils import is_box
+from .utils import is_cylinder
+from .utils import is_robot
+from .utils import is_sphere
 from .utils import valid_filename
 from .utils import xml_comment
 
@@ -19,6 +24,8 @@ from .utils import xml_comment
 def _supported_object_selected():
     for obj in fcgui.Selection.getSelection():
         if hasattr(obj, 'Placement'):
+            return True
+        if is_robot(obj):
             return True
     return False
 
@@ -43,12 +50,15 @@ class _UrdfExportCommand:
                 # For now, only objects with 'TypeId' are supported.
                 continue
             xml: Optional[et.ElementTree] = None
-            if obj.TypeId == 'Part::Box':
+            if is_box(obj):
                 xml = urdf_collision_from_box(obj)
-            elif obj.TypeId == 'Part::Sphere':
+            elif is_sphere(obj):
                 xml = urdf_collision_from_sphere(obj)
-            elif obj.TypeId == 'Part::Cylinder':
+            elif is_cylinder(obj):
                 xml = urdf_collision_from_cylinder(obj)
+            elif is_robot(obj):
+                if hasattr(obj, 'Proxy'):
+                    xml = obj.Proxy.export_urdf()
             elif hasattr(obj, 'Placement'):
                 has_mesh = True
                 mesh_name = valid_filename(obj.Label) if hasattr(obj, 'Label') else 'mesh.dae'
@@ -62,7 +72,7 @@ class _UrdfExportCommand:
                 txt += et.tostring(xml).decode('utf-8')
         fc.Console.PrintMessage(txt)
         if txt:
-            # txt = minidom.parseString(txt).toprettyxml(indent='  ', encoding='utf-8').decode('utf-8')
+            txt = minidom.parseString(txt).toprettyxml(indent='  ', encoding='utf-8').decode('utf-8')
             original_txt = copy.copy(txt)
             main_win = fcgui.getMainWindow()
             dialog = QtGui.QDialog(main_win, QtCore.Qt.Tool)

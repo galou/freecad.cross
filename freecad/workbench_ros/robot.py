@@ -1,4 +1,7 @@
-from typing import Iterable,List,Optional
+from pathlib import Path
+from typing import List, Optional
+import xml.etree.ElementTree as et
+from xml.dom import minidom
 
 import FreeCAD as fc
 
@@ -6,6 +9,9 @@ from .utils import ICON_PATH
 from .utils import add_property
 from .utils import error
 from .utils import get_links
+from .utils import split_package_path
+from .utils import valid_urdf_name
+from .utils import warn
 
 # Typing hint aliases
 DO = fc.DocumentObject
@@ -62,6 +68,9 @@ def _add_links_lod(link: DO, objects: List[DO], lod: str) -> List[DO]:
 
 class Robot:
     """The Robot group."""
+
+    type = 'Ros::Robot'
+
     def __init__(self, obj):
         obj.Proxy = self
         self.robot = obj
@@ -71,10 +80,10 @@ class Robot:
         self.init_properties(obj)
 
     def init_properties(self, obj):
-        add_property(obj, 'App::PropertyString', 'Type', 'Internal',
-                    'The type').Type = self.type
-        obj.setEditorMode('Type', 3)  # Make read-only and hidden.
-        # obj.setPropertyStatus('Type', 'Hidden')?
+        add_property(obj, 'App::PropertyString', '_Type', 'Internal',
+                     'The type')._Type = self.type
+        obj.setEditorMode('_Type', 3)  # Make read-only and hidden.
+        # obj.setPropertyStatus('_Type', 'Hidden')?
         obj.setEditorMode('Group', 1)  # Read-only, managed in self.reset_group().
 
         add_property(obj, 'App::PropertyLink', 'Assembly', 'Components',
@@ -111,6 +120,21 @@ class Robot:
         if prop in ['Group', 'ShowReal', 'ShowVisual', 'ShowCollision']:
             self.reset_group()
 
+    def onDocumentRestored(self, obj):
+        """Restore attributes because __init__ is not called on restore."""
+        print('Robot::onDocumenRestored')
+        obj.Proxy = self
+        self.robot = obj
+        self.previous_link_count = len(get_links(self.robot.Group))
+        self.init_properties(obj)
+
+    def __getstate__(self):
+        return (self.type, self.previous_link_count)
+
+    def __setstate__(self, state):
+        if state:
+            self.type, self.previous_link_count = state
+
     def reset_group(self):
         print('Robot::reset_group()')
 
@@ -120,7 +144,6 @@ class Robot:
             return
 
         links = get_links(self.robot.Group)  # ROS links.
-        rest = [o for o in self.robot.Group if o not in links]
 
         # List of linked objects from all Ros::Link in robot.Group.
         current_linked_objects: List[DO] = []
@@ -150,25 +173,35 @@ class Robot:
             self.robot.Document.removeObject(o.Name)
         # TODO?: doc.recompute() if objects_to_remove or (set(current_linked_objects) != set(all_linked_objects))
 
-    def onDocumentRestored(self, obj):
-        """Restore attributes because __init__ is not called on restore."""
-        print('Robot::onDocumenRestored')
-        obj.Proxy = self
-        self.robot = obj
-        self.type = 'Ros::Robot'
-        self.previous_link_count = len(get_links(self.robot.Group))
-        self.init_properties(obj)
-
-    def __getstate__(self):
-        return (self.type, self.previous_link_count)
-
-    def __setstate__(self, state):
-        if state:
-            self.type, self.previous_link_count = state
+    def export_urdf(self) -> et.ElementTree:
+        if not hasattr(self, 'robot'):
+            return et.ElementTree()
+        if not hasattr(self.robot, 'OutputPath'):
+            return et.ElementTree()
+        output_path = Path(self.robot.OutputPath)
+        parent, package_name = split_package_path(output_path)
+        output_path.mkdir(parents=True, exist_ok=True)
+        # TODO: warn if package name doesn't end with `_description`.
+        xml = et.fromstring(f'<robot name="{valid_urdf_name(self.robot.Label)}"/>')
+        previous_placement = fc.Placement()
+        for l in get_links(self.robot.Group):
+            if not l.Real:
+                error(f"Link '{l.Label}' has no link in 'Real'", True)
+            link_placement = previous_placement.inverse() * l.Real[0].LinkPlacement
+            if hasattr(l, 'Proxy'):
+                xml.append(l.Proxy.export_urdf(parent, package_name, link_placement))
+            previous_placement = link_placement
+        # Save the xml into a file.
+        txt = minidom.parseString(et.tostring(xml)).toprettyxml(indent='  ')
+        urdf_path = output_path / 'urdf/robot.urdf'
+        urdf_path.parent.mkdir(parents=True, exist_ok=True)
+        urdf_path.write_text(txt)
+        return xml
 
 
 class _ViewProviderRobot:
     """A view provider for the Robot container object """
+
     def __init__(self, vobj):
         vobj.Proxy = self
 
@@ -188,7 +221,6 @@ class _ViewProviderRobot:
         return
 
     def doubleClicked(self, vobj):
-        import FreeCADGui as fcgui
         gui_doc = vobj.Document
         if not gui_doc.getInEdit():
             gui_doc.setEdit(vobj.Object.Name)
@@ -228,4 +260,3 @@ def makeRobot(name):
 
     doc.recompute()
     return obj
-

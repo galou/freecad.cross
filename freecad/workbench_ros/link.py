@@ -1,13 +1,20 @@
-
+from pathlib import Path
 from typing import List
+import xml.etree.ElementTree as et
 
 import FreeCAD as fc
 
+from .export_urdf import urdf_collision_from_object
+from .export_urdf import urdf_visual_from_object
 from .utils import ICON_PATH
 from .utils import add_property
 from .utils import error
 from .utils import get_placement
 from .utils import hasallattr
+from .utils import is_primitive
+from .utils import save_mesh
+from .utils import valid_filename
+from .utils import valid_urdf_name
 
 
 def _get_placement_from(
@@ -36,6 +43,9 @@ def _get_placement_from(
 
 class Link:
     """The Link group."""
+
+    type = 'Ros::Link'
+
     # The names can be changed but not the order. Names can be added.
     collision_placement_enum = ['Own', 'From Real', 'From Visual']
     visual_placement_enum = ['Own', 'From Real']
@@ -43,20 +53,19 @@ class Link:
     def __init__(self, obj):
         obj.Proxy = self
         self.link = obj
-        self.type = 'Ros::Link'
         self.init_properties(obj)
 
     def init_properties(self, obj):
-        add_property(obj, 'App::PropertyString', 'Type', 'Internal',
-                    'The type').Type = self.type
-        obj.setEditorMode('Type', 3)  # Make read-only and hidden.
+        add_property(obj, 'App::PropertyString', '_Type', 'Internal',
+                     'The type')._Type = self.type
+        obj.setEditorMode('_Type', 3)  # Make read-only and hidden.
 
         add_property(obj, 'App::PropertyLinkList', 'Real', 'Elements',
-                    'The real part objects of this link, optional')
+                     'The real part objects of this link, optional')
         add_property(obj, 'App::PropertyLinkList', 'Visual', 'Elements',
-                    'The part objects this link that consistute the URDF visual elements, optional')
+                     'The part objects this link that consistute the URDF visual elements, optional')
         add_property(obj, 'App::PropertyLinkList', 'Collision', 'Elements',
-                    'The part objects this link that consistute the URDF collision elements, optional')
+                     'The part objects this link that consistute the URDF collision elements, optional')
         add_property(obj, 'App::PropertyEnumeration', 'CollisionPlacement', 'Elements', 'Placement of Collision')
         obj.CollisionPlacement = Link.collision_placement_enum
         add_property(obj, 'App::PropertyEnumeration', 'VisualPlacement', 'Elements', 'Placement of Visual')
@@ -169,6 +178,37 @@ class Link:
                 return None
             return _get_placement_from(self.link.Collision[index], self.link.Visual)
 
+    def export_urdf(self,
+            package_path: Path,
+            package_name: Path,
+            placement: fc.Placement) -> et.ElementTree:
+        """Return the xml for this link."""
+
+        def get_xml(obj, urdf_function):
+            # We export to STL because the DAE export (`importDAE.export()`)
+            # doesn't support `App::Part` as of 2022-04-07.
+            mesh_name = valid_filename(obj.Label) + '.stl'
+            visual_xml = urdf_function(
+                    obj,
+                    mesh_name=mesh_name,
+                    package_name=str(package_name),
+                    placement=placement,
+                    )
+            if not is_primitive(obj):
+                mesh_path = package_path / package_name / 'meshes' / mesh_name
+                save_mesh(obj, mesh_path)
+            return visual_xml
+
+        link_xml = et.fromstring(
+                f'<link name="{valid_urdf_name(self.link.Label)}" />')
+        for l in self.link.Visual:
+            print(f'About to export visual for {l.Label}')
+            link_xml.append(get_xml(l, urdf_visual_from_object))
+        for l in self.link.Collision:
+            print(f'About to export collision for {l.Label}')
+            link_xml.append(get_xml(l, urdf_collision_from_object))
+        return link_xml
+
 
 class _ViewProviderLink:
     """A view provider for the Link container object """
@@ -235,9 +275,8 @@ def makeLink(name):
         sel = fcgui.Selection.getSelection()
         if sel:
             candidate = sel[0]
-            if hasattr(candidate, 'Type') and candidate.Type == 'Ros::Robot':
+            if hasattr(candidate, '_Type') and candidate._Type == 'Ros::Robot':
                 obj.adjustRelativeLinks(candidate)
                 candidate.addObject(obj)
 
     return obj
-

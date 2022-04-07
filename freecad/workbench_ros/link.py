@@ -98,12 +98,12 @@ class Link:
         - index: index of the object in self.{Real,Visual,Collision}.
 
         """
-        map = {
+        function_map = {
             'real': self.get_real_placement,
             'visual': self.get_visual_placement,
             'collision': self.get_collision_placement,
         }
-        return map[lod.lower()](index)
+        return function_map[lod.lower()](index)
 
     def get_real_placement(self, index: int):
         """Return the placement of a linked real object.
@@ -261,7 +261,7 @@ class _ViewProviderLink:
 def makeLink(name):
     """Add a Ros::Link to the current document."""
     doc = fc.activeDocument()
-    if not doc:
+    if doc is None:
         return
     obj = doc.addObject('App::DocumentObjectGroupPython', name)
     Link(obj)

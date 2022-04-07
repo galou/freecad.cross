@@ -2,6 +2,8 @@ import os
 from pathlib import Path
 import string
 from typing import Any, List, Tuple, Union
+import xml.etree.ElementTree as et
+from xml.dom import minidom
 
 import FreeCAD as fc
 
@@ -207,3 +209,11 @@ def save_mesh(obj: fc.DocumentObject, filename: Union[Path, str]) -> None:
     Path(filename).parent.mkdir(parents=True, exist_ok=True)
     # TODO: scale to meters.
     Mesh.export([obj], str(filename))
+
+
+def save_xml(xml: et.ElementTree, filename: Union[Path, str]) -> None:
+    """Save the xml element into a file."""
+    file_path = Path(filename)
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    txt = minidom.parseString(et.tostring(xml)).toprettyxml(indent='  ')
+    file_path.write_text(txt)

@@ -9,6 +9,7 @@ from .utils import ICON_PATH
 from .utils import add_property
 from .utils import error
 from .utils import get_links
+from .utils import save_xml
 from .utils import split_package_path
 from .utils import valid_urdf_name
 from .utils import warn
@@ -192,10 +193,8 @@ class Robot:
                 xml.append(l.Proxy.export_urdf(parent, package_name, link_placement))
             previous_placement = link_placement
         # Save the xml into a file.
-        txt = minidom.parseString(et.tostring(xml)).toprettyxml(indent='  ')
         urdf_path = output_path / 'urdf/robot.urdf'
-        urdf_path.parent.mkdir(parents=True, exist_ok=True)
-        urdf_path.write_text(txt)
+        save_xml(xml, urdf_path)
         return xml
 
 
@@ -250,7 +249,7 @@ class _ViewProviderRobot:
 def makeRobot(name):
     """Add a Ros::Robot to the current document."""
     doc = fc.activeDocument()
-    if not doc:
+    if doc is None:
         return
     obj = doc.addObject('App::DocumentObjectGroupPython', name)
     Robot(obj)

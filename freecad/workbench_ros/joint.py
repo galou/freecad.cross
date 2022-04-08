@@ -7,8 +7,8 @@ from .utils import ICON_PATH
 from .utils import add_property
 from .utils import error
 from .utils import get_placement
-from .utils import urdf_origin_from_placement
 from .utils import valid_urdf_name
+from .export_urdf import urdf_origin_from_placement
 
 
 class Joint:
@@ -34,7 +34,7 @@ class Joint:
         add_property(obj, 'App::PropertyLink', 'Parent', 'Elements', 'Parent link (from the ROS Workbench)')
         add_property(obj, 'App::PropertyLink', 'Child', 'Elements', 'Child link (from the ROS Workbench)')
         add_property(obj, 'App::PropertyPlacement', 'Origin', 'Elements', 'Joint origin relative to the parent link')
-        add_property(obj, 'App::PropertyPlacement', 'Placement', 'Internal')
+        add_property(obj, 'App::PropertyPlacement', 'Placement', 'Internal', 'The placement relative to the robot')
         obj.setPropertyStatus('Placement', 'Hidden')
 
     def onChanged(self, feature: fc.DocumentObjectGroup, prop: str) -> None:
@@ -79,29 +79,26 @@ class _ViewProviderJoint:
 
     def attach(self, vobj):
         """Setup the scene sub-graph of the view provider."""
-        from pivy import coin
-        self.group = coin.SoGroup()
-        self.wireframe = coin.SoGroup()
-        self.scale = coin.SoScale()
-        self.color = coin.SoBaseColor()
+        pass
 
-        data=coin.SoCube()
-        self.shaded.addChild(self.scale)
-        self.shaded.addChild(self.color)
-        self.shaded.addChild(data)
-        obj.addDisplayMode(self.shaded,"Shaded");
-        style=coin.SoDrawStyle()
-        style.style = coin.SoDrawStyle.LINES
-        self.wireframe.addChild(style)
-        self.wireframe.addChild(self.scale)
-        self.wireframe.addChild(self.color)
-        self.wireframe.addChild(data)
-        obj.addDisplayMode(self.wireframe,"Wireframe");
-        self.onChanged(obj,"Color")
-
-
-    def updateData(self, obj, prop):
-        return
+    def updateData(self, vobj: 'FreeCADGui.ViewProviderDocumentObject', prop):
+        from .coin_utils import arrow_group
+        from .coin_utils import transform_from_placement
+        if (prop == 'Origin'):
+            vobj.removeAllChildren()
+            try:
+                origin = vobj.Object.Origin
+                # TODO: Include the robot placement.
+                parent_placement = vobj.Object.Parent.Visual[0].Placement
+            except (AttributeError, IndexError):
+                return
+            p0 = parent_placement.Base
+            p1 = (parent_placement * origin).Base
+            dp = p1 - p0
+            p1_1m = p0 + dp * 1000 / dp.Length
+            arrow = arrow_group([p0, p1_1m])
+            vobj.RootNode.addChild(transform_from_placement(parent_placement))
+            vobj.RootNode.addChild(arrow)
 
     def onChanged(self, vobj, prop):
         return
@@ -138,7 +135,7 @@ def makeJoint(name):
     doc = fc.activeDocument()
     if doc is None:
         return
-    obj = doc.addObject('Part::Feature', name)
+    obj = doc.addObject('Part::FeaturePython', name)
     Joint(obj)
 
     if fc.GuiUp:

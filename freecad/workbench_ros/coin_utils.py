@@ -1,8 +1,38 @@
-from typing import List, Tuple
+from typing import List, Tuple, Union
 
 import FreeCAD as fc
 
 from pivy import coin
+
+
+def transform_from_placement(placement: [fc.Placement, fc.Vector, fc.Rotation]) -> coin.SoTransform:
+    """Return the SoTransform equivalent to the placement.
+
+    # Should show a cone entering a cylinder.
+    >>> placement = App.Placement(App.Vector(10, 20, 30), App.Rotation(10, 20, 30))
+    >>> cyl_to_y = App.Placement(App.Rotation(App.Vector(1, 0, 0), -90).toMatrix())
+    >>> cyl = App.ActiveDocument.addObject('Part::Cylinder', 'Cylinder')
+    >>> cyl.Placement = placement * cyl_to_y
+    >>> cone = coin.SoCone()  # Centered, along y.
+    >>> sg = Gui.ActiveDocument.ActiveView.getSceneGraph()
+    >>> sep = coin.SoSeparator()
+    >>> sep.addChild(transform_from_placement(placement))
+    >>> sep.addChild(cone)
+    >>> sg.addChild(sep)
+    >>> App.ActiveDocument.recompute()
+    """
+    if (not (isinstance(placement, fc.Placement)
+             or isinstance(placement, fc.Vector)
+             or isinstance(placement, fc.Rotation))):
+        raise RuntimeError('Argument must be a FreeCAD.{Placement,Vector,Rotation}')
+    if isinstance(placement, fc.Vector):
+        placement = fc.Placement(placement, fc.Rotation())
+    elif isinstance(placement, fc.Rotation):
+        placement = fc.Placement(placement.toMatrix())
+    transform = coin.SoTransform()
+    transform.translation = placement.Base
+    transform.rotation = placement.Rotation.Q
+    return transform
 
 
 def arrow_group(
@@ -26,7 +56,7 @@ def arrow_group(
     p0, p1 = points[:2]
     if ((not isinstance(p0, fc.Vector))
             or (not isinstance(p1, fc.Vector))):
-        raise RuntimeError('The list must contains FreeCAD.Vector instances')
+        raise RuntimeError('The list of points must contains FreeCAD.Vector instances')
 
     v = p1 - p0
     # Rotation to bring the x-axis to v.

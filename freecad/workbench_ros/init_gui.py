@@ -5,6 +5,7 @@ import FreeCAD as fc
 import FreeCADGui as fcgui
 
 from . import box_from_bounding_box
+from . import command_new_joint
 from . import command_new_link
 from . import command_new_robot
 from . import command_urdf_export
@@ -31,6 +32,7 @@ class RosWorkbench(fcgui.Workbench):
         commands = [
             'NewRobot',  # Defined in ./command_new_robot.py
             'NewLink',  # Defined in ./command_new_link.py
+            'NewJoint',  # Defined in ./command_new_joint.py
             'BoxFromBoundingBox',  # Defined in ./box_from_bounding_box.py.
             'SphereFromBoundingBox',  # Defined in ./sphere_from_bounding_box.py.
             'UrdfExport',  # Defined in ./command_urdf_export.py.

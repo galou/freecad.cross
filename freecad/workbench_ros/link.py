@@ -9,12 +9,15 @@ from .export_urdf import urdf_visual_from_object
 from .utils import ICON_PATH
 from .utils import add_property
 from .utils import error
+from .utils import get_joints
 from .utils import get_placement
 from .utils import hasallattr
 from .utils import is_primitive
-from .utils import save_mesh
+from .utils import is_robot
+from .utils import save_mesh_dae
 from .utils import valid_filename
 from .utils import valid_urdf_name
+from .utils import warn
 
 
 def _get_placement_from(
@@ -53,6 +56,10 @@ class Link:
     def __init__(self, obj):
         obj.Proxy = self
         self.link = obj
+        # Flag to detect when the first link in `Real` is added.
+        self.real_was_empty = False
+        # Placement at the time the first link in `Real` is added.
+        # The link is supposed to be added when the joint has position 0.0.
         self.init_properties(obj)
 
     def init_properties(self, obj):
@@ -71,17 +78,37 @@ class Link:
         add_property(obj, 'App::PropertyEnumeration', 'VisualPlacement', 'Elements', 'Placement of Visual')
         obj.VisualPlacement = Link.visual_placement_enum
 
+        # Placement in the robot frame when building.
+        add_property(obj, 'App::PropertyPlacement', 'CachedPlacement', 'Internal', 'Placement when building')
+        warn(f'{self.link.Name}.CachedPlacement = {obj.CachedPlacement}')
+        obj.setPropertyStatus('CachedPlacement', 'Hidden')
+
     def execute(self, obj):
         pass
 
-    def onChanged(self, feature: fc.DocumentObjectGroup, prop: str) -> None:
-        print(f'Link::onChanged({feature.Name}, {prop})')
+    def onBeforeChange(self, obj: fc.DocumentObjectGroup, prop: str) -> None:
+        if not hasattr(self, 'link'):
+            return
+        if prop == 'Real':
+            self.real_was_empty = hasattr(self.link, 'Real') and not(self.link.Real)
+
+    def onChanged(self, obj: fc.DocumentObjectGroup, prop: str) -> None:
+        if not hasattr(self, 'link'):
+            return
+        if prop == 'Real':
+            if self.link.Real and self.real_was_empty:
+                placement = self.get_real_placement(0)
+                warn(f'{placement = }')
+                if placement:
+                    self.link.CachedPlacement = placement
+                else:
+                    error('Internal error, cannot set CachedPlacement')
 
     def onDocumentRestored(self, obj):
-        obj.Proxy = self
-        self.link = obj
-        self.type = 'Ros::Link'
-        self.init_properties(obj)
+        # obj.Proxy = self
+        # self.link = obj
+        # self.init_properties(obj)
+        self.__init__(obj)
 
     def __getstate__(self):
         return None
@@ -91,6 +118,9 @@ class Link:
 
     def get_link_placement(self, lod: str, index: int):
         """Return the placement of a linked object.
+
+        Linked objects are objects in {'Real', 'Visual', 'Collision'}, not
+        self or self.link.
 
         Parameters
         ----------
@@ -178,16 +208,44 @@ class Link:
                 return None
             return _get_placement_from(self.link.Collision[index], self.link.Visual)
 
+    def get_robot(self) -> fc.DocumentObject:
+        """Return the Ros::Robot this link belongs to."""
+        if not hasattr(self, 'link'):
+            return
+        for o in self.link.InList:
+            if is_robot(o):
+                return o
+
+    def get_ref_joint(self) -> fc.DocumentObject:
+        """Return the joint this link is the child of."""
+        robot = self.get_robot()
+        if robot is None:
+            return
+        joints = get_joints(robot.Group)
+        for joint in joints:
+            if joint.Child is self.link:
+                # Parallel mechanisms are not supported, there should be only
+                # one joint that has `link` as child.
+                return joint
+
     def export_urdf(self,
             package_path: Path,
             package_name: Path,
-            placement: fc.Placement) -> et.ElementTree:
-        """Return the xml for this link."""
+            placement: fc.Placement = fc.Placement()) -> et.ElementTree:
+        """Return the xml for this link.
+
+        Parameters
+        ----------
+        - package_path: the parent directory of the package.
+        - package_name: the name of the package (also the name of the
+            directory).
+        - placement: the placement of the link relative to the joint of the
+            previous link.
+
+        """
 
         def get_xml(obj, urdf_function):
-            # We export to STL because the DAE export (`importDAE.export()`)
-            # doesn't support `App::Part` as of 2022-04-07.
-            mesh_name = valid_filename(obj.Label) + '.stl'
+            mesh_name = valid_filename(obj.Label) + '.dae'
             visual_xml = urdf_function(
                     obj,
                     mesh_name=mesh_name,
@@ -196,17 +254,15 @@ class Link:
                     )
             if not is_primitive(obj):
                 mesh_path = package_path / package_name / 'meshes' / mesh_name
-                save_mesh(obj, mesh_path)
+                save_mesh_dae(obj.LinkedObject, mesh_path)
             return visual_xml
 
         link_xml = et.fromstring(
                 f'<link name="{valid_urdf_name(self.link.Label)}" />')
-        for l in self.link.Visual:
-            print(f'About to export visual for {l.Label}')
-            link_xml.append(get_xml(l, urdf_visual_from_object))
-        for l in self.link.Collision:
-            print(f'About to export collision for {l.Label}')
-            link_xml.append(get_xml(l, urdf_collision_from_object))
+        for link in self.link.Visual:
+            link_xml.append(get_xml(link, urdf_visual_from_object))
+        for link in self.link.Collision:
+            link_xml.append(get_xml(link, urdf_collision_from_object))
         return link_xml
 
 

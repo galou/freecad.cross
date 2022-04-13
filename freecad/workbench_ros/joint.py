@@ -6,8 +6,10 @@ import FreeCAD as fc
 from .utils import ICON_PATH
 from .utils import add_property
 from .utils import error
-from .utils import get_placement
+from .utils import get_joints
+from .utils import is_robot
 from .utils import valid_urdf_name
+from .utils import warn
 from .export_urdf import urdf_origin_from_placement
 
 
@@ -16,8 +18,9 @@ class Joint:
 
     type = 'Ros::Joint'
 
-    # The names can be changed but not the order. Names can be added.
-    type_enum = ['fixed', 'revolute', 'prismatic']
+    # The names cannot be changed because they are used as-is in the generated
+    # URDF. The order can be changed an influence the order in the GUI.
+    type_enum = ['revolute', 'continuous', 'prismatic', 'fixed', 'floating', 'planar']
 
     def __init__(self, obj):
         obj.Proxy = self
@@ -34,11 +37,14 @@ class Joint:
         add_property(obj, 'App::PropertyLink', 'Parent', 'Elements', 'Parent link (from the ROS Workbench)')
         add_property(obj, 'App::PropertyLink', 'Child', 'Elements', 'Child link (from the ROS Workbench)')
         add_property(obj, 'App::PropertyPlacement', 'Origin', 'Elements', 'Joint origin relative to the parent link')
-        add_property(obj, 'App::PropertyPlacement', 'Placement', 'Internal', 'The placement relative to the robot')
-        obj.setPropertyStatus('Placement', 'Hidden')
+        add_property(obj, 'App::PropertyFloat', 'LowerLimit', 'Limits', 'Lower position limit (m or rad)')
+        add_property(obj, 'App::PropertyFloat', 'UpperLimit', 'Limits', 'Upper position limit (m or rad)')
+        add_property(obj, 'App::PropertyFloat', 'Effort', 'Limits', 'Maximal effort (N)')
+        add_property(obj, 'App::PropertyFloat', 'Velocity', 'Limits', 'Maximal velocity (m/s or rad/s)')
 
     def onChanged(self, feature: fc.DocumentObjectGroup, prop: str) -> None:
-        print(f'Joint::onChanged({feature.Name}, {prop})')
+        # print(f'Joint::onChanged({feature.Name}, {prop})') # DEBUG
+        pass
 
     def onDocumentRestored(self, obj):
         obj.Proxy = self
@@ -51,18 +57,60 @@ class Joint:
     def __setstate__(self, state):
         return None
 
-    def get_joint_placement(self):
+    def get_placement(self) -> Optional[fc.Placement]:
         """Return the absolute joint placement."""
-        return get_placement(self.joint.Parent.LinkedObject.Real[0]) * self.joint.Origin
+        predecessor = self.get_predecessor()
+        if predecessor is None:
+            # First joint in the chain.
+            try:
+                return self.joint.Parent.CachedPlacement * self.joint.Origin
+            except (AttributeError, NotImplementedError):
+                print('get_placement(), ERROR')
+                return
+        else:
+            pred_placement = predecessor.Proxy.get_placement()
+            if pred_placement is None:
+                return
+            return pred_placement * self.joint.Origin
+
+    def get_robot(self) -> fc.DocumentObject:
+        """Return the Ros::Robot this joint belongs to."""
+        if not hasattr(self, 'joint'):
+            return
+        for o in self.joint.InList:
+            if is_robot(o):
+                return o
+
+    def get_predecessor(self) -> fc.DocumentObject:
+        """Return the predecessing joint."""
+        robot = self.get_robot()
+        if robot is None:
+            return
+        for candidate_joint in get_joints(robot.Group):
+            if candidate_joint.Child is self.joint.Parent:
+                return candidate_joint
 
     def export_urdf(self) -> et.ElementTree:
+        joint = self.joint
         joint_xml = et.fromstring('<joint/>')
-        joint_xml.attrib['name'] = valid_urdf_name(self.name)
-        joint_xml.attrib['type'] = self.joint.Type
-        joint_xml.append(et.fromstring('<parent joint="{valid_urdf_name(self.parent.Label)}"/>'))
-        joint_xml.append(et.fromstring('<child joint="{valid_urdf_name(self.child.Label)}"/>'))
-        joint_xml.append(urdf_origin_from_placement(self.origin))
+        joint_xml.attrib['name'] = valid_urdf_name(joint.Label)
+        joint_xml.attrib['type'] = joint.Type
+        if joint.Parent:
+            joint_xml.append(et.fromstring(f'<parent link="{valid_urdf_name(joint.Parent.Label)}"/>'))
+        else:
+            joint_xml.append(et.fromstring('<parent link="NO_PARENT_DEFINED"/>'))
+        if joint.Child:
+            joint_xml.append(et.fromstring(f'<child link="{valid_urdf_name(joint.Child.Label)}"/>'))
+        else:
+            joint_xml.append(et.fromstring('<child link="NO_CHILD_DEFINED"/>'))
+        joint_xml.append(urdf_origin_from_placement(joint.Origin))
         joint_xml.append(et.fromstring('<axis xyz="0 0 1" />'))
+        limit_xml = et.fromstring('<limit/>')
+        limit_xml.attrib['lower'] = str(joint.LowerLimit)
+        limit_xml.attrib['upper'] = str(joint.UpperLimit)
+        limit_xml.attrib['effort'] = str(joint.Effort)
+        limit_xml.attrib['velocity'] = str(joint.Velocity)
+        joint_xml.append(limit_xml)
         return joint_xml
 
 
@@ -81,24 +129,27 @@ class _ViewProviderJoint:
         """Setup the scene sub-graph of the view provider."""
         pass
 
-    def updateData(self, vobj: 'FreeCADGui.ViewProviderDocumentObject', prop):
+    def updateData(self,
+            obj: 'FeaturePython',
+            prop: str):
         from .coin_utils import arrow_group
-        from .coin_utils import transform_from_placement
-        if (prop == 'Origin'):
-            vobj.removeAllChildren()
-            try:
-                origin = vobj.Object.Origin
-                # TODO: Include the robot placement.
-                parent_placement = vobj.Object.Parent.Visual[0].Placement
-            except (AttributeError, IndexError):
+
+        vobj = obj.ViewObject
+        root_node = vobj.RootNode
+        if not hasattr(vobj, 'Visibility'):
+            return
+        if not vobj.Visibility:
+            # root_node.removeAllChildren() # This segfaults when loading the document.
+            return
+        if prop == 'Origin':
+            placement = obj.Proxy.get_placement()
+            if placement is None:
                 return
-            p0 = parent_placement.Base
-            p1 = (parent_placement * origin).Base
-            dp = p1 - p0
-            p1_1m = p0 + dp * 1000 / dp.Length
-            arrow = arrow_group([p0, p1_1m])
-            vobj.RootNode.addChild(transform_from_placement(parent_placement))
-            vobj.RootNode.addChild(arrow)
+            p0 = placement.Base
+            p1 = placement * fc.Vector(0.0, 0.0, 1000.0)
+            arrow = arrow_group([p0, p1], scale=0.2)
+            root_node.removeAllChildren()
+            root_node.addChild(arrow)
 
     def onChanged(self, vobj, prop):
         return
@@ -112,10 +163,10 @@ class _ViewProviderJoint:
         return True
 
     def setEdit(self, vobj, mode):
-        import FreeCADGui as fcgui
-        from .task_panel_joint import TaskPanelJoint
-        task_panel = TaskPanelJoint(self.joint)
-        fcgui.Control.showDialog(task_panel)
+        # import FreeCADGui as fcgui
+        # from .task_panel_joint import TaskPanelJoint
+        # task_panel = TaskPanelJoint(self.joint)
+        # fcgui.Control.showDialog(task_panel)
         return True
 
     def unsetEdit(self, vobj, mode):
@@ -147,8 +198,8 @@ def makeJoint(name):
         sel = fcgui.Selection.getSelection()
         if sel:
             candidate = sel[0]
-            if hasattr(candidate, '_Type') and candidate._Type == 'Ros::Robot':
-                obj.adjustRelativeJoints(candidate)
+            if is_robot(candidate):
+                obj.adjustRelativeLinks(candidate)
                 candidate.addObject(obj)
 
     return obj

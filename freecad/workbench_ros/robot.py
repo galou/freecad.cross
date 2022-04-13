@@ -1,14 +1,15 @@
 from pathlib import Path
 from typing import List, Optional
 import xml.etree.ElementTree as et
-from xml.dom import minidom
 
 import FreeCAD as fc
 
 from .utils import ICON_PATH
 from .utils import add_property
 from .utils import error
+from .utils import get_joints
 from .utils import get_links
+from .utils import is_link
 from .utils import save_xml
 from .utils import split_package_path
 from .utils import valid_urdf_name
@@ -96,28 +97,16 @@ class Robot:
         add_property(obj, 'App::PropertyBool', 'ShowCollision', 'Components',
                     'Whether to show the parts for URDF collision').ShowCollision = False
 
-        add_property(obj, 'App::PropertyPath', 'OutputPath', 'Export',
-                    'The path to the ROS package to export files to')
+        add_property(obj, 'App::PropertyPath', 'OutputPath', 'Export', 'The path to the ROS package to export files to')
 
     def execute(self, obj):
         self.reset_group()
 
     def onChanged(self, feature: DO, prop: str) -> None:
-        print(f'Robot::onChanged({feature.Name}, {prop})')
+        # print(f'Robot::onChanged({feature.Name}, {prop})') # DEBUG
         if not hasattr(self, 'robot'):
             # Implementation note: happens but how is it possible?
-            print('self has no "robot"') # DEBUG
             return
-        # 'Group' must be treated specially to avoid recursion when calling
-        # self.reset_group().
-        # link_count_now = len(get_links(self.robot.Group))
-        # if prop == 'Group' and (self.previous_link_count != link_count_now):
-        #     self.previous_link_count = link_count_now
-        #     self.reset_group()
-        #     return
-        # if prop in ['ShowReal', 'ShowVisual', 'ShowCollision']:
-        #     self.reset_group()
-        #     return
         if prop in ['Group', 'ShowReal', 'ShowVisual', 'ShowCollision']:
             self.reset_group()
 
@@ -137,7 +126,7 @@ class Robot:
             self.type, self.previous_link_count = state
 
     def reset_group(self):
-        print('Robot::reset_group()')
+        # print('Robot::reset_group()') # DEBUG
 
         if ((not hasattr(self.robot, 'ShowReal'))
                 or (not hasattr(self.robot, 'ShowVisual'))
@@ -148,24 +137,24 @@ class Robot:
 
         # List of linked objects from all Ros::Link in robot.Group.
         current_linked_objects: List[DO] = []
-        for l in links:
-            for o in l.Group:
+        for link in links:
+            for o in link.Group:
                 current_linked_objects.append(o)
                 # print(f'  current_linked_objects; {o.Name}: {hash(current_linked_objects[-1])}')
 
         # Add objects from selected components.
         all_linked_objects: List[DO] = []
         if self.robot.ShowReal:
-            for l in links:
-                all_linked_objects += _add_links_lod(l, l.Real, 'real')
+            for link in links:
+                all_linked_objects += _add_links_lod(link, link.Real, 'real')
 
         if self.robot.ShowVisual:
-            for l in links:
-                all_linked_objects += _add_links_lod(l, l.Visual, 'visual')
+            for link in links:
+                all_linked_objects += _add_links_lod(link, link.Visual, 'visual')
 
         if self.robot.ShowCollision:
-            for l in links:
-                all_linked_objects += _add_links_lod(l, l.Collision, 'collision')
+            for link in links:
+                all_linked_objects += _add_links_lod(link, link.Collision, 'collision')
 
         # Remove objects that do not belong to `all_linked_objects`.
         objects_to_remove = set(current_linked_objects) - set(all_linked_objects)
@@ -174,24 +163,50 @@ class Robot:
             self.robot.Document.removeObject(o.Name)
         # TODO?: doc.recompute() if objects_to_remove or (set(current_linked_objects) != set(all_linked_objects))
 
+    def _get_link_placement(self, link: fc.DocumentObject):
+        """Return the placement of the link relative to the joint it's child of."""
+        if not is_link(link):
+            return
+        parent_joint = link.Proxy.get_ref_joint()
+        if parent_joint is None:
+            # We have a root link (or an error).
+            return fc.Placement()
+        return (parent_joint.Proxy.get_placement().inverse()
+                * link.CachedPlacement)
+
     def export_urdf(self) -> et.ElementTree:
         if not hasattr(self, 'robot'):
             return et.ElementTree()
         if not hasattr(self.robot, 'OutputPath'):
             return et.ElementTree()
         output_path = Path(self.robot.OutputPath)
-        parent, package_name = split_package_path(output_path)
+        package_parent, package_name = split_package_path(output_path)
         output_path.mkdir(parents=True, exist_ok=True)
         # TODO: warn if package name doesn't end with `_description`.
-        xml = et.fromstring(f'<robot name="{valid_urdf_name(self.robot.Label)}"/>')
-        previous_placement = fc.Placement()
-        for l in get_links(self.robot.Group):
-            if not l.Real:
-                error(f"Link '{l.Label}' has no link in 'Real'", True)
-            link_placement = previous_placement.inverse() * l.Real[0].LinkPlacement
-            if hasattr(l, 'Proxy'):
-                xml.append(l.Proxy.export_urdf(parent, package_name, link_placement))
-            previous_placement = link_placement
+        xml = et.fromstring('<robot/>')
+        xml.attrib['name'] = valid_urdf_name(self.robot.Label)
+        for link in get_links(self.robot.Group):
+            if not link.Real:
+                error(f"Link '{link.Label}' has no link in 'Real'", True)
+                continue
+            if not hasattr(link, 'Proxy'):
+                error(f"Internal error with '{link.Label}', has no 'Proxy' attribute", True)
+                return
+            link_placement = self._get_link_placement(link)
+            print(f'{link.Label}.link_placement = {link_placement}') # DEBUG
+            xml.append(link.Proxy.export_urdf(package_parent, package_name, link_placement))
+        for joint in get_joints(self.robot.Group):
+            warn(f'About to export {joint.Label}') # DEBUG
+            if not joint.Parent:
+                error(f"Joint '{joint.Label}' has no parent link", True)
+                continue
+            if not joint.Child:
+                error(f"Joint '{joint.Label}' has no child link", True)
+                continue
+            if hasattr(joint, 'Proxy'):
+                xml.append(joint.Proxy.export_urdf())
+            else: # DEBUG
+                error(f"Internal error with joint '{joint.Label}'", True) # DEBUG
         # Save the xml into a file.
         urdf_path = output_path / 'urdf/robot.urdf'
         save_xml(xml, urdf_path)

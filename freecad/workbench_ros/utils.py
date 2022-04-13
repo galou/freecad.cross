@@ -95,7 +95,7 @@ def _has_ros_type(obj: fc.DocumentObject, type_: str) -> bool:
     """Return True if the object is an object from this workbench."""
     if not isinstance(obj, fc.DocumentObject):
         return False
-    return hasattr(obj, 'Type') and (obj.Type == type_)
+    return hasattr(obj, '_Type') and (obj._Type == type_)
 
 
 def is_robot(obj: fc.DocumentObject) -> bool:
@@ -106,6 +106,11 @@ def is_robot(obj: fc.DocumentObject) -> bool:
 def is_link(obj: fc.DocumentObject) -> bool:
     """Return True if the object is a Ros::Link."""
     return _has_ros_type(obj, 'Ros::Link')
+
+
+def is_joint(obj: fc.DocumentObject) -> bool:
+    """Return True if the object is a Ros::Link."""
+    return _has_ros_type(obj, 'Ros::Joint')
 
 
 def _has_typeid(obj: fc.DocumentObject, typeid: str) -> bool:
@@ -155,6 +160,11 @@ def has_placement(obj: fc.DocumentObject) -> bool:
 def get_links(objs: List[fc.DocumentObject]) -> List[fc.DocumentObject]:
     """Return only the objects that are Ros::Link instances."""
     return [o for o in objs if is_link(o)]
+
+
+def get_joints(objs: List[fc.DocumentObject]) -> List[fc.DocumentObject]:
+    """Return only the objects that are Ros::Joint instances."""
+    return [o for o in objs if is_joint(o)]
 
 
 def hasallattr(obj: Any, attrs: List[str]):

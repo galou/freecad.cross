@@ -180,24 +180,22 @@ def urdf_cylinder_placement_from_object(
 def _urdf_generic_from_box(
         box: 'PrimitivePy',
         generic: str,
-        placement: Optional[fc.Placement] = None) -> et.Element:
+        placement: fc.Placement = fc.Placement()) -> et.Element:
     """Return the xml element for visual or collision for a FreeCAD's box.
 
     Parameters
     ----------
     - cyl: the FreeCAD cylinder Part object
     - generic: {'visual', 'collision'}.
-    - placement: optional placement of the lower-left-bottom corner of the box
-        relative to the link it belongs.
-        If not given, box.Placement will be used.
+    - placement: additional displacement of the box, the box' original
+        placement is added to this.
 
     """
     if not is_box(box):
         raise RuntimeError("Argument must be a 'Part::Box'")
     parent = et.fromstring(f'<{generic}/>')
     # TODO: handle links
-    if not placement:
-        placement = box.Placement
+    placement = placement * box.Placement
     center_placement = urdf_box_placement_from_object(box, placement)
     parent.append(urdf_origin_from_placement(center_placement))
     parent.append(urdf_geometry_box(
@@ -210,15 +208,14 @@ def _urdf_generic_from_box(
 
 def urdf_visual_from_box(
         box: 'PrimitivePy',
-        placement: Optional[fc.Placement] = None) -> et.Element:
+        placement: fc.Placement = fc.Placement()) -> et.Element:
     """Return the xml element for visual for a FreeCAD's box.
 
     Parameters
     ----------
     - cyl: the FreeCAD cylinder Part object
-    - placement: optional placement of the lower-left-bottom corner of the box
-        relative to the link it belongs.
-        If not given, box.Placement will be used.
+    - placement: additional displacement of the box, the box' original
+        placement is added to this.
 
     """
     return _urdf_generic_from_box(box, 'visual', placement)
@@ -226,15 +223,15 @@ def urdf_visual_from_box(
 
 def urdf_collision_from_box(
         box: 'PrimitivePy',
-        placement: Optional[fc.Placement] = None) -> et.Element:
+        placement: fc.Placement = fc.Placement()) -> et.Element:
     """Return the xml element for collision for a FreeCAD's box.
 
     Parameters
     ----------
     - cyl: the FreeCAD cylinder Part object
-    - placement: optional placement of the lower-left-bottom corner of the box
-        relative to the link it belongs.
-        If not given, box.Placement will be used.
+    - placement: additional displacement of the box, the box' original
+        placement is added to this.
+
     """
     return _urdf_generic_from_box(box, 'collision', placement)
 
@@ -242,25 +239,22 @@ def urdf_collision_from_box(
 def _urdf_generic_from_sphere(
         sphere: 'PrimitivePy',
         generic: str,
-        placement: Optional[fc.Placement] = None) -> et.Element:
+        placement: fc.Placement = fc.Placement()) -> et.Element:
     """Return the xml element for visual or collision for a FreeCAD's sphere.
 
     Parameters
     ----------
     - sphere: the FreeCAD sphere Part object
     - generic: {'visual', 'collision'}.
-    - placement: optional placement of the sphere relative to the link it
-        belongs.
-        If not given, obj.Placement will be used.
+    - placement: additional displacement of the sphere, the sphere's original
+        placement is added to this.
 
     """
     if not is_sphere(sphere):
         raise RuntimeError("Argument must be a 'Part::Sphere'")
     parent = et.fromstring(f'<{generic}/>')
     # TODO: handle links
-    if not placement:
-        placement = sphere.Placement
-    parent.append(urdf_origin_from_placement(sphere, placement))
+    placement = placement * sphere.Placement
     parent.append(urdf_geometry_sphere(
         sphere.Radius.getValueAs('m'),
         ))
@@ -269,15 +263,14 @@ def _urdf_generic_from_sphere(
 
 def urdf_visual_from_sphere(
         sphere: 'PrimitivePy',
-        placement: Optional[fc.Placement] = None) -> et.Element:
+        placement: fc.Placement = fc.Placement()) -> et.Element:
     """Return the xml element for visual for a FreeCAD's sphere.
 
     Parameters
     ----------
     - sphere: the FreeCAD sphere Part object
-    - placement: optional placement of the sphere relative to the link it
-        belongs.
-        If not given, obj.Placement will be used.
+    - placement: additional displacement of the sphere, the sphere's original
+        placement is added to this.
 
     """
     return _urdf_generic_from_sphere(sphere, 'visual', placement)
@@ -285,15 +278,14 @@ def urdf_visual_from_sphere(
 
 def urdf_collision_from_sphere(
         sphere: 'PrimitivePy',
-        placement: Optional[fc.Placement] = None) -> et.Element:
+        placement: fc.Placement = fc.Placement()) -> et.Element:
     """Return the xml element for collision for a FreeCAD's sphere.
 
     Parameters
     ----------
     - sphere: the FreeCAD sphere Part object
-    - placement: optional placement of the sphere relative to the link it
-        belongs.
-        If not given, obj.Placement will be used.
+    - placement: additional displacement of the sphere, the sphere's original
+        placement is added to this.
 
     """
     return _urdf_generic_from_sphere(sphere, 'collision', placement)
@@ -302,23 +294,22 @@ def urdf_collision_from_sphere(
 def _urdf_generic_from_cylinder(
         cyl: 'PrimitivePy',
         generic: str,
-        placement: Optional[fc.Placement] = None) -> et.Element:
+        placement: fc.Placement = fc.Placement()) -> et.Element:
     """Return the xml element for visual or collision for a FreeCAD's cylinder.
 
     Parameters
     ----------
     - cyl: the FreeCAD cylinder Part object
     - generic: {'visual', 'collision'}.
-    - placement: optional placement of the mesh relative to the URDF link.
-        If not given, obj.Placement will be used.
+    - placement: additional displacement of the cylinder, the cylinder's
+        original placement is added to this.
 
     """
     if not is_cylinder(cyl):
         raise RuntimeError("Argument must be a 'Part::Cylinder'")
     parent = et.fromstring(f'<{generic}/>')
     # TODO: handle links
-    if not placement:
-        placement = cyl.Placement
+    placement = placement * cyl.Placement
     center_placement = urdf_cylinder_placement_from_object(cyl, placement)
     parent.append(urdf_origin_from_placement(center_placement))
     parent.append(urdf_geometry_cylinder(
@@ -330,14 +321,14 @@ def _urdf_generic_from_cylinder(
 
 def urdf_visual_from_cylinder(
         cyl: 'PrimitivePy',
-        placement: Optional[fc.Placement] = None) -> et.Element:
+        placement: fc.Placement = fc.Placement()) -> et.Element:
     """Return the xml element for visual for a FreeCAD's cylinder.
 
     Parameters
     ----------
     - cyl: the FreeCAD cylinder Part object
-    - placement: optional placement of the mesh relative to the URDF link.
-        If not given, obj.Placement will be used.
+    - placement: additional displacement of the cylinder, the cylinder's
+        original placement is added to this.
 
     """
     return _urdf_generic_from_cylinder(cyl, 'visual', placement)
@@ -345,14 +336,15 @@ def urdf_visual_from_cylinder(
 
 def urdf_collision_from_cylinder(
         cyl: 'PrimitivePy',
-        placement: Optional[fc.Placement] = None) -> et.Element:
+        placement: fc.Placement = fc.Placement()) -> et.Element:
     """Return the xml element for collision for a FreeCAD's cylinder.
 
     Parameters
     ----------
     - cyl: the FreeCAD cylinder Part object
-    - placement: optional placement of the mesh relative to the URDF link.
-        If not given, obj.Placement will be used.
+    - placement: additional displacement of the cylinder, the cylinder's
+        original placement is added to this.
+
 
     """
     return _urdf_generic_from_cylinder(cyl, 'collision', placement)
@@ -379,7 +371,7 @@ def _urdf_generic_mesh(
         mesh_name: str,
         package_name: str,
         generic: str,
-        placement: Optional[fc.Placement] = None) -> et.Element:
+        placement: fc.Placement = fc.Placement()) -> et.Element:
     """Return the xml element for visual or collision mesh for a FreeCAD object.
 
     The URDF just contains a reference to the object.
@@ -392,16 +384,14 @@ def _urdf_generic_mesh(
         mesh reference is `package://{package_name}/meshes/{mesh_name}`.
     - package_name: name of the ROS package.
     - generic: {'visual', 'collision'}.
-    - placement: optional placement of the mesh relative to the URDF link.
-        If not given, obj.Placement will be used.
+    - placement: additional displacement of the mesh, the mesh's
+        original placement is added to this.
 
     """
     if (not placement) and (not has_placement(obj)):
         raise RuntimeError("Argument must be a FreeCAD object with a 'Placement' attribute")
     parent = et.fromstring(f'<{generic}/>')
     # TODO: handle links
-    if not placement:
-        placement = obj.Placement
     parent.append(et.Comment(xml_comment(obj.Label)))
     parent.append(urdf_origin_from_placement(placement))  # TODO: handle links
     parent.append(urdf_geometry_mesh(mesh_name, package_name))
@@ -412,7 +402,7 @@ def urdf_visual_mesh(
         obj: fc.DocumentObject,
         mesh_name: str,
         package_name: str,
-        placement: Optional[fc.Placement] = None) -> et.Element:
+        placement: fc.Placement = fc.Placement()) -> et.Element:
     """Return the xml element for visual mesh for a FreeCAD object.
 
     The URDF just contains a reference to the object.
@@ -424,8 +414,8 @@ def urdf_visual_mesh(
     - mesh_name: name of the mesh file without directory, so that the final
         mesh reference is `package://{package_name}/meshes/{mesh_name}`.
     - package_name: name of the ROS package.
-    - placement: optional placement of the mesh relative to the URDF link.
-        If not given, obj.Placement will be used.
+    - placement: additional displacement of the mesh, the mesh's
+        original placement is added to this.
 
     """
     return _urdf_generic_mesh(obj, mesh_name, package_name, 'visual', placement)
@@ -435,7 +425,7 @@ def urdf_collision_mesh(
         obj: fc.DocumentObject,
         mesh_name: str,
         package_name: str,
-        placement: Optional[fc.Placement] = None) -> et.Element:
+        placement: fc.Placement = fc.Placement()) -> et.Element:
     """Return the xml element for collision mesh for a FreeCAD object.
 
     The URDF just contains a reference to the mesh.
@@ -447,8 +437,8 @@ def urdf_collision_mesh(
     - mesh_name: name of the mesh file without directory, so that the final
         mesh reference is `package://{package_name}/meshes/{mesh_name}`.
     - package_name: name of the ROS package.
-    - placement: optional placement of the mesh relative to the URDF link.
-        If not given, obj.Placement will be used.
+    - placement: additional displacement of the mesh, the mesh's
+        original placement is added to this.
 
     """
     return _urdf_generic_mesh(obj, mesh_name, package_name, 'collision', placement)
@@ -459,7 +449,7 @@ def _urdf_generic_from_object(
         generic: str,
         mesh_name: Optional[str] = None,
         package_name: Optional[str] = None,
-        placement: Optional[fc.Placement] = None,
+        placement: fc.Placement = fc.Placement(),
         ) -> et.ElementTree:
     """Return the xml element for visual or collision for a FreeCAD object.
 
@@ -473,8 +463,8 @@ def _urdf_generic_from_object(
         mesh reference is `package://{package_name}/meshes/{mesh_name}`.
     - package_name: name of the ROS package.
     - generic: {'visual', 'collision'}.
-    - placement: optional placement of the mesh relative to the URDF link.
-        If not given, obj.Placement will be used.
+    - placement: optional additional displacement. The object's placement will
+        be added to this.
 
     """
     if is_box(obj):

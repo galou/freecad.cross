@@ -18,7 +18,6 @@ from .utils import is_cylinder
 from .utils import is_robot
 from .utils import is_sphere
 from .utils import valid_filename
-from .utils import xml_comment
 
 
 def _supported_object_selected():
@@ -70,7 +69,6 @@ class _UrdfExportCommand:
                 )
             if xml:
                 txt += et.tostring(xml).decode('utf-8')
-        fc.Console.PrintMessage(txt)
         if txt:
             txt = minidom.parseString(txt).toprettyxml(indent='  ', encoding='utf-8').decode('utf-8')
             original_txt = copy.copy(txt)

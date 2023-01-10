@@ -18,6 +18,8 @@ from .utils import is_cylinder
 from .utils import is_robot
 from .utils import is_sphere
 from .utils import valid_filename
+from .placement_utils import get_global_placement
+from .placement_utils import get_subobjects_by_full_name
 
 
 def _supported_object_selected():
@@ -33,44 +35,77 @@ class _UrdfExportCommand:
     def GetResources(self):
         return {'Pixmap': 'urdf_export',
                 'MenuText': QtCore.QT_TRANSLATE_NOOP('workbench_ros', 'Export to URDF'),  # TODO: translatable
-                'ToolTip': QtCore.QT_TRANSLATE_NOOP('workbench_ros', 'Exported selected elements to URDF'),
+                'ToolTip': QtCore.QT_TRANSLATE_NOOP('workbench_ros', 'Export selected elements to URDF'),
                 }
 
     def Activated(self):
         def set_package_name() -> None:
             nonlocal txt
-            txt = original_txt.replace('$package_name$', package_name_lineedit.text())
+            txt = original_txt.replace('$package_name$',
+                                       package_name_lineedit.text())
             txt_view.setPlainText(txt)
 
+        selection = fcgui.Selection.getSelectionEx('', 0)
+        if not selection:
+            fc.Console.PrintWarning('Nothing selected, nothing to do\n')
+            return
         txt = ''
         has_mesh = False
-        for obj in fcgui.Selection.getSelection():
-            if not hasattr(obj, 'TypeId'):
-                # For now, only objects with 'TypeId' are supported.
-                continue
-            xml: Optional[et.ElementTree] = None
-            if is_box(obj):
-                xml = urdf_collision_from_box(obj)
-            elif is_sphere(obj):
-                xml = urdf_collision_from_sphere(obj)
-            elif is_cylinder(obj):
-                xml = urdf_collision_from_cylinder(obj)
-            elif is_robot(obj):
-                if hasattr(obj, 'Proxy'):
-                    xml = obj.Proxy.export_urdf()
-            elif hasattr(obj, 'Placement'):
-                has_mesh = True
-                mesh_name = valid_filename(obj.Label) if hasattr(obj, 'Label') else 'mesh.dae'
-                package_name = '$package_name$'  # Will be replaced later by the GUI.
-                xml = urdf_collision_from_object(
-                    obj,
-                    mesh_name=valid_filename(obj.Label) + '.dae',
-                    package_name=package_name,
-                )
-            if xml:
-                txt += et.tostring(xml).decode('utf-8')
+        exported_objects: list[fc.DocumentObject] = []
+        for selection_object in selection:
+            root_obj = selection_object.Object
+            sub_fullpaths = selection_object.SubElementNames
+            if not sub_fullpaths:
+                # An object is selected, not a face, edge, vertex.
+                obj = root_obj
+                placement = get_global_placement(root_obj, '')
+            for sub_fullpath in sub_fullpaths:
+                obj = get_subobjects_by_full_name(root_obj,
+                                                  sub_fullpath)[-1]
+                # One or more subelements are selected.
+                placement = get_global_placement(root_obj, sub_fullpath)
+                if not hasattr(obj, 'TypeId'):
+                    # For now, only objects with 'TypeId' are supported.
+                    continue
+                if obj in exported_objects:
+                    # Object already exported.
+                    continue
+                exported_objects.append(obj)
+                xml: Optional[et.ElementTree] = None
+                if is_box(obj):
+                    xml = urdf_collision_from_box(obj, placement,
+                                                  ignore_obj_placement=True)
+                elif is_sphere(obj):
+                    xml = urdf_collision_from_sphere(obj, placement,
+                                                     ignore_obj_placement=True)
+                elif is_cylinder(obj):
+                    xml = urdf_collision_from_cylinder(
+                            obj, placement, ignore_obj_placement=True)
+                elif is_robot(obj):
+                    if hasattr(obj, 'Proxy'):
+                        xml = obj.Proxy.export_urdf()
+                elif hasattr(obj, 'Placement'):
+                    has_mesh = True
+                    mesh_name = valid_filename(obj.Label) if hasattr(obj, 'Label') else 'mesh.dae'
+                    package_name = '$package_name$'  # Will be replaced later by the GUI.
+                    xml = urdf_collision_from_object(
+                        obj,
+                        mesh_name=valid_filename(obj.Label) + '.dae',
+                        package_name=package_name,
+                        placement=placement,
+                    )
+                if xml:
+                    txt += f'  <!-- {obj.Label} -->\n'
+                    txt += et.tostring(xml).decode('utf-8')
         if txt:
-            txt = minidom.parseString(txt).toprettyxml(indent='  ', encoding='utf-8').decode('utf-8')
+            if 'dummy>' in txt:
+                fc.Console.PrintError('Object labels cannot contain '
+                                      '"<dummy>" or "</dummy>"')
+            txt = f'<dummy>{txt}</dummy>'  # xml cannot have multiple root tags
+            txt = (minidom.parseString(txt)
+                   .toprettyxml(indent='  ', encoding='utf-8')
+                   .decode('utf-8'))
+            txt = txt.replace('<dummy>', '').replace('</dummy>', '')
             original_txt = copy.copy(txt)
             main_win = fcgui.getMainWindow()
             dialog = QtGui.QDialog(main_win, QtCore.Qt.Tool)

@@ -19,16 +19,23 @@ from .utils import warn
 DO = fc.DocumentObject
 
 
-def _existing_link(link: DO, o: DO) -> Optional[DO]:
-    """Return the link to o if it exists in link.Group.
+def _existing_link(link: DO, obj: DO, lod: str) -> Optional[DO]:
+    """Return the link to obj if it exists in link.Group with the given lod.
+
+    Return the link to obj if it exists in link.Group with the given level of
+    detail.
 
     Parameters
     ----------
-    - link: a FreeCAD object proxied to Link.
+    - link: a FreeCAD object of type Ros::Link.
+    - obj: a FreeCAD object of which to search a link.
+    - lod: string describing the level of details, {'real', 'visual',
+            'collision'}.
 
     """
     for linked_lod in link.Group:
-        if linked_lod.LinkedObject is o:
+        if ((linked_lod.LinkedObject is obj)
+                and linked_lod.Name.startswith(lod)):
             return linked_lod
 
 
@@ -48,7 +55,7 @@ def _add_links_lod(link: DO, objects: List[DO], lod: str) -> List[DO]:
     doc = link.Document
     old_and_new_objects: List[DO] = []
     for i, o in enumerate(objects):
-        link_to_o = _existing_link(link, o)
+        link_to_o = _existing_link(link, o, lod)
         if link_to_o is not None:
             # print(f' {o.Name} is already linked')
             old_and_new_objects.append(link_to_o)

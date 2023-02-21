@@ -30,7 +30,7 @@ class Joint:
     def init_properties(self, obj):
         add_property(obj, 'App::PropertyString', '_Type', 'Internal',
                      'The type')._Type = Joint.type
-        obj.setEditorMode('_Type', 3)  # Make read-only and hidden.
+        obj.setPropertyStatus('_Type', ['Hidden', 'ReadOnly'])
 
         add_property(obj, 'App::PropertyEnumeration', 'Type', 'Elements', 'The kinematical type of the joint')
         obj.Type = Joint.type_enum

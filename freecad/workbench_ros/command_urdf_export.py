@@ -105,6 +105,9 @@ class _UrdfExportCommand:
             txt = (minidom.parseString(txt)
                    .toprettyxml(indent='  ', encoding='utf-8')
                    .decode('utf-8'))
+            # Maybe see
+            # http://www.ronrothman.com/public/leftbraned/xml-dom-minidom-toprettyxml-and-silly-whitespace/#best-solution
+            # if whitespace problems.
             txt = txt.replace('<dummy>', '').replace('</dummy>', '')
             original_txt = copy.copy(txt)
             main_win = fcgui.getMainWindow()

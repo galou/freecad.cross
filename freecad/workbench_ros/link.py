@@ -65,7 +65,7 @@ class Link:
     def init_properties(self, obj):
         add_property(obj, 'App::PropertyString', '_Type', 'Internal',
                      'The type')._Type = self.type
-        obj.setEditorMode('_Type', 3)  # Make read-only and hidden.
+        obj.setPropertyStatus('_Type', ['Hidden', 'ReadOnly'])
 
         add_property(obj, 'App::PropertyLinkList', 'Real', 'Elements',
                      'The real part objects of this link, optional')
@@ -121,6 +121,7 @@ class Link:
 
         Linked objects are objects in {'Real', 'Visual', 'Collision'}, not
         self or self.link.
+        The returned placement places the linked object at the correct position
 
         Parameters
         ----------
@@ -136,7 +137,10 @@ class Link:
         return function_map[lod.lower()](index)
 
     def get_real_placement(self, index: int):
-        """Return the placement of a linked real object.
+        """Return the placement of a linked object in 'Real'.
+
+        The returned placement places the linked object at the correct position
+        when all joint positions are 0.
 
         Parameters
         ----------
@@ -154,6 +158,9 @@ class Link:
 
     def get_visual_placement(self, index: int):
         """Return the placement of a linked visual object.
+
+        The returned placement places the linked object at the correct position
+        when all joint positions are 0.
 
         Parameters
         ----------
@@ -178,6 +185,9 @@ class Link:
 
     def get_collision_placement(self, index: int):
         """Return the placement of a linked collision object.
+
+        The returned placement places the linked object at the correct position
+        when all joint positions are 0.
 
         Parameters
         ----------

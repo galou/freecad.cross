@@ -48,13 +48,6 @@ pip install <package-name>
 
 ## Additional Information
 
-### Projects using this structure
-
-- [pyrate][pyrate] - Optical raytracing based on Python
-- [OpenGlider][OpenGlider] - Python library to build paragliders
-- [FCGear][FCGear] - a gear module for FreeCAD
-- [freecad_pipintegration][FC_pipintegration] - support pip installable freecad-packages
-
 ### Glossary
 
 - **_module_** : a Python source file, which can expose classes, functions and global variables
@@ -79,8 +72,3 @@ sys.path
 --------------------------------------------------------------------------------
 
 [ROS]: https://www.ros.org/
-[twine]: https://pypi.python.org/pypi/twine
-[pyrate]: https://github.com/mess42/pyrate
-[OpenGlider]: https://github.com/booya-at/OpenGlider
-[FCGear]: https://github.com/looooo/FCGear
-[FC_pipintegration]: https://github.com/looooo/freecad_pipintegration

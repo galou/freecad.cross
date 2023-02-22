@@ -1,3 +1,8 @@
+# This module should not be imported before the GUI is up otherwise, it'll be
+# imported without `tr` and later import attempts will be ignored because this
+# is own Python works.
+# TODO: solve the import mess.
+
 import os
 from pathlib import Path
 import string
@@ -8,8 +13,6 @@ from xml.dom import minidom
 import FreeCAD as fc
 
 import Mesh  # FreeCAD
-
-import importDAE  # FreeCAD.
 
 if fc.GuiUp:
     import FreeCADGui as fcgui
@@ -140,6 +143,31 @@ def is_primitive(obj: fc.DocumentObject) -> bool:
     return is_box(obj) or is_sphere(obj) or is_cylinder(obj)
 
 
+def is_mesh(obj: fc.DocumentObject) -> bool:
+    """Return True if the object is a 'Mesh::Feature'."""
+    return _has_typeid(obj, 'Mesh::Feature')
+
+
+def is_part(obj: fc.DocumentObject) -> bool:
+    """Return True if the object is a 'App::Part'."""
+    return _has_typeid(obj, 'App::Part')
+
+
+def is_group(obj: fc.DocumentObject) -> bool:
+    """Return True if the object is a 'App::DocumentObjectGroup'."""
+    return _has_typeid(obj, 'App::DocumentObjectGroup')
+
+
+def is_freecad_link(obj: fc.DocumentObject) -> bool:
+    """Return True if the object is a 'App::Link'."""
+    return _has_typeid(obj, 'App::Link')
+
+
+def is_lcs(obj: fc.DocumentObject) -> bool:
+    """Return True if the object is a 'PartDesign::CoordinateSystem'."""
+    return _has_typeid(obj, 'PartDesign::CoordinateSystem')
+
+
 def is_robot_selected() -> bool:
     """Return True if the first selected object is a Ros::Object."""
     if not fc.GuiUp:
@@ -205,6 +233,12 @@ def split_package_path(package_path: Union[Path, str]) -> Tuple[Path, Path]:
 
 def save_mesh_dae(obj: fc.DocumentObject, filename: Union[Path, str]) -> None:
     """Save the mesh of a FreeCAD object into a Collada file."""
+    if hasattr(fc, 'GuiUp'):
+        # If imported too early, fails with
+        # "AttributeError: module 'FreeCAD' has no attribute 'GuiUp'"
+        # because of Arch.py L.37.
+        import importDAE  # FreeCAD.
+
     Path(filename).parent.mkdir(parents=True, exist_ok=True)
     importDAE.export([obj], str(filename))
 
@@ -219,6 +253,18 @@ def save_mesh(obj: fc.DocumentObject, filename: Union[Path, str]) -> None:
     Path(filename).parent.mkdir(parents=True, exist_ok=True)
     # TODO: scale to meters.
     Mesh.export([obj], str(filename))
+
+
+def scale_mesh_object(obj: fc.DocumentObject, scale_factor: float):
+    """Uniformly scale a mesh object in place."""
+    if not is_mesh(obj):
+        raise RuntimeError(
+                'First argument must be `Mesh::Feature` FreeCAD object')
+    scale_mat = fc.Matrix()
+    scale_mat.scale(fc.Vector(scale_factor, scale_factor, scale_factor))
+    mesh = obj.Mesh.copy()
+    mesh.transform(scale_mat)
+    obj.Mesh = mesh
 
 
 def save_xml(xml: et.ElementTree, filename: Union[Path, str]) -> None:

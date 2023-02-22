@@ -77,7 +77,7 @@ def euler_from_matrix(matrix) -> Rpy:
     return ax, ay, az
 
 
-def urdf_from_quaternion(q: QuatList) -> Rpy:
+def rpy_from_quaternion(q: QuatList) -> Rpy:
     """Convert quaternion to rpy (URDF convention).
 
     The quaternion must have the format (qx, qy, qz, qw).
@@ -91,7 +91,7 @@ def urdf_from_quaternion(q: QuatList) -> Rpy:
 def rotation_from_rpy(rpy: Rpy) -> fc.Rotation:
     """Convert rpy (URDF convention) to a FreeCAD's rotation (quaternion).
 
-    Cf. `urdf_from_quaternion` for the "inverse" function.
+    Cf. `rpy_from_quaternion` for the "inverse" function.
 
     """
     # Inverse the order to get from URDF's rotations about absolute axes to
@@ -104,7 +104,7 @@ def rotation_from_rpy(rpy: Rpy) -> fc.Rotation:
 
 def urdf_origin_from_placement(p: fc.Placement) -> et.Element:
     """Return an xml element 'origin'."""
-    rpy = urdf_from_quaternion(p.Rotation.Q)
+    rpy = rpy_from_quaternion(p.Rotation.Q)
     pattern = '<origin xyz="{v.x:.6} {v.y:.6} {v.z:.6}" rpy="{r[0]} {r[1]} {r[2]}" />'
     return et.fromstring(pattern.format(v=p.Base * 1e-3, r=rpy))
 

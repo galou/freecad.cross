@@ -1,15 +1,14 @@
 import os
 
-import FreeCAD as fc
-
 import FreeCADGui as fcgui
 
-from . import box_from_bounding_box
+from . import command_box_from_bounding_box
 from . import command_new_joint
 from . import command_new_link
 from . import command_new_robot
 from . import command_urdf_export
-from . import sphere_from_bounding_box
+from . import command_urdf_import
+from . import command_sphere_from_bounding_box
 from .utils import ICON_PATH
 
 
@@ -36,6 +35,7 @@ class RosWorkbench(fcgui.Workbench):
             'BoxFromBoundingBox',  # Defined in ./box_from_bounding_box.py.
             'SphereFromBoundingBox',  # Defined in ./sphere_from_bounding_box.py.
             'UrdfExport',  # Defined in ./command_urdf_export.py.
+            'UrdfImport',  # Defined in ./command_urdf_import.py.
             ]
         self.appendToolbar('ROS', commands)
         self.appendMenu('ROS', commands)

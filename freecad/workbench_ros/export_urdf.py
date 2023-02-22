@@ -21,12 +21,13 @@ from .utils import xml_comment
 
 # Hint for a URDF rotation.
 Rpy = Tuple[float, float, float]
+QuatList = Tuple[float, float, float, float]  # (qx, qy, qz, qw).
 
 # Small number to test whether a number is close to zero.
 _EPS = np.finfo(float).eps * 4.0
 
 
-def quaternion_matrix(quaternion: Iterable[float]) -> np.ndarray:
+def quaternion_matrix(quaternion: QuatList) -> np.ndarray:
     """Return the homogeneous rotation matrix from quaternion.
 
     The quaternion must have the format (qx, qy, qz, qw).
@@ -76,13 +77,29 @@ def euler_from_matrix(matrix) -> Rpy:
     return ax, ay, az
 
 
-def urdf_from_quaternion(q) -> Rpy:
+def urdf_from_quaternion(q: QuatList) -> Rpy:
     """Convert quaternion to rpy (URDF convention).
 
     The quaternion must have the format (qx, qy, qz, qw).
 
+    Cf. `rotation_from_rpy` for the "inverse" function.
+
     """
     return euler_from_matrix(quaternion_matrix(q))
+
+
+def rotation_from_rpy(rpy: Rpy) -> fc.Rotation:
+    """Convert rpy (URDF convention) to a FreeCAD's rotation (quaternion).
+
+    Cf. `urdf_from_quaternion` for the "inverse" function.
+
+    """
+    # Inverse the order to get from URDF's rotations about absolute axes to
+    # relative axes.
+    return (
+            fc.Rotation(fc.Vector(0.0, 0.0, 1.0), np.degrees(rpy[2]))
+            * fc.Rotation(fc.Vector(0.0, 1.0, 0.0), np.degrees(rpy[1]))
+            * fc.Rotation(fc.Vector(1.0, 0.0, 0.0), np.degrees(rpy[0])))
 
 
 def urdf_origin_from_placement(p: fc.Placement) -> et.Element:

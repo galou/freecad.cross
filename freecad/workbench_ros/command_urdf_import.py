@@ -10,6 +10,7 @@ from PySide import QtGui  # FreeCAD's PySide!
 from PySide import QtCore  # FreeCAD's PySide!
 
 from .assembly_from_urdf import assembly_from_urdf
+from .ros_utils import is_ros_found
 from .urdf_loader import UrdfLoader
 
 
@@ -33,9 +34,10 @@ class _UrdfImportCommand:
             filename = str(dialog.selectedFiles()[0])
             urdf_robot = UrdfLoader.load_from_file(filename)
             assembly_from_urdf(urdf_robot, doc)
+            doc.recompute()
 
     def IsActive(self):
-        return True
+        return is_ros_found()
 
 
 fcgui.addCommand('UrdfImport', _UrdfImportCommand())

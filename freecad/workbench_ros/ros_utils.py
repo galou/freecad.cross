@@ -23,11 +23,13 @@ def is_ros_found():
     return 'ROS_DISTRO' in os.environ
 
 
-def add_ros_python_library():
+def add_ros_python_library() -> bool:
     """Add /opt/ros/$ROS_DISTRO/lib/python?.?/site-packages to sys.path."""
     if not is_ros_found():
         warn('The environment variable `ROS_DISTRO`'
              ' is not set, some functionalities will be missing')
+        return False
     major = sys.version_info.major
     minor = sys.version_info.minor
     sys.path.append(f'/opt/ros/{os.environ["ROS_DISTRO"]}/lib/python{major}.{minor}/site-packages')
+    return True

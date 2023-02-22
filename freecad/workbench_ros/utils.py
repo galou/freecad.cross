@@ -3,10 +3,12 @@
 # is own Python works.
 # TODO: solve the import mess.
 
+from __future__ import annotations
+
 import os
 from pathlib import Path
 import string
-from typing import Any, List, Tuple, Union
+from typing import Any, Optional
 import xml.etree.ElementTree as et
 from xml.dom import minidom
 
@@ -18,7 +20,6 @@ if fc.GuiUp:
     import FreeCADGui as fcgui
 
     from PySide import QtCore  # FreeCAD's PySide!
-    from PySide.QtCore import QT_TRANSLATE_NOOP
     from PySide import QtGui  # FreeCAD's PySide!
 
     def tr(text: str) -> str:
@@ -79,6 +80,81 @@ def error(text: str, gui: bool = False) -> None:
         diag.exec_()
 
 
+def strip_subelement(sub_fullpath: str) -> str:
+    """Return sub_fullpath without the last sub-element.
+
+    A sub-element is a face, edge or vertex.
+    Examples:
+
+    - 'Face6' -> ''
+    - 'Body.Box001.' -> 'Body.Box001'
+    - 'Body.Box001.Face6' -> 'Body.Box001'
+
+    Parameters
+    ----------
+    - subobject_fullpath: SelectionObject.SubElementNames[i], where
+        SelectionObject is obtained with gui.Selection.getSelectionEx('', 0)
+        (i.e. not gui.Selection.getSelectionEx()).
+        Examples:
+        - 'Face6' if you select the top face of a cube solid made in Part.
+        - 'Body.Box001.' if you select the tip of a Part->Body->"additive
+            primitve" in PartDesign.
+        - 'Body.Box001.Face6' if you select the top face of a Part->Body->
+            "additive primitve" in PartDesign.
+
+    """
+    if (not sub_fullpath) or ('.' not in sub_fullpath):
+        return ''
+    return sub_fullpath.rsplit('.', maxsplit=1)[0]
+
+
+def get_subobject_by_name(object_: fc.DocumentObject,
+                          subobject_name: str,
+                          ) -> Optional[fc.DocumentObject]:
+    """Return the appropriate object from object_.OutListRecursive."""
+    for o in object_.OutListRecursive:
+        if o.Name == subobject_name:
+            return o
+
+
+def get_subobjects_by_full_name(
+        root_object: fc.DocumentObject,
+        subobject_fullpath: str,
+        ) -> list[fc.DocumentObject]:
+    """Return the list of objects after root_object to the named object.
+
+    The last part of ``subobject_fullpath`` is then a specific vertex, edge or
+    face and is ignored.
+    So, subobject_fullpath has the form 'name0.name1.Edge001', for example; in
+    this case, the returned objects are
+    [object_named_name0, object_named_name1].
+
+    Parameters
+    ----------
+    - root_object: SelectionObject.Object, where SelectionObject is obtained
+        with gui.Selection.getSelectionEx('', 0)
+        (i.e. not gui.Selection.getSelectionEx()).
+    - subobject_fullpath: SelectionObject.SubElementNames[i].
+        Examples:
+        - 'Face6' if you select the top face of a cube solid made in Part.
+        - 'Body.Box001.' if you select the tip of a Part->Body->"additive
+            primitve" in PartDesign.
+        - 'Body.Box001.Face6' if you select the top face of a Part->Body->
+            "additive primitve" in PartDesign.
+
+    """
+    objects = []
+    names = strip_subelement(subobject_fullpath).split('.')
+    subobject = root_object
+    for name in names:
+        subobject = get_subobject_by_name(subobject, name)
+        if subobject is None:
+            # This should not append.
+            return []
+        objects.append(subobject)
+    return objects
+
+
 def add_property(
         obj: fc.DocumentObject,
         type_: str,
@@ -116,26 +192,26 @@ def is_joint(obj: fc.DocumentObject) -> bool:
     return _has_ros_type(obj, 'Ros::Joint')
 
 
-def _has_typeid(obj: fc.DocumentObject, typeid: str) -> bool:
+def _is_derived_from(obj: fc.DocumentObject, typeid: str) -> bool:
     """Return True if the object is a object of the given type."""
     if not isinstance(obj, fc.DocumentObject):
         return False
-    return hasattr(obj, 'TypeId') and (obj.TypeId == typeid)
+    return hasattr(obj, 'isDerivedFrom') and obj.isDerivedFrom(typeid)
 
 
 def is_box(obj: fc.DocumentObject) -> bool:
     """Return True if the object is a 'Part::Box'."""
-    return _has_typeid(obj, 'Part::Box')
+    return _is_derived_from(obj, 'Part::Box')
 
 
 def is_sphere(obj: fc.DocumentObject) -> bool:
     """Return True if the object is a 'Part::Sphere'."""
-    return _has_typeid(obj, 'Part::Sphere')
+    return _is_derived_from(obj, 'Part::Sphere')
 
 
 def is_cylinder(obj: fc.DocumentObject) -> bool:
     """Return True if the object is a 'Part::Cylinder'."""
-    return _has_typeid(obj, 'Part::Cylinder')
+    return _is_derived_from(obj, 'Part::Cylinder')
 
 
 def is_primitive(obj: fc.DocumentObject) -> bool:
@@ -145,27 +221,27 @@ def is_primitive(obj: fc.DocumentObject) -> bool:
 
 def is_mesh(obj: fc.DocumentObject) -> bool:
     """Return True if the object is a 'Mesh::Feature'."""
-    return _has_typeid(obj, 'Mesh::Feature')
+    return _is_derived_from(obj, 'Mesh::Feature')
 
 
 def is_part(obj: fc.DocumentObject) -> bool:
     """Return True if the object is a 'App::Part'."""
-    return _has_typeid(obj, 'App::Part')
+    return _is_derived_from(obj, 'App::Part')
 
 
 def is_group(obj: fc.DocumentObject) -> bool:
     """Return True if the object is a 'App::DocumentObjectGroup'."""
-    return _has_typeid(obj, 'App::DocumentObjectGroup')
+    return _is_derived_from(obj, 'App::DocumentObjectGroup')
 
 
 def is_freecad_link(obj: fc.DocumentObject) -> bool:
     """Return True if the object is a 'App::Link'."""
-    return _has_typeid(obj, 'App::Link')
+    return _is_derived_from(obj, 'App::Link')
 
 
 def is_lcs(obj: fc.DocumentObject) -> bool:
     """Return True if the object is a 'PartDesign::CoordinateSystem'."""
-    return _has_typeid(obj, 'PartDesign::CoordinateSystem')
+    return _is_derived_from(obj, 'PartDesign::CoordinateSystem')
 
 
 def is_robot_selected() -> bool:
@@ -185,17 +261,17 @@ def has_placement(obj: fc.DocumentObject) -> bool:
     return hasattr(obj, 'Placement') and isinstance(obj.Placement, fc.Placement)
 
 
-def get_links(objs: List[fc.DocumentObject]) -> List[fc.DocumentObject]:
+def get_links(objs: list[fc.DocumentObject]) -> list[fc.DocumentObject]:
     """Return only the objects that are Ros::Link instances."""
     return [o for o in objs if is_link(o)]
 
 
-def get_joints(objs: List[fc.DocumentObject]) -> List[fc.DocumentObject]:
+def get_joints(objs: list[fc.DocumentObject]) -> list[fc.DocumentObject]:
     """Return only the objects that are Ros::Joint instances."""
     return [o for o in objs if is_joint(o)]
 
 
-def hasallattr(obj: Any, attrs: List[str]):
+def hasallattr(obj: Any, attrs: list[str]):
     """Return True if object has all attributes."""
     for attr in attrs:
         if not hasattr(obj, attr):
@@ -220,7 +296,7 @@ def get_placement(obj: fc.DocumentObject) -> fc.Placement:
             return obj.Placement
 
 
-def split_package_path(package_path: Union[Path, str]) -> Tuple[Path, Path]:
+def split_package_path(package_path: [Path | str]) -> tuple[Path, Path]:
     """Return the package parent and the package name."""
     package_path = Path(package_path)
     if not package_path.is_dir():
@@ -231,7 +307,9 @@ def split_package_path(package_path: Union[Path, str]) -> Tuple[Path, Path]:
     return parent, package_name
 
 
-def save_mesh_dae(obj: fc.DocumentObject, filename: Union[Path, str]) -> None:
+def save_mesh_dae(obj: fc.DocumentObject,
+                  filename: [Path | str],
+                  ) -> None:
     """Save the mesh of a FreeCAD object into a Collada file."""
     if hasattr(fc, 'GuiUp'):
         # If imported too early, fails with
@@ -243,7 +321,9 @@ def save_mesh_dae(obj: fc.DocumentObject, filename: Union[Path, str]) -> None:
     importDAE.export([obj], str(filename))
 
 
-def save_mesh(obj: fc.DocumentObject, filename: Union[Path, str]) -> None:
+def save_mesh(obj: fc.DocumentObject,
+              filename: [Path | str],
+              ) -> None:
     """Save the mesh of a FreeCAD object into a file.
 
     The type of the exported file is determined by the Mesh module.
@@ -267,7 +347,10 @@ def scale_mesh_object(obj: fc.DocumentObject, scale_factor: float):
     obj.Mesh = mesh
 
 
-def save_xml(xml: et.ElementTree, filename: Union[Path, str]) -> None:
+def save_xml(
+        xml: et.ElementTree,
+        filename: [Path | str],
+        ) -> None:
     """Save the xml element into a file."""
     file_path = Path(filename)
     file_path.parent.mkdir(parents=True, exist_ok=True)

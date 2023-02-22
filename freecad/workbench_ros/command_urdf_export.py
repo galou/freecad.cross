@@ -13,13 +13,13 @@ from .export_urdf import urdf_collision_from_box
 from .export_urdf import urdf_collision_from_cylinder
 from .export_urdf import urdf_collision_from_object
 from .export_urdf import urdf_collision_from_sphere
+from .placement_utils import get_global_placement
+from .utils import get_subobjects_by_full_name
 from .utils import is_box
 from .utils import is_cylinder
 from .utils import is_robot
 from .utils import is_sphere
 from .utils import valid_filename
-from .placement_utils import get_global_placement
-from .placement_utils import get_subobjects_by_full_name
 
 
 def _supported_object_selected():

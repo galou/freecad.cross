@@ -2,14 +2,19 @@
 
 from __future__ import annotations
 
-from typing import Tuple
+from typing import Any, Tuple
 
 import FreeCAD as fc
 
-from urdf_parser_py.urdf import Robot as UrdfRobot
-from urdf_parser_py.urdf import Joint as UrdfJoint
+try:
+    from urdf_parser_py.urdf import Robot as UrdfRobot
+    from urdf_parser_py.urdf import Joint as UrdfJoint
+except ImportError:
+    UrdfJoint = Any
+    UrdfRobot = Any
 
-from .utils import add_property
+from .assembly4_utils import add_asm4_properties
+from .assembly4_utils import update_placement_expression
 from .utils import is_freecad_link
 from .utils import is_group
 from .utils import is_lcs
@@ -28,12 +33,22 @@ def assembly_from_urdf(
         ) -> DO:
     assembly, parts_group = _make_assembly(doc, robot.name)
     link_map: dict[str, DO] = {}
+    lcs_map: dict[str, DO] = {}
     for link in robot.links:
-        link_map[link.name] = _add_link(assembly, parts_group, link.name)
+        fc_link, lcs = _add_link(assembly, parts_group, link.name)
+        link_map[link.name] = fc_link
+        lcs_map[link.name] = lcs
     joint_map: dict[str, LcsPair] = {}
     for joint in robot.joints:
         joint_map[joint.name] = _add_joint_lcs(link_map, joint)
-        _make_structure(joint_map[joint.name])
+        _make_structure(joint_map[joint.name], joint, link_map)
+    # Rewrite the placement expression for the root link.
+    # TODO: get the real LCS name.
+    if robot.links:
+        root_link = link_map[robot.get_root()]
+        lcs_link = lcs_map[robot.get_root()]
+        update_placement_expression(root_link,
+            f'LCS_Origin.Placement * AttachmentOffset * {lcs_link.Name}.Placement ^ -1')
 
 
 # TODO: Use `from Asm4_libs import createVariables as _new_variable_container`
@@ -82,8 +97,8 @@ def _make_assembly(
     Note that you can make an Assembly4 assembly from a App::Part with
     assembly.Label = 'Assembly'
     assembly.Type = 'Assembly'
-    assembly.addProperty('App::PropertyString', 'AssemblyType', 'Assembly')
-    assembly.AssemblyType = 'Part::Link'
+    assembly.addProperty('App::PropertyString', 'SolverId', 'Assembly')
+    assembly.SolverId = 'Asm4EE'
 
     """
     # Adapted from Assembly4/newAssemblyCmd.py (v0.12.5).
@@ -97,8 +112,8 @@ def _make_assembly(
         assembly = doc.addObject('App::Part', 'Assembly')
         # set the type as a "proof" that it's an Assembly
         assembly.Type = 'Assembly'
-        assembly.addProperty('App::PropertyString', 'AssemblyType', 'Assembly')
-        assembly.AssemblyType = 'Part::Link'
+        assembly.addProperty('App::PropertyString', 'SolverId', 'Assembly')
+        assembly.SolverId = 'Asm4EE'
     else:
         # Create a normal part.
         assembly = doc.addObject('App::Part', name)
@@ -126,7 +141,7 @@ def _make_assembly(
 def _make_part(
         doc: fc.Document,
         name: str = 'Part',
-        ) -> DO:
+        ) -> tuple[DO, DO]:
     """Create an App::Part.
 
     Emulates an Assembly4 Part by adding a local coordinate system.
@@ -138,28 +153,19 @@ def _make_part(
     lcs.Support = [(part.Origin.OriginFeatures[0], '')]  # The X axis.
     lcs.MapMode = 'ObjectXY'
     lcs.MapReversed = False
-    return part
-
-
-def _add_asm4_properties(obj: DO):
-    """Render `obj` compatible with Assembly4."""
-    # Adapted from Asm4_libs.makeAsmProperties.
-    add_property(obj, 'App::PropertyString', 'AssemblyType', 'Assembly', '')
-    add_property(obj, 'App::PropertyString', 'AttachedBy', 'Assembly', '')
-    add_property(obj, 'App::PropertyString', 'AttachedTo', 'Assembly', '')
-    add_property(obj, 'App::PropertyPlacement', 'AttachmentOffset', 'Assembly',
-                 '')
-    add_property(obj, 'App::PropertyString', 'SolverId', 'Assembly', '')
-    obj.AssemblyType = 'Part::Link'
-    obj.SolverId = 'Asm4EE'
+    return part, lcs
 
 
 def _add_link(
         assembly: DO,
         parts_group: DO,
         name: str,
-        ) -> DO:
-    """Add an App::Part to the group and a link to it to the assembly."""
+        ) -> Tuple[DO, DO]:
+    """Add an App::Part to the group and a link to it to the assembly.
+
+    Return the link and its first LCS.
+
+    """
     if not is_part(assembly):
         raise RuntimeError(
                 'First argument must be an `App::Part` FreeCAD object')
@@ -168,17 +174,17 @@ def _add_link(
                 'First argument must be an `App::DocumentObjectGroup`'
                 ' FreeCAD object')
     # We use an underscore to let the label free for the link in `assembly`.
-    part = _make_part(assembly.Document, name + '_')
+    part, lcs = _make_part(assembly.Document, name + '_')
     parts_group.addObject(part)
     # Make a link
     link = assembly.newObject('App::Link', name)
     link.setLink(part)
-    _add_asm4_properties(link)
+    add_asm4_properties(link)
     # Attach to the parent assembly by default.
     # This will be changed by _make_structure later on.
     # TODO: get the real LCS name.
     link.AttachedTo = 'Parent Assembly#LCS_Origin'
-    return link
+    return link, lcs
 
 
 def _lcs_name(
@@ -269,8 +275,30 @@ def _place_parent_lcs(
     lcs.AttachmentOffset.Rotation = rotation_from_rpy(joint.origin.rpy)
 
 
+def _get_parent_link(
+        joint: UrdfJoint,
+        link_map: dict[str, DO],
+        ) -> DO:
+    """Return the FreeCAD link associated with the parent link of the joint."""
+    for link_name, link_object in link_map.items():
+        if link_name == joint.parent:
+            return link_object
+
+
+def _get_child_link(
+        joint: UrdfJoint,
+        link_map: dict[str, DO],
+        ) -> DO:
+    """Return the FreeCAD link associated with the child link of the joint."""
+    for link_name, link_object in link_map.items():
+        if link_name == joint.child:
+            return link_object
+
+
 def _make_structure(
         lcs_pair: LcsPair,
+        joint: UrdfJoint,
+        link_map: dict[str, DO],
         ) -> None:
     """Create the parent-child inheritence."""
     if not (
@@ -282,13 +310,16 @@ def _make_structure(
                            ' `PartDesign::CoordinateSystem`')
     parent_lcs = lcs_pair[0]
     child_lcs = lcs_pair[1]
-    parent_part = parent_lcs.getParentGeoFeatureGroup()
-    if not parent_part:
+    parent_link = _get_parent_link(joint, link_map)
+    if not parent_link:
         raise RuntimeError('The parent LCS is not associated to any'
                            ' `App::Part`')
-    child_part = child_lcs.getParentGeoFeatureGroup()
-    if not child_part:
+    child_link = _get_child_link(joint, link_map)
+    if not child_link:
         raise RuntimeError('The child LCS is not associated to any'
                            ' `App::Part`')
-    child_part.AttachedBy = f'#{child_lcs.Name}'
-    child_part.AttachedTo = f'{parent_part.Name}#{parent_lcs.Name}'
+    child_link.AttachedBy = f'#{child_lcs.Name}'
+    child_link.AttachedTo = f'{parent_link.Name}#{parent_lcs.Name}'
+
+    expr = f'{parent_link.Name}.Placement * {parent_lcs.Name}.Placement * AttachmentOffset * {child_lcs.Name}.Placement ^ -1'
+    update_placement_expression(child_link, expr)

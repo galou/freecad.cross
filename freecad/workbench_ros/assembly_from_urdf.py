@@ -377,7 +377,8 @@ def _add_geometries(
             geom_obj, _ = obj_from_geometry(geometry.geometry, group)
         except NotImplementedError:
             continue
-        geom_obj.Placement = placement_from_origin(geometry.origin)
+        geom_obj.Placement = (placement_from_origin(geometry.origin)
+                              * geom_obj.Placement)
         if name_linked_geom:
             # Make a FC link into `link`.
             original_part = link.LinkedObject

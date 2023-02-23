@@ -65,13 +65,16 @@ class Joint:
             try:
                 return self.joint.Parent.CachedPlacement * self.joint.Origin
             except (AttributeError, NotImplementedError):
-                print('get_placement(), ERROR')
+                error('Joint.get_placement(), ERROR')
                 return
-        else:
-            pred_placement = predecessor.Proxy.get_placement()
-            if pred_placement is None:
-                return
-            return pred_placement * self.joint.Origin
+        if predecessor is self.joint:
+            error(f'Joint.get_placement(), ERROR, `{self.joint.Name}` is predecessor of itself')
+            return
+        pred_placement = predecessor.Proxy.get_placement()
+        warn(f'{self.joint.Name}: {pred_placement=}') # DEBUG
+        if pred_placement is None:
+            return
+        return pred_placement * self.joint.Origin
 
     def get_robot(self) -> fc.DocumentObject:
         """Return the Ros::Robot this joint belongs to."""
@@ -87,7 +90,8 @@ class Joint:
         if robot is None:
             return
         for candidate_joint in get_joints(robot.Group):
-            if candidate_joint.Child is self.joint.Parent:
+            if ((candidate_joint.Child is not None)
+               and (candidate_joint.Child is self.joint.Parent)):
                 return candidate_joint
 
     def export_urdf(self) -> et.ElementTree:

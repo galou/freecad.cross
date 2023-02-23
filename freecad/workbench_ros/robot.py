@@ -39,7 +39,11 @@ def _existing_link(link: DO, obj: DO, lod: str) -> Optional[DO]:
             return linked_lod
 
 
-def _add_links_lod(link: DO, objects: List[DO], lod: str) -> List[DO]:
+def _add_links_lod(
+        link: DO,
+        objects: List[DO],
+        lod: str,
+        ) -> List[DO]:
     """Add a level of detail as links to real, visual or collision elements.
 
     Return the full list of linked objects (existing + created).
@@ -65,7 +69,7 @@ def _add_links_lod(link: DO, objects: List[DO], lod: str) -> List[DO]:
         lod_link.Label = name
         # print(f'Adding link {lod_link.Name} to {o.Name} into {link.Name}')
         if len(o.Parents) != 1:
-            warn(f'Wrong object type. {o.Name}.Parents has more than one entry')
+            warn(f'Wrong object type. {o.Name}.Parents has no or more than one entries')
         link_placement = link.Proxy.get_link_placement(lod, i) or fc.Placement()
         lod_link.LinkPlacement = link_placement
         lod_link.setLink(o)
@@ -148,7 +152,7 @@ class Robot:
         for link in links:
             for o in link.Group:
                 current_linked_objects.append(o)
-                # print(f'  current_linked_objects; {o.Name}: {hash(current_linked_objects[-1])}')
+                # print(f'  current_linked_objects; {o.Name}: {hash(current_linked_objects[-1])}') # DEBUG
 
         # Add objects from selected components.
         all_linked_objects: List[DO] = []

@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from pathlib import Path
-from typing import List, Optional
+from typing import Optional
 import xml.etree.ElementTree as et
 
 import FreeCAD as fc
@@ -41,9 +43,9 @@ def _existing_link(link: DO, obj: DO, lod: str) -> Optional[DO]:
 
 def _add_links_lod(
         link: DO,
-        objects: List[DO],
+        objects: list[DO],
         lod: str,
-        ) -> List[DO]:
+        ) -> list[DO]:
     """Add a level of detail as links to real, visual or collision elements.
 
     Return the full list of linked objects (existing + created).
@@ -57,7 +59,7 @@ def _add_links_lod(
 
     """
     doc = link.Document
-    old_and_new_objects: List[DO] = []
+    old_and_new_objects: list[DO] = []
     for i, o in enumerate(objects):
         link_to_o = _existing_link(link, o, lod)
         if link_to_o is not None:
@@ -148,14 +150,14 @@ class Robot:
         links = get_links(self.robot.Group)  # ROS links.
 
         # List of linked objects from all Ros::Link in robot.Group.
-        current_linked_objects: List[DO] = []
+        current_linked_objects: list[DO] = []
         for link in links:
             for o in link.Group:
                 current_linked_objects.append(o)
                 # print(f'  current_linked_objects; {o.Name}: {hash(current_linked_objects[-1])}') # DEBUG
 
         # Add objects from selected components.
-        all_linked_objects: List[DO] = []
+        all_linked_objects: list[DO] = []
         if self.robot.ShowReal:
             for link in links:
                 all_linked_objects += _add_links_lod(link, link.Real, 'real')

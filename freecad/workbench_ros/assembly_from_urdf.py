@@ -2,16 +2,25 @@
 
 from __future__ import annotations
 
-from typing import Any, Tuple
+from typing import Any, Iterable, Tuple
 
 import FreeCAD as fc
 
 try:
-    from urdf_parser_py.urdf import Robot as UrdfRobot
+    from urdf_parser_py import xml_reflection as xmlr
+    from urdf_parser_py.urdf import Collision as UrdfCollision
     from urdf_parser_py.urdf import Joint as UrdfJoint
+    from urdf_parser_py.urdf import Robot as UrdfRobot
+    from urdf_parser_py.urdf import Visual as UrdfVisual
+
+    from .urdf_parser_utils import obj_from_geometry
+    from .urdf_parser_utils import placement_from_origin
 except ImportError:
     UrdfJoint = Any
     UrdfRobot = Any
+    UrdfVisual = Any
+    UrdfCollision = Any
+    raise
 
 from .assembly4_utils import add_asm4_properties
 from .assembly4_utils import update_placement_expression
@@ -19,10 +28,14 @@ from .utils import is_freecad_link
 from .utils import is_group
 from .utils import is_lcs
 from .utils import is_part
+from .utils import make_group
 from .export_urdf import rotation_from_rpy
 
 # Typing hints.
 DO = fc.DocumentObject
+# List of UrdfVisual or List of UrdfCollision.
+VisualList = Iterable[UrdfVisual]
+CollisionList = Iterable[UrdfCollision]
 # A pair of `App::CoordinateSystem`, [parent, child].
 LcsPair = Tuple[DO, DO]
 
@@ -49,6 +62,8 @@ def assembly_from_urdf(
         lcs_link = lcs_map[robot.get_root()]
         update_placement_expression(root_link,
             f'LCS_Origin.Placement * AttachmentOffset * {lcs_link.Name}.Placement ^ -1')
+    _add_visual(robot, link_map)
+    _import_collision(robot, link_map)
 
 
 # TODO: Use `from Asm4_libs import createVariables as _new_variable_container`
@@ -119,9 +134,7 @@ def _make_assembly(
         assembly = doc.addObject('App::Part', name)
 
     # Create a group 'Parts' to hold all parts in the assembly document.
-    parts_group = doc.getObject('Parts')
-    if parts_group is None:
-        parts_group = doc.addObject('App::DocumentObjectGroup', 'Parts')
+    parts_group = make_group(doc, 'Parts', visible=False)
 
     # Add an LCS at the root of the Model, and attach it to the 'Origin'.
     lcs = assembly.newObject('PartDesign::CoordinateSystem', 'LCS_Origin')
@@ -323,3 +336,74 @@ def _make_structure(
 
     expr = f'{parent_link.Name}.Placement * {parent_lcs.Name}.Placement * AttachmentOffset * {child_lcs.Name}.Placement ^ -1'
     update_placement_expression(child_link, expr)
+
+
+def _add_visual(
+        robot: UrdfRobot,
+        link_map: dict[str, DO],
+        ) -> None:
+    for link_name, link_obj in link_map.items():
+        _add_visual_geometries(link_obj, link_name, robot.link_map[link_name].visuals)
+
+
+def _add_visual_geometries(
+        link: DO,
+        link_name: str,
+        geometries: [VisualList | CollisionList],
+        ) -> tuple[list[DO], DO]:
+    """Add the primitive shapes and meshes to a link."""
+    group = make_group(link.Document, 'Visuals', visible=False)
+    name_linked_geom = f'{link_name}_visual'
+    _add_geometries(link, geometries, name_linked_geom, group)
+
+
+def _add_geometries(
+        link: DO,
+        geometries: [VisualList | CollisionList],
+        name_linked_geom: str,
+        group: DO,
+        ) -> tuple[list[DO], DO]:
+    """Add the geometries from URDF into `group` and a FC link to it into `link`.
+
+    `geometries` is either `visuals` or `collisions` and the geometry itself is
+    `geometries[?].geometry`.
+    If `name_linked_geom` is empty, not FC link is created in `link`.
+
+    """
+    fc_links: list[DO] = []
+    for geometry in geometries:
+        # Make the FC object in the group.
+        try:
+            geom_obj, _ = obj_from_geometry(geometry.geometry, group)
+        except NotImplementedError:
+            continue
+        geom_obj.Placement = placement_from_origin(geometry.origin)
+        if name_linked_geom:
+            # Make a FC link into `link`.
+            original_part = link.LinkedObject
+            link_to_geom = original_part.newObject('App::Link', name_linked_geom)
+            link_to_geom.setLink(geom_obj)
+            fc_links.append(link_to_geom)
+
+
+def _import_collision(
+        robot: UrdfRobot,
+        link_map: dict[str, DO],
+        ) -> None:
+    """Import the collision objects to the group Collisions.
+
+    Do not create FC links into the links.
+
+    """
+    for link_name, link_obj in link_map.items():
+        _import_collision_geometries(link_obj.Document, link_name, robot.link_map[link_name].collisions)
+
+
+def _import_collision_geometries(
+        doc: DO,
+        link_name: str,
+        geometries: Iterable[xmlr.Object],
+        ) -> tuple[list[DO], DO]:
+    """Add the URDF geometries to a group."""
+    group = make_group(doc, 'Collisions', visible=False)
+    _add_geometries(group, geometries, '', group)

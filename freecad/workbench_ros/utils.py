@@ -16,7 +16,7 @@ import FreeCAD as fc
 
 import Mesh  # FreeCAD
 
-if fc.GuiUp:
+if hasattr(fc, 'GuiUp') and fc.GuiUp:
     import FreeCADGui as fcgui
 
     from PySide import QtCore  # FreeCAD's PySide!
@@ -28,12 +28,18 @@ else:
     def tr(text: str) -> str:
         return text
 
+# Typing hints.
+DO = fc.DocumentObject
 
 # MOD_PATH = Path(os.path.join(fc.getResourceDir(), 'Mod', 'workbench_ros'))
 MOD_PATH = Path(os.path.dirname(__file__)).joinpath('../..').resolve()  # For development
 RESOURCES_PATH = MOD_PATH.joinpath('resources')
 UI_PATH = RESOURCES_PATH.joinpath('ui')
 ICON_PATH = RESOURCES_PATH.joinpath('icons')
+
+
+def with_fc_gui() -> bool:
+    return hasattr(fc, 'GuiUp') and fc.GuiUp
 
 
 def valid_filename(text: str) -> str:
@@ -356,3 +362,24 @@ def save_xml(
     file_path.parent.mkdir(parents=True, exist_ok=True)
     txt = minidom.parseString(et.tostring(xml)).toprettyxml(indent='  ')
     file_path.write_text(txt)
+
+
+def make_group(
+        doc_or_group: [fc.Document | DO],
+        name: str,
+        visible: bool = True,
+        ) -> DO:
+    """Create or retrieve a group."""
+    if is_group(doc_or_group):
+        doc = doc_or_group.Document
+    else:
+        doc = doc_or_group
+    existing_group = doc.getObject(name)
+    if existing_group and is_group(existing_group):
+        return existing_group
+    group = doc.addObject('App::DocumentObjectGroup', name)
+    if is_group(doc_or_group):
+        doc_or_group.addObject(group)
+    if hasattr(group, 'Visibility'):
+        group.Visibility = visible
+    return group

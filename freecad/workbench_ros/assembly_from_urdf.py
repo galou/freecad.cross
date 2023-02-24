@@ -23,6 +23,7 @@ except ImportError:
     raise
 
 from .assembly4_utils import add_asm4_properties
+from .assembly4_utils import new_variable_container
 from .assembly4_utils import update_placement_expression
 from .utils import is_freecad_link
 from .utils import is_group
@@ -44,7 +45,7 @@ def assembly_from_urdf(
         robot: UrdfRobot,
         doc: fc.Document,
         ) -> DO:
-    assembly, parts_group = _make_assembly(doc, robot.name)
+    assembly, parts_group, var_container = _make_assembly(doc, robot.name)
     link_map: dict[str, DO] = {}
     lcs_map: dict[str, DO] = {}
     for link in robot.links:
@@ -64,43 +65,17 @@ def assembly_from_urdf(
             f'LCS_Origin.Placement * AttachmentOffset * {lcs_link.Name}.Placement ^ -1')
     _add_visual(robot, link_map)
     _import_collision(robot, link_map)
-
-
-# TODO: Use `from Asm4_libs import createVariables as _new_variable_container`
-#       (but fallback if not importable)
-# From Asm4_libs
-def _new_variable_container(
-        assembly: DO,
-        ) -> DO:
-    """Return a variable container for Assembly4."""
-    if ((not hasattr(assembly, 'TypeId'))
-            or (assembly.TypeId != 'App::Part')):
-        raise RuntimeError(
-                'First argument must be an `App::Part` FreeCAD object')
-    # There is no object "Variables", so we create it.
-    variables = assembly.Document.addObject('App::FeaturePython', 'Variables')
-    if hasattr(variables, 'ViewObject') and variables.ViewObject:
-        # TODO
-        # variables.ViewObject.Proxy = ViewProviderCustomIcon(obj,
-        #                                            path + "FreeCADIco.png")
-        # variables.ViewObject.Proxy = setCustomIcon(object,
-        #                                    'Asm4_Variables.svg')
-        pass
-    # Signature of a PropertyContainer.
-    variables.addProperty('App::PropertyString', 'Type')
-    variables.Type = 'App::PropertyContainer'
-    assembly.addObject(variables)
-    return variables
+    _add_joint_variables(var_container, robot, joint_map)
 
 
 def _make_assembly(
         doc: fc.Document,
         emulate_assembly4: bool = True,
         name: str = 'robot',
-        ) -> tuple[DO, DO]:
+        ) -> tuple[DO, DO, DO]:
     """Create an App::Part.
 
-    Return (assembly object, parts group).
+    Return (assembly object, parts group, variable container).
 
     If `emulate_assembly4` is True, the `name` will be ignored and the
     App::Part object created will be named "Assembly" in order to emulate an
@@ -142,13 +117,14 @@ def _make_assembly(
     lcs.MapMode = 'ObjectXY'
     lcs.MapReversed = False
     # Create an object Variables to hold variables to be used in this document.
-    assembly.addObject(_new_variable_container(assembly))
+    var_container = new_variable_container(assembly)
+    assembly.addObject(var_container)
     # Create a group Constraints to store future solver constraints there.
     assembly.newObject('App::DocumentObjectGroup', 'Constraints')
     # Create a group Configurations to store future solver constraints there
     assembly.newObject('App::DocumentObjectGroup', 'Configurations')
 
-    return assembly, parts_group
+    return assembly, parts_group, var_container
 
 
 def _make_part(
@@ -338,6 +314,99 @@ def _make_structure(
     update_placement_expression(child_link, expr)
 
 
+def _add_joint_variables(
+        variable_container: DO,
+        robot: UrdfRobot,
+        joint_map: dict[str, LcsPair],
+        ) -> dict[str, str]:
+    var_map: dict[str, str] = {}
+    for joint_name, joint_obj in joint_map.items():
+        _, child_lcs = joint_map[joint_name]
+        var_name = _add_joint_variable(variable_container, robot, joint_name,
+                                       joint_obj, child_lcs)
+        var_map[joint_name] = var_name
+    return var_map
+
+
+def _add_joint_variable(
+        variable_container: DO,
+        robot: UrdfRobot,
+        joint_name: str,
+        joint: DO,
+        child_lcs: DO,
+        ) -> str:
+    urdf_joint = robot.joint_map[joint_name]
+    if urdf_joint.joint_type == 'prismatic':
+        unit = 'mm'
+    elif urdf_joint.joint_type in ['revolute', 'continuous']:
+        unit = 'deg'
+    else:
+        return ''
+    # `joint_name` may not be a valid property name in FreeCAD but the LCS was
+    # already created based on `joint_name`. Just try this first.
+    if child_lcs.Name.startswith('LCS_') and child_lcs.Name.endswith('_child'):
+        # Remove the `LCS_` prefix and `_child` suffix.
+        lcs_name = child_lcs.Name[len('LCS_'):-len('_child')]
+        var_name = f'{lcs_name}{f"_{unit}" if unit else ""}'
+    else:
+        # TODO: replace forbidden characters with `_`.
+        var_name = f'{joint_name}{f"_{unit}" if unit else ""}'
+    help_txt = f'{joint_name}{f" in {unit}" if unit else ""}'
+    variable_container.addProperty('App::PropertyFloat', var_name,
+                                   'Variables', help_txt)
+    if urdf_joint.joint_type == 'prismatic':
+        _make_prismatic_lcs(urdf_joint.axis, variable_container.Name,
+                            var_name, child_lcs)
+    elif urdf_joint.joint_type in ['revolute', 'continuous']:
+        _make_revolute_lcs(urdf_joint.axis, variable_container.Name,
+                           var_name, child_lcs)
+    return var_name
+
+
+def _multiplier_for_expression(factor: float) -> str:
+    if factor == 1.0:
+        return ''
+    elif factor == -1.0:
+        return '-'
+    else:
+        return f'{factor} * '
+
+
+def _make_prismatic_lcs(
+        axis: list[float],
+        var_container_name: str,
+        var_name: str,
+        child_lcs: DO,
+        ) -> None:
+    # We need to invert the direction.
+    v = -fc.Vector(axis)
+    v.normalize()
+    m = _multiplier_for_expression
+    if v.x != 0.0:
+        expr = f'{m(v.x)}{var_container_name}.{var_name}'
+        child_lcs.setExpression('.AttachmentOffset.Base.x', expr)
+    if v.y != 0.0:
+        expr = f'{m(v.y)}{var_container_name}.{var_name}'
+        child_lcs.setExpression('.AttachmentOffset.Base.y', expr)
+    if v.z != 0.0:
+        expr = f'{m(v.z)}{var_container_name}.{var_name}'
+        child_lcs.setExpression('.AttachmentOffset.Base.z', expr)
+
+
+def _make_revolute_lcs(
+        axis: list[float],
+        var_container_name: str,
+        var_name: str,
+        child_lcs: DO,
+        ) -> None:
+    # We need to invert the direction.
+    v = -fc.Vector(axis)
+    v.normalize()
+    child_lcs.AttachmentOffset.Rotation.Axis = v
+    expr = f'{var_container_name}.{var_name}'
+    child_lcs.setExpression('.AttachmentOffset.Rotation.Angle', expr)
+
+
 def _add_visual(
         robot: UrdfRobot,
         link_map: dict[str, DO],
@@ -352,16 +421,17 @@ def _add_visual_geometries(
         geometries: [VisualList | CollisionList],
         ) -> tuple[list[DO], DO]:
     """Add the primitive shapes and meshes to a link."""
-    group = make_group(link.Document, 'Visuals', visible=False)
+    visual_group = make_group(link.Document, 'Visuals', visible=False)
+    group = make_group(visual_group, f'{link_name} Visuals')
     name_linked_geom = f'{link_name}_visual'
-    _add_geometries(link, geometries, name_linked_geom, group)
+    _add_geometries(group, geometries, link, name_linked_geom)
 
 
 def _add_geometries(
-        link: DO,
-        geometries: [VisualList | CollisionList],
-        name_linked_geom: str,
         group: DO,
+        geometries: [VisualList | CollisionList],
+        link: DO = None,
+        name_linked_geom: str = '',
         ) -> tuple[list[DO], DO]:
     """Add the geometries from URDF into `group` and a FC link to it into `link`.
 
@@ -379,7 +449,7 @@ def _add_geometries(
             continue
         geom_obj.Placement = (placement_from_origin(geometry.origin)
                               * geom_obj.Placement)
-        if name_linked_geom:
+        if link is not None:
             # Make a FC link into `link`.
             original_part = link.LinkedObject
             link_to_geom = original_part.newObject('App::Link', name_linked_geom)
@@ -406,5 +476,6 @@ def _import_collision_geometries(
         geometries: Iterable[xmlr.Object],
         ) -> tuple[list[DO], DO]:
     """Add the URDF geometries to a group."""
-    group = make_group(doc, 'Collisions', visible=False)
-    _add_geometries(group, geometries, '', group)
+    collision_group = make_group(doc, 'Collisions', visible=False)
+    group = make_group(collision_group, f'{link_name} Collisions')
+    _add_geometries(group, geometries)

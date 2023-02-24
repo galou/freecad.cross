@@ -25,6 +25,33 @@ def add_asm4_properties(obj: DO):
     obj.SolverId = 'Asm4EE'
 
 
+# TODO: Use `from Asm4_libs import createVariables as _new_variable_container`
+#       (but fallback if not importable)
+# From Asm4_libs
+def new_variable_container(
+        assembly: DO,
+        ) -> DO:
+    """Return a variable container for Assembly4."""
+    if ((not hasattr(assembly, 'TypeId'))
+            or (assembly.TypeId != 'App::Part')):
+        raise RuntimeError(
+                'First argument must be an `App::Part` FreeCAD object')
+    # There is no object "Variables", so we create it.
+    variables = assembly.Document.addObject('App::FeaturePython', 'Variables')
+    if hasattr(variables, 'ViewObject') and variables.ViewObject:
+        # TODO
+        # variables.ViewObject.Proxy = ViewProviderCustomIcon(obj,
+        #                                            path + "FreeCADIco.png")
+        # variables.ViewObject.Proxy = setCustomIcon(object,
+        #                                    'Asm4_Variables.svg')
+        pass
+    # Signature of a PropertyContainer.
+    variables.addProperty('App::PropertyString', 'Type')
+    variables.Type = 'App::PropertyContainer'
+    assembly.addObject(variables)
+    return variables
+
+
 def _get_placement_label_and_expression(
         expression_engine: ExpressionEngine,
         ) -> Optional[LabelAndExpression]:

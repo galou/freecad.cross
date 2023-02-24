@@ -35,6 +35,7 @@ class _UrdfImportCommand:
             urdf_robot = UrdfLoader.load_from_file(filename)
             assembly_from_urdf(urdf_robot, doc)
             doc.recompute()
+            fcgui.SendMsgToActiveView('ViewFit')
 
     def IsActive(self):
         return is_ros_found()

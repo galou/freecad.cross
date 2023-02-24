@@ -20,7 +20,7 @@
 #***************************************************************************
 
 import FreeCAD, Mesh, os, numpy, MeshPart, Arch, Draft
-if FreeCAD.GuiUp:
+if hasattr(FreeCAD, 'GuiUp') and FreeCAD.GuiUp:
     from draftutils.translate import translate
 else:
     # \cond
@@ -131,6 +131,9 @@ def decode(name):
 def read(filename):
 
     "reads a DAE file"
+
+    if not checkCollada():
+        return
 
     global col
     col = collada.Collada(filename, ignore=[collada.DaeUnsupportedError])

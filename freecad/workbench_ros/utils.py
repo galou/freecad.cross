@@ -8,7 +8,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 import string
-from typing import Any, Optional
+from typing import Any, Iterable, Optional
 import xml.etree.ElementTree as et
 from xml.dom import minidom
 
@@ -346,13 +346,28 @@ def save_mesh(obj: DO,
     Mesh.export([obj], str(filename))
 
 
-def scale_mesh_object(obj: DO, scale_factor: float):
-    """Uniformly scale a mesh object in place."""
+def scale_mesh_object(obj: DO, scale_factor: [float | Iterable[float]]):
+    """Scale a mesh object in place.
+
+    Parameters
+    ----------
+    - obj: FreeCAD object of type `Mesh::Feature`.
+    - scale_factor: a single float or a list of 3 floats.
+
+    """
     if not is_mesh(obj):
         raise RuntimeError(
                 'First argument must be `Mesh::Feature` FreeCAD object')
+    if isinstance(scale_factor, float):
+        scaling_vector = fc.Vector(scale_factor, scale_factor, scale_factor)
+    else:
+        try:
+            scaling_vector = fc.Vector(scale_factor)
+        except (IndexError, ValueError):
+            raise RuntimeError('Scaling factor must be a float or a list'
+                               f' of 3 floats, got {scale_factor}')
     scale_mat = fc.Matrix()
-    scale_mat.scale(fc.Vector(scale_factor, scale_factor, scale_factor))
+    scale_mat.scale(scaling_vector)
     mesh = obj.Mesh.copy()
     mesh.transform(scale_mat)
     obj.Mesh = mesh

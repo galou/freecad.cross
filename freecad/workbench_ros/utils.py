@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import copy
 import os
 from pathlib import Path
 import string
@@ -15,6 +16,9 @@ from xml.dom import minidom
 import FreeCAD as fc
 
 import Mesh  # FreeCAD
+
+from .import_dae import read as read_dae
+from .import_dae import export as export_dae
 
 if hasattr(fc, 'GuiUp') and fc.GuiUp:
     import FreeCADGui as fcgui
@@ -318,18 +322,30 @@ def split_package_path(package_path: [Path | str]) -> tuple[Path, Path]:
     return parent, package_name
 
 
+def read_mesh_dae(
+        filename: [Path | str],
+        ) -> Mesh.MeshObject:
+    current_doc = fc.activeDocument()
+    path = Path(filename)
+    tmp_doc = fc.newDocument(hidden=True, temp=True)
+    fc.setActiveDocument(tmp_doc.Name)
+    read_dae(str(path))
+    # A `Mesh::MeshObject`.
+    merged_raw_mesh = Mesh.Mesh()
+    for mesh_obj in tmp_doc.Objects:
+        merged_raw_mesh.addMesh(mesh_obj.Mesh)
+    fc.closeDocument(tmp_doc.Name)
+    if current_doc:
+        fc.setActiveDocument(current_doc.Name)
+    return merged_raw_mesh
+
+
 def save_mesh_dae(obj: DO,
                   filename: [Path | str],
                   ) -> None:
     """Save the mesh of a FreeCAD object into a Collada file."""
-    if hasattr(fc, 'GuiUp'):
-        # If imported too early, fails with
-        # "AttributeError: module 'FreeCAD' has no attribute 'GuiUp'"
-        # because of Arch.py L.37.
-        import importDAE  # FreeCAD.
-
     Path(filename).parent.mkdir(parents=True, exist_ok=True)
-    importDAE.export([obj], str(filename))
+    export_dae([obj], str(filename))
 
 
 def save_mesh(obj: DO,

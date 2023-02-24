@@ -7,7 +7,7 @@ from typing import Optional
 
 import FreeCAD as fc
 
-import Mesh as fcmesh # FreeCAD.
+import Mesh as fcmesh  # FreeCAD.
 
 from ament_index_python.packages import PackageNotFoundError
 from ament_index_python.packages import get_package_share_directory
@@ -21,6 +21,7 @@ from urdf_parser_py.urdf import Sphere
 
 from .utils import add_object
 from .utils import is_group
+from .utils import read_mesh_dae
 from .utils import scale_mesh_object
 from .export_urdf import rotation_from_rpy
 
@@ -101,7 +102,10 @@ def obj_from_mesh(
     mesh_path = mesh_path_from_urdf(geometry.filename)
     if not mesh_path:
         return
-    raw_mesh = fcmesh.read(str(mesh_path))
+    if mesh_path.suffix.lower() == '.dae':
+        raw_mesh = read_mesh_dae(mesh_path)
+    else:
+        raw_mesh = fcmesh.read(str(mesh_path))
     if is_group(doc_or_group):
         doc = doc_or_group.Document
     else:
@@ -113,7 +117,9 @@ def obj_from_mesh(
     mesh_obj.Mesh = raw_mesh
     if mesh_path.suffix.lower() in ['.stl', '.obj']:
         scale_mesh_object(mesh_obj, 1000.0)  # m to mm.
-    if (geometry.scale is not None) and (geometry.scale != 1.0):
+    if ((geometry.scale is not None)
+            and (not (geometry.scale == 1.0)
+                 or geometry.scale == [1.0, 1.0, 1.0])):
         scale_mesh_object(mesh_obj, geometry.scale)
     return mesh_obj, mesh_path
 

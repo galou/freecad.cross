@@ -60,7 +60,7 @@ def valid_urdf_name(name: str) -> str:
 
 
 def label_or(
-        obj: fc.DocumentObject,
+        obj: DO,
         alternative: str = 'no label') -> str:
     """Return the `Label` or the alternative."""
     return obj.Label if hasattr(obj, 'Label') else alternative
@@ -114,9 +114,9 @@ def strip_subelement(sub_fullpath: str) -> str:
     return sub_fullpath.rsplit('.', maxsplit=1)[0]
 
 
-def get_subobject_by_name(object_: fc.DocumentObject,
+def get_subobject_by_name(object_: DO,
                           subobject_name: str,
-                          ) -> Optional[fc.DocumentObject]:
+                          ) -> Optional[DO]:
     """Return the appropriate object from object_.OutListRecursive."""
     for o in object_.OutListRecursive:
         if o.Name == subobject_name:
@@ -124,9 +124,9 @@ def get_subobject_by_name(object_: fc.DocumentObject,
 
 
 def get_subobjects_by_full_name(
-        root_object: fc.DocumentObject,
+        root_object: DO,
         subobject_fullpath: str,
-        ) -> list[fc.DocumentObject]:
+        ) -> list[DO]:
     """Return the list of objects after root_object to the named object.
 
     The last part of ``subobject_fullpath`` is then a specific vertex, edge or
@@ -162,12 +162,12 @@ def get_subobjects_by_full_name(
 
 
 def add_property(
-        obj: fc.DocumentObject,
+        obj: DO,
         type_: str,
         name: str,
         category: str,
         help_: str,
-        ) -> fc.DocumentObject:
+        ) -> DO:
     """Add a dynamic property to the object and return the object."""
     if name not in obj.PropertiesList:
         return obj.addProperty(type_, name, category, tr(help_))
@@ -176,76 +176,81 @@ def add_property(
     return obj
 
 
-def _has_ros_type(obj: fc.DocumentObject, type_: str) -> bool:
+def _has_ros_type(obj: DO, type_: str) -> bool:
     """Return True if the object is an object from this workbench."""
-    if not isinstance(obj, fc.DocumentObject):
+    if not isinstance(obj, DO):
         return False
     return hasattr(obj, '_Type') and (obj._Type == type_)
 
 
-def is_robot(obj: fc.DocumentObject) -> bool:
+def is_robot(obj: DO) -> bool:
     """Return True if the object is a Ros::Robot."""
     return _has_ros_type(obj, 'Ros::Robot')
 
 
-def is_link(obj: fc.DocumentObject) -> bool:
+def is_link(obj: DO) -> bool:
     """Return True if the object is a Ros::Link."""
     return _has_ros_type(obj, 'Ros::Link')
 
 
-def is_joint(obj: fc.DocumentObject) -> bool:
+def is_joint(obj: DO) -> bool:
     """Return True if the object is a Ros::Link."""
     return _has_ros_type(obj, 'Ros::Joint')
 
 
-def _is_derived_from(obj: fc.DocumentObject, typeid: str) -> bool:
+def _is_derived_from(obj: DO, typeid: str) -> bool:
     """Return True if the object is a object of the given type."""
-    if not isinstance(obj, fc.DocumentObject):
+    if not isinstance(obj, DO):
         return False
     return hasattr(obj, 'isDerivedFrom') and obj.isDerivedFrom(typeid)
 
 
-def is_box(obj: fc.DocumentObject) -> bool:
+def is_box(obj: DO) -> bool:
     """Return True if the object is a 'Part::Box'."""
     return _is_derived_from(obj, 'Part::Box')
 
 
-def is_sphere(obj: fc.DocumentObject) -> bool:
+def is_sphere(obj: DO) -> bool:
     """Return True if the object is a 'Part::Sphere'."""
     return _is_derived_from(obj, 'Part::Sphere')
 
 
-def is_cylinder(obj: fc.DocumentObject) -> bool:
+def is_cylinder(obj: DO) -> bool:
     """Return True if the object is a 'Part::Cylinder'."""
     return _is_derived_from(obj, 'Part::Cylinder')
 
 
-def is_primitive(obj: fc.DocumentObject) -> bool:
+def is_primitive(obj: DO) -> bool:
     """Return True if the object is a 'Part::{Box,Cylinder,Sphere}'."""
     return is_box(obj) or is_sphere(obj) or is_cylinder(obj)
 
 
-def is_mesh(obj: fc.DocumentObject) -> bool:
+def is_mesh(obj: DO) -> bool:
     """Return True if the object is a 'Mesh::Feature'."""
     return _is_derived_from(obj, 'Mesh::Feature')
 
 
-def is_part(obj: fc.DocumentObject) -> bool:
+def is_part(obj: DO) -> bool:
     """Return True if the object is a 'App::Part'."""
     return _is_derived_from(obj, 'App::Part')
 
 
-def is_group(obj: fc.DocumentObject) -> bool:
+def is_group(obj: DO) -> bool:
     """Return True if the object is a 'App::DocumentObjectGroup'."""
     return _is_derived_from(obj, 'App::DocumentObjectGroup')
 
 
-def is_freecad_link(obj: fc.DocumentObject) -> bool:
+def is_container(obj: DO) -> bool:
+    """Return True if the object can contain other objects."""
+    return is_part(obj) or is_group(obj)
+
+
+def is_freecad_link(obj: DO) -> bool:
     """Return True if the object is a 'App::Link'."""
     return _is_derived_from(obj, 'App::Link')
 
 
-def is_lcs(obj: fc.DocumentObject) -> bool:
+def is_lcs(obj: DO) -> bool:
     """Return True if the object is a 'PartDesign::CoordinateSystem'."""
     return _is_derived_from(obj, 'PartDesign::CoordinateSystem')
 
@@ -262,17 +267,17 @@ def is_robot_selected() -> bool:
     return is_robot(sel[0])
 
 
-def has_placement(obj: fc.DocumentObject) -> bool:
+def has_placement(obj: DO) -> bool:
     """Return True if obj has a Placement."""
     return hasattr(obj, 'Placement') and isinstance(obj.Placement, fc.Placement)
 
 
-def get_links(objs: list[fc.DocumentObject]) -> list[fc.DocumentObject]:
+def get_links(objs: list[DO]) -> list[DO]:
     """Return only the objects that are Ros::Link instances."""
     return [o for o in objs if is_link(o)]
 
 
-def get_joints(objs: list[fc.DocumentObject]) -> list[fc.DocumentObject]:
+def get_joints(objs: list[DO]) -> list[DO]:
     """Return only the objects that are Ros::Joint instances."""
     return [o for o in objs if is_joint(o)]
 
@@ -285,9 +290,9 @@ def hasallattr(obj: Any, attrs: list[str]):
     return True
 
 
-def get_placement(obj: fc.DocumentObject) -> fc.Placement:
+def get_placement(obj: DO) -> fc.Placement:
     """Return the object's placement."""
-    if not isinstance(obj, fc.DocumentObject):
+    if not isinstance(obj, DO):
         raise RuntimeError('Not a DocumentObject')
     if obj.TypeId == 'App::Link':
         if not obj.Parents:
@@ -313,7 +318,7 @@ def split_package_path(package_path: [Path | str]) -> tuple[Path, Path]:
     return parent, package_name
 
 
-def save_mesh_dae(obj: fc.DocumentObject,
+def save_mesh_dae(obj: DO,
                   filename: [Path | str],
                   ) -> None:
     """Save the mesh of a FreeCAD object into a Collada file."""
@@ -327,7 +332,7 @@ def save_mesh_dae(obj: fc.DocumentObject,
     importDAE.export([obj], str(filename))
 
 
-def save_mesh(obj: fc.DocumentObject,
+def save_mesh(obj: DO,
               filename: [Path | str],
               ) -> None:
     """Save the mesh of a FreeCAD object into a file.
@@ -341,7 +346,7 @@ def save_mesh(obj: fc.DocumentObject,
     Mesh.export([obj], str(filename))
 
 
-def scale_mesh_object(obj: fc.DocumentObject, scale_factor: float):
+def scale_mesh_object(obj: DO, scale_factor: float):
     """Uniformly scale a mesh object in place."""
     if not is_mesh(obj):
         raise RuntimeError(
@@ -383,3 +388,28 @@ def make_group(
     if hasattr(group, 'Visibility'):
         group.Visibility = visible
     return group
+
+
+def add_object(
+        container: [fc.Document | DO],
+        type_: str,
+        name: str,
+        ) -> DO:
+    """Create a new object into the container.
+
+    The object's label will be set `name` but, according to your settings in
+    FreeCAD, the label will not be set if there's already an object with that
+    Label. The object's name might be also different if FreeCAD decides so.
+
+    """
+    if is_container(container):
+        doc = container.Document
+    else:
+        doc = container
+    if not isinstance(doc, fc.Document):
+        raise RuntimeError('First argument is not a Document, a Group, or a Part')
+    obj = doc.addObject(type_, name)
+    obj.Label = name
+    if is_container(container):
+        container.addObject(obj)
+    return obj

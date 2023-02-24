@@ -454,6 +454,7 @@ def _add_geometries(
             original_part = link.LinkedObject
             link_to_geom = original_part.newObject('App::Link', name_linked_geom)
             link_to_geom.setLink(geom_obj)
+            link_to_geom.Placement = geom_obj.Placement
             fc_links.append(link_to_geom)
 
 

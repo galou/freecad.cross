@@ -1,4 +1,5 @@
-# Assembly4 mentioned here is https://github.com/Zolko-123/FreeCAD_Assembly4.
+# The Assembly4 workbench mentioned here is
+# https://github.com/Zolko-123/FreeCAD_Assembly4.
 
 from __future__ import annotations
 
@@ -15,12 +16,11 @@ try:
 
     from .urdf_parser_utils import obj_from_geometry
     from .urdf_parser_utils import placement_from_origin
-except ImportError:
+except ModuleNotFoundError:
     UrdfJoint = Any
     UrdfRobot = Any
     UrdfVisual = Any
     UrdfCollision = Any
-    raise
 
 from .assembly4_utils import add_asm4_properties
 from .assembly4_utils import new_variable_container

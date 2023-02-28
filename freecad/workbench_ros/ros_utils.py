@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import sys
 
 import FreeCAD as fc
@@ -19,8 +20,9 @@ def warn(text: str, gui: bool = False) -> None:
         diag.exec_()
 
 
-def is_ros_found():
-    return 'ROS_DISTRO' in os.environ
+def is_ros_found() -> bool:
+    return (('ROS_DISTRO' in os.environ)
+            and (Path(f'/opt/ros/{os.environ["ROS_DISTRO"]}').exists()))
 
 
 def add_ros_python_library() -> bool:

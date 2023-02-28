@@ -11,7 +11,10 @@ from PySide import QtCore  # FreeCAD's PySide!
 
 from .assembly_from_urdf import assembly_from_urdf
 from .ros_utils import is_ros_found
-from .urdf_loader import UrdfLoader
+try:
+    from .urdf_loader import UrdfLoader
+except ModuleNotFoundError:
+    pass
 
 
 class _UrdfImportCommand:

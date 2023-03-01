@@ -36,7 +36,7 @@ class _UrdfImportCommand:
                 doc = fc.newDocument()
             filename = str(dialog.selectedFiles()[0])
             urdf_robot = UrdfLoader.load_from_file(filename)
-            assembly_from_urdf(urdf_robot, doc)
+            assembly_from_urdf(doc, urdf_robot)
             doc.recompute()
             fcgui.SendMsgToActiveView('ViewFit')
 

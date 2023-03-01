@@ -25,6 +25,7 @@ except ModuleNotFoundError:
 from .assembly4_utils import add_asm4_properties
 from .assembly4_utils import new_variable_container
 from .assembly4_utils import update_placement_expression
+from .utils import add_property
 from .utils import is_freecad_link
 from .utils import is_group
 from .utils import is_lcs
@@ -42,10 +43,10 @@ LcsPair = Tuple[DO, DO]
 
 
 def assembly_from_urdf(
-        robot: UrdfRobot,
         doc: fc.Document,
+        robot: UrdfRobot,
         ) -> DO:
-    assembly, parts_group, var_container = _make_assembly(doc, robot.name)
+    assembly, parts_group, var_container = _make_assembly_container(doc, robot.name)
     link_map: dict[str, DO] = {}
     lcs_map: dict[str, DO] = {}
     for link in robot.links:
@@ -64,11 +65,14 @@ def assembly_from_urdf(
         update_placement_expression(root_link,
             f'LCS_Origin.Placement * AttachmentOffset * {lcs_link.Name}.Placement ^ -1')
     _add_visual(robot, link_map)
-    _import_collision(robot, link_map)
     _add_joint_variables(var_container, robot, joint_map)
 
+    # Make the assembly for collision.
+    _make_collision_assembly_from_visual(doc, robot, link_map, joint_map,
+                                         var_container)
 
-def _make_assembly(
+
+def _make_assembly_container(
         doc: fc.Document,
         emulate_assembly4: bool = True,
         name: str = 'robot',
@@ -125,6 +129,29 @@ def _make_assembly(
     assembly.newObject('App::DocumentObjectGroup', 'Configurations')
 
     return assembly, parts_group, var_container
+
+
+def _make_collision_assembly_from_visual(
+        doc: fc.Document,
+        robot: UrdfRobot,
+        visual_link_map: dict[str, DO],
+        visual_joint_map: dict[str, LcsPair],
+        variable_container: DO,
+        ) -> DO:
+    assembly, _ = _make_part(doc, 'Collision Assembly')
+    assembly.Label = 'Collision Assembly'
+    parts_group = make_group(doc, 'Collision Parts', visible=False)
+    collision_link_map: dict[str, DO] = {}
+    for link_name, visual_link_obj in visual_link_map.items():
+        fc_link, _ = _add_link(assembly, parts_group, link_name)
+        collision_link_map[link_name] = fc_link
+    collision_joint_map: dict[str, LcsPair] = {}
+    for joint in robot.joints:
+        joint_obj = _add_joint_lcs(collision_link_map, joint)
+        _make_structure(joint_obj, joint, collision_link_map)
+        collision_joint_map[joint.name] = joint_obj
+    _add_collision(robot, collision_link_map)
+    _add_joint_variables(variable_container, robot, collision_joint_map)
 
 
 def _make_part(
@@ -352,8 +379,9 @@ def _add_joint_variable(
         # TODO: replace forbidden characters with `_`.
         var_name = f'{joint_name}{f"_{unit}" if unit else ""}'
     help_txt = f'{joint_name}{f" in {unit}" if unit else ""}'
-    variable_container.addProperty('App::PropertyFloat', var_name,
-                                   'Variables', help_txt)
+    add_property(variable_container,
+                 'App::PropertyFloat', var_name,
+                 'Variables', help_txt)
     if urdf_joint.joint_type == 'prismatic':
         _make_prismatic_lcs(urdf_joint.axis, variable_container.Name,
                             var_name, child_lcs)
@@ -412,19 +440,41 @@ def _add_visual(
         link_map: dict[str, DO],
         ) -> None:
     for link_name, link_obj in link_map.items():
-        _add_visual_geometries(link_obj, link_name, robot.link_map[link_name].visuals)
+        _add_visual_geometries(link_obj, link_name,
+                               robot.link_map[link_name].visuals)
+
+
+def _add_collision(
+        robot: UrdfRobot,
+        link_map: dict[str, DO],
+        ) -> None:
+    for link_name, link_obj in link_map.items():
+        _add_collision_geometries(link_obj, link_name,
+                                  robot.link_map[link_name].collisions)
 
 
 def _add_visual_geometries(
         link: DO,
         link_name: str,
         geometries: [VisualList | CollisionList],
-        ) -> tuple[list[DO], DO]:
+        ) -> tuple[list[DO], list[DO]]:
     """Add the primitive shapes and meshes to a link."""
     visual_group = make_group(link.Document, 'Visuals', visible=False)
     group = make_group(visual_group, f'{link_name} Visuals')
     name_linked_geom = f'{link_name}_visual'
-    _add_geometries(group, geometries, link, name_linked_geom)
+    return _add_geometries(group, geometries, link, name_linked_geom)
+
+
+def _add_collision_geometries(
+        link: DO,
+        link_name: str,
+        geometries: [VisualList | CollisionList],
+        ) -> tuple[list[DO], list[DO]]:
+    """Add the primitive shapes and meshes to a link."""
+    collision_group = make_group(link.Document, 'Collisions', visible=False)
+    group = make_group(collision_group, f'{link_name} Collisions')
+    name_linked_geom = f'{link_name}_collision'
+    return _add_geometries(group, geometries, link, name_linked_geom)
 
 
 def _add_geometries(
@@ -432,14 +482,18 @@ def _add_geometries(
         geometries: [VisualList | CollisionList],
         link: DO = None,
         name_linked_geom: str = '',
-        ) -> tuple[list[DO], DO]:
+        ) -> tuple[list[DO], list[DO]]:
     """Add the geometries from URDF into `group` and a FC link to it into `link`.
 
     `geometries` is either `visuals` or `collisions` and the geometry itself is
     `geometries[?].geometry`.
     If `name_linked_geom` is empty, not FC link is created in `link`.
 
+    Return the list of objects reprensenting the geometries and the list of
+    FreeCAD links.
+
     """
+    geom_objs: list[DO] = []
     fc_links: list[DO] = []
     for geometry in geometries:
         # Make the FC object in the group.
@@ -447,36 +501,15 @@ def _add_geometries(
             geom_obj, _ = obj_from_geometry(geometry.geometry, group)
         except NotImplementedError:
             continue
+        geom_objs.append(geom_obj)
         geom_obj.Placement = (placement_from_origin(geometry.origin)
                               * geom_obj.Placement)
         if link is not None:
             # Make a FC link into `link`.
             original_part = link.LinkedObject
-            link_to_geom = original_part.newObject('App::Link', name_linked_geom)
+            link_to_geom = original_part.newObject('App::Link',
+                                                   name_linked_geom)
             link_to_geom.setLink(geom_obj)
             link_to_geom.Placement = geom_obj.Placement
             fc_links.append(link_to_geom)
-
-
-def _import_collision(
-        robot: UrdfRobot,
-        link_map: dict[str, DO],
-        ) -> None:
-    """Import the collision objects to the group Collisions.
-
-    Do not create FC links into the links.
-
-    """
-    for link_name, link_obj in link_map.items():
-        _import_collision_geometries(link_obj.Document, link_name, robot.link_map[link_name].collisions)
-
-
-def _import_collision_geometries(
-        doc: DO,
-        link_name: str,
-        geometries: Iterable[xmlr.Object],
-        ) -> tuple[list[DO], DO]:
-    """Add the URDF geometries to a group."""
-    collision_group = make_group(doc, 'Collisions', visible=False)
-    group = make_group(collision_group, f'{link_name} Collisions')
-    _add_geometries(group, geometries)
+    return geom_objs, fc_links

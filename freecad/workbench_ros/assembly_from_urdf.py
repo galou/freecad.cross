@@ -379,16 +379,16 @@ def _add_joint_variable(
         # TODO: replace forbidden characters with `_`.
         var_name = f'{joint_name}{f"_{unit}" if unit else ""}'
     help_txt = f'{joint_name}{f" in {unit}" if unit else ""}'
-    add_property(variable_container,
-                 'App::PropertyFloat', var_name,
-                 'Variables', help_txt)
+    _, used_var_name = add_property(variable_container,
+                                    'App::PropertyFloat', var_name,
+                                    'Variables', help_txt)
     if urdf_joint.joint_type == 'prismatic':
         _make_prismatic_lcs(urdf_joint.axis, variable_container.Name,
-                            var_name, child_lcs)
+                            used_var_name, child_lcs)
     elif urdf_joint.joint_type in ['revolute', 'continuous']:
         _make_revolute_lcs(urdf_joint.axis, variable_container.Name,
-                           var_name, child_lcs)
-    return var_name
+                           used_var_name, child_lcs)
+    return used_var_name
 
 
 def _multiplier_for_expression(factor: float) -> str:

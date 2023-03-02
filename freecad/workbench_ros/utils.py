@@ -41,6 +41,7 @@ RESOURCES_PATH = MOD_PATH.joinpath('resources')
 UI_PATH = RESOURCES_PATH.joinpath('ui')
 ICON_PATH = RESOURCES_PATH.joinpath('icons')
 
+INVALIDS_FOR_PROPERTY_NAME = '-<>#$'
 
 def with_fc_gui() -> bool:
     return hasattr(fc, 'GuiUp') and fc.GuiUp
@@ -165,19 +166,40 @@ def get_subobjects_by_full_name(
     return objects
 
 
+def is_valid_property_name(
+        name: str,
+        ) -> bool:
+    """Return True if the property name is legal."""
+    for c in INVALIDS_FOR_PROPERTY_NAME:
+        if c in name:
+            return False
+    return True
+
+
+def get_valid_property_name(
+        name: str,
+        ) -> str:
+    """Return a legal property name."""
+    for c in INVALIDS_FOR_PROPERTY_NAME:
+        name = name.replace(c, '_')
+    return name
+
+
 def add_property(
         obj: DO,
         type_: str,
         name: str,
         category: str,
         help_: str,
-        ) -> DO:
+        ) -> tuple[DO, str]:
     """Add a dynamic property to the object and return the object."""
+    name = get_valid_property_name(name)
+
     if name not in obj.PropertiesList:
-        return obj.addProperty(type_, name, category, tr(help_))
+        return obj.addProperty(type_, name, category, tr(help_)), name
 
     # Return the object, similaryly to obj.addProperty.
-    return obj
+    return obj, name
 
 
 def _has_ros_type(obj: DO, type_: str) -> bool:

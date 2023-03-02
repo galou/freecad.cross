@@ -80,7 +80,6 @@ class Link:
 
         # Placement in the robot frame when building.
         add_property(obj, 'App::PropertyPlacement', 'CachedPlacement', 'Internal', 'Placement when building')
-        warn(f'{self.link.Name}.CachedPlacement = {obj.CachedPlacement}')
         obj.setPropertyStatus('CachedPlacement', 'Hidden')
 
     def execute(self, obj):

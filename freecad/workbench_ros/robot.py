@@ -78,7 +78,6 @@ def _add_links_lod(
         lod_link.adjustRelativeLinks(link)
         link.addObject(lod_link)
         old_and_new_objects.append(lod_link)
-        print(f'Appending {lod_link.Name}')
     return old_and_new_objects
 
 
@@ -117,7 +116,6 @@ class Robot:
         self.reset_group()
 
     def onChanged(self, feature: DO, prop: str) -> None:
-        # print(f'Robot::onChanged({feature.Name}, {prop})') # DEBUG
         if not hasattr(self, 'robot'):
             # Implementation note: happens but how is it possible?
             return
@@ -140,8 +138,6 @@ class Robot:
             self.type, self.previous_link_count = state
 
     def reset_group(self):
-        # print('Robot::reset_group()') # DEBUG
-
         if ((not hasattr(self.robot, 'ShowReal'))
                 or (not hasattr(self.robot, 'ShowVisual'))
                 or (not hasattr(self.robot, 'ShowCollision'))):
@@ -154,7 +150,6 @@ class Robot:
         for link in links:
             for o in link.Group:
                 current_linked_objects.append(o)
-                # print(f'  current_linked_objects; {o.Name}: {hash(current_linked_objects[-1])}') # DEBUG
 
         # Add objects from selected components.
         all_linked_objects: list[DO] = []
@@ -208,10 +203,8 @@ class Robot:
                 error(f"Internal error with '{link.Label}', has no 'Proxy' attribute", True)
                 return
             link_placement = self._get_link_placement(link)
-            print(f'{link.Label}.link_placement = {link_placement}') # DEBUG
             xml.append(link.Proxy.export_urdf(package_parent, package_name, link_placement))
         for joint in get_joints(self.robot.Group):
-            warn(f'About to export {joint.Label}') # DEBUG
             if not joint.Parent:
                 error(f"Joint '{joint.Label}' has no parent link", True)
                 continue

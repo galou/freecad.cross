@@ -8,7 +8,6 @@ from typing import Any, Iterable, Tuple
 import FreeCAD as fc
 
 try:
-    from urdf_parser_py import xml_reflection as xmlr
     from urdf_parser_py.urdf import Collision as UrdfCollision
     from urdf_parser_py.urdf import Joint as UrdfJoint
     from urdf_parser_py.urdf import Robot as UrdfRobot
@@ -38,7 +37,7 @@ DO = fc.DocumentObject
 # List of UrdfVisual or List of UrdfCollision.
 VisualList = Iterable[UrdfVisual]
 CollisionList = Iterable[UrdfCollision]
-# A pair of `App::CoordinateSystem`, [parent, child].
+# A pair of "App::CoordinateSystem", [parent, child].
 LcsPair = Tuple[DO, DO]
 
 
@@ -46,7 +45,16 @@ def assembly_from_urdf(
         doc: fc.Document,
         robot: UrdfRobot,
         ) -> DO:
-    assembly, parts_group, var_container = _make_assembly_container(doc, robot.name)
+    """Creates two "App::Part" objects that mimic Assembly4 assemblies.
+
+    Creates an "App::Part" object that mimics an Assembly4 assembly for the
+    visual part of a URDF robot and an "App::Part" that doesn't mimic an
+    Assembly4 assembly. Assembly4 allows only one assembly per FreeCAD
+    document.
+
+    """
+    assembly, parts_group, var_container = _make_assembly_container(doc,
+                                                                    robot.name)
     link_map: dict[str, DO] = {}
     lcs_map: dict[str, DO] = {}
     for link in robot.links:
@@ -88,7 +96,7 @@ def _make_assembly_container(
     The group called 'Parts' is potentially created and returned. If the object
     'Parts' is not a group, a different name will be given.
 
-    Note that you can make an Assembly4 assembly from a App::Part with
+    Note that you can make an Assembly4 assembly from an App::Part with
     assembly.Label = 'Assembly'
     assembly.Type = 'Assembly'
     assembly.addProperty('App::PropertyString', 'SolverId', 'Assembly')
@@ -162,6 +170,14 @@ def _make_part(
 
     Emulates an Assembly4 Part by adding a local coordinate system.
 
+    Returns the created "App::Part" and "PartDesign::CoordinateSystem".
+
+    Parameters
+    ==========
+
+    - doc: document to add the objects to.
+    - name: name suggestion for the "App::Part".
+
     """
     part = doc.addObject('App::Part', name)
     # Add an LCS at the root of the Part, and attach it to the 'Origin'.
@@ -184,10 +200,10 @@ def _add_link(
     """
     if not is_part(assembly):
         raise RuntimeError(
-                'First argument must be an `App::Part` FreeCAD object')
+                'First argument must be an "App::Part" FreeCAD object')
     if not is_group(parts_group):
         raise RuntimeError(
-                'First argument must be an `App::DocumentObjectGroup`'
+                'First argument must be an "App::DocumentObjectGroup"'
                 ' FreeCAD object')
     # We use an underscore to let the label free for the link in `assembly`.
     part, lcs = _make_part(assembly.Document, name + '_')
@@ -207,6 +223,7 @@ def _lcs_name(
         joint_name: str,
         part_is_parent: bool,
         ) -> str:
+    """Return the candidate name for a coordinate system."""
     if part_is_parent:
         suffix = 'parent'
     else:
@@ -223,6 +240,9 @@ def _add_lcs(
 
     A link to a part can be provided and the coordinate system will be added to
     the part.
+
+    Add a "PartDesign::CoordinateSystem" object to either `part_or_link` or
+    `part_or_link.LinkedObject`.
 
     """
     is_link = is_freecad_link(part_or_link)
@@ -253,7 +273,7 @@ def _add_joint_lcs(
 
     Parameters
     ----------
-    - link_map: the `App::Link` object associated with each URDF link,
+    - link_map: the "App::Link" object associated with each URDF link,
           identified by its name.
 
     """
@@ -316,24 +336,40 @@ def _make_structure(
         joint: UrdfJoint,
         link_map: dict[str, DO],
         ) -> None:
-    """Create the parent-child inheritence."""
+    """Create the parent-child inheritence.
+
+    The parent-child inheritence is done exclusively by the expression engines
+    of the two local coordinate systems (LCS) associated with a joint, one in
+    the parent `App::Part` and one in the child `App::Part`.
+
+    Parameters
+    ==========
+
+    - lcs_pair: the two LCS, parent and child.
+    - joint: the associated URDF joint.
+    - link_map: a dict[urdf_link_name: "App::Link"], where each
+                "App::Link" object links to an "App::Part" object
+                representing the visual- or collision geometries
+                of a URDF link.
+
+    """
     if not (
             isinstance(lcs_pair, tuple)
             and len(lcs_pair) == 2
             and is_lcs(lcs_pair[0])
             and is_lcs(lcs_pair[1])):
         raise RuntimeError('First argument must be a list of 2'
-                           ' `PartDesign::CoordinateSystem`')
+                           ' PartDesign::CoordinateSystem')
     parent_lcs = lcs_pair[0]
     child_lcs = lcs_pair[1]
     parent_link = _get_parent_link(joint, link_map)
     if not parent_link:
         raise RuntimeError('The parent LCS is not associated to any'
-                           ' `App::Part`')
+                           ' App::Part')
     child_link = _get_child_link(joint, link_map)
     if not child_link:
         raise RuntimeError('The child LCS is not associated to any'
-                           ' `App::Part`')
+                           ' App::Part')
     child_link.AttachedBy = f'#{child_lcs.Name}'
     child_link.AttachedTo = f'{parent_link.Name}#{parent_lcs.Name}'
 
@@ -392,6 +428,7 @@ def _add_joint_variable(
 
 
 def _multiplier_for_expression(factor: float) -> str:
+    """Return a textual form of a multiplier."""
     if factor == 1.0:
         return ''
     elif factor == -1.0:
@@ -406,6 +443,24 @@ def _make_prismatic_lcs(
         var_name: str,
         child_lcs: DO,
         ) -> None:
+    """Set the expression of a coordinate system.
+
+    Set the expression engine of a child local coordinate system to correspond
+    to a joint of type "prismatic".
+
+    Parameters
+    ==========
+
+    - axis: list of 3 floats.
+    - var_container_name: name of the group of variables, expected "Variables"
+                          in Assembly4.
+
+    - var_name: variable name of the joint in question. Currently, for a URDF
+                joint named "q0", the expected value is "q0_mm".
+    - child_lcs: the coordinate system in the child `App::Part` representing
+                 the URDF child link of the joint.
+
+    """
     # We need to invert the direction.
     v = -fc.Vector(axis)
     v.normalize()
@@ -427,6 +482,24 @@ def _make_revolute_lcs(
         var_name: str,
         child_lcs: DO,
         ) -> None:
+    """Set the expression of a coordinate system.
+
+    Set the expression engine of a child local coordinate system to correspond
+    to a joint of type "revolute".
+
+    Parameters
+    ==========
+
+    - axis: list of 3 floats.
+    - var_container_name: name of the group of variables, expected "Variables"
+                          in Assembly4.
+
+    - var_name: variable name of the joint in question. Currently, for a URDF
+                joint named "q0", the expected value is "q0_deg".
+    - child_lcs: the coordinate system in the child `App::Part` representing
+                 the URDF child link of the joint.
+
+    """
     # We need to invert the direction.
     v = -fc.Vector(axis)
     v.normalize()
@@ -439,6 +512,17 @@ def _add_visual(
         robot: UrdfRobot,
         link_map: dict[str, DO],
         ) -> None:
+    """Add the visual geometries to an assembly.
+
+    Parameters
+    ==========
+
+    - robot: an UrdfRobot.
+    - link_map: a dict[urdf_link_name: "App::Link"], where each
+                "App::Link" object links to an "App::Part" object
+                representing the visual geometries of a URDF link.
+
+    """
     for link_name, link_obj in link_map.items():
         _add_visual_geometries(link_obj, link_name,
                                robot.link_map[link_name].visuals)
@@ -448,6 +532,17 @@ def _add_collision(
         robot: UrdfRobot,
         link_map: dict[str, DO],
         ) -> None:
+    """Add the collision geometries to an assembly.
+
+    Parameters
+    ==========
+
+    - robot: an UrdfRobot.
+    - link_map: a dict[urdf_link_name: "App::Link"], where each
+                "App::Link" object links to an "App::Part" object
+                representing the collision geometries of a URDF link.
+
+    """
     for link_name, link_obj in link_map.items():
         _add_collision_geometries(link_obj, link_name,
                                   robot.link_map[link_name].collisions)
@@ -456,9 +551,19 @@ def _add_collision(
 def _add_visual_geometries(
         link: DO,
         link_name: str,
-        geometries: [VisualList | CollisionList],
+        geometries: VisualList,
         ) -> tuple[list[DO], list[DO]]:
-    """Add the primitive shapes and meshes to a link."""
+    """Add the primitive shapes and meshes to a FreeCAD link.
+
+    Parameters
+    ==========
+
+    - link: an "App::Link" object linking to an "App::Part" object representing
+            the visual geometries of a URDF link.
+    - link_name: name of the URDF link.
+    - geometries: list of URDF geometries.
+
+    """
     visual_group = make_group(link.Document, 'Visuals', visible=False)
     group = make_group(visual_group, f'{link_name} Visuals')
     name_linked_geom = f'{link_name}_visual'
@@ -468,9 +573,19 @@ def _add_visual_geometries(
 def _add_collision_geometries(
         link: DO,
         link_name: str,
-        geometries: [VisualList | CollisionList],
+        geometries: CollisionList,
         ) -> tuple[list[DO], list[DO]]:
-    """Add the primitive shapes and meshes to a link."""
+    """Add the primitive shapes and meshes to a link.
+
+    Parameters
+    ==========
+
+    - link: an "App::Link" object linking to an "App::Part" object representing
+            the collision geometries of a URDF link.
+    - link_name: name of the URDF link.
+    - geometries: list of URDF geometries.
+
+    """
     collision_group = make_group(link.Document, 'Collisions', visible=False)
     group = make_group(collision_group, f'{link_name} Collisions')
     name_linked_geom = f'{link_name}_collision'
@@ -483,7 +598,7 @@ def _add_geometries(
         link: DO = None,
         name_linked_geom: str = '',
         ) -> tuple[list[DO], list[DO]]:
-    """Add the geometries from URDF into `group` and a FC link to it into `link`.
+    """Add the geometries from URDF into `group` and an App::Link to it into `link`.
 
     `geometries` is either `visuals` or `collisions` and the geometry itself is
     `geometries[?].geometry`.
@@ -491,6 +606,18 @@ def _add_geometries(
 
     Return the list of objects reprensenting the geometries and the list of
     FreeCAD links.
+
+    Parameters
+    ==========
+
+    - group: an "App::DocumentObjectGroup" where the generated FreeCAD objects
+             will be placed.
+    - geometries: list of URDF geometries.
+    - link: an "App::Link" object linking to an "App::Part" object representing
+            the visual- or collision geometries of a URDF link.
+    - name_linked_geom: base pattern for the generated "App::Link" objects
+                        generated. The final name may then be
+                        `name_linked_geom`, `name_linked_geom`001, ...
 
     """
     geom_objs: list[DO] = []

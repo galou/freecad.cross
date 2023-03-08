@@ -41,7 +41,9 @@ RESOURCES_PATH = MOD_PATH.joinpath('resources')
 UI_PATH = RESOURCES_PATH.joinpath('ui')
 ICON_PATH = RESOURCES_PATH.joinpath('icons')
 
-INVALIDS_FOR_PROPERTY_NAME = '-<>#$'
+# List of invalid characters in a property name.
+INVALIDS_FOR_PROPERTY_NAME = '+-<>#$'
+
 
 def with_fc_gui() -> bool:
     return hasattr(fc, 'GuiUp') and fc.GuiUp
@@ -192,11 +194,18 @@ def add_property(
         category: str,
         help_: str,
         ) -> tuple[DO, str]:
-    """Add a dynamic property to the object and return the object."""
+    """Add a dynamic property to the object and return the object.
+
+    Return the `App::FeaturePython` object containing the property.
+
+    """
     name = get_valid_property_name(name)
 
     if name not in obj.PropertiesList:
         return obj.addProperty(type_, name, category, tr(help_)), name
+
+    return_type_obj_and_value = 2
+    prop, _ = obj.getPropertyByName(name, return_type_obj_and_value)
 
     # Return the object, similaryly to obj.addProperty.
     return obj, name

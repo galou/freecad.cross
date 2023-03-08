@@ -1,4 +1,4 @@
-# Emulate some functions from module Asm4_libs.
+# Emulate some functions from module Asm4_libs v0.12.5.
 
 from typing import List, Optional, Tuple
 

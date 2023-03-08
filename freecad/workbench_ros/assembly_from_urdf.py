@@ -76,8 +76,11 @@ def assembly_from_urdf(
     _add_joint_variables(var_container, robot, joint_map)
 
     # Make the assembly for collision.
-    _make_collision_assembly_from_visual(doc, robot, link_map, joint_map,
-                                         var_container)
+    collision_assembly = _make_collision_assembly_from_visual(
+            doc, robot, link_map, joint_map, var_container)
+
+    # Make the collision- and visual assemblies coincident.
+    _collision_at_visual(assembly, collision_assembly)
 
 
 def _make_assembly_container(
@@ -160,6 +163,7 @@ def _make_collision_assembly_from_visual(
         collision_joint_map[joint.name] = joint_obj
     _add_collision(robot, collision_link_map)
     _add_joint_variables(variable_container, robot, collision_joint_map)
+    return assembly
 
 
 def _make_part(
@@ -640,3 +644,18 @@ def _add_geometries(
             link_to_geom.Placement = geom_obj.Placement
             fc_links.append(link_to_geom)
     return geom_objs, fc_links
+
+
+def _collision_at_visual(
+        visual_assembly: DO,
+        collision_assembly: DO,
+        ) -> None:
+    """Make the collision and visual assembly coincident.
+
+    Write expressions for the placement of `collision_assembly` so that it has
+    the same pose than `visual_assembly`.
+
+    """
+    collision_assembly.setExpression('.Placement',
+                                     f'{visual_assembly.Name}.Placement')
+    collision_assembly.setEditorMode('Placement', ['ReadOnly'])

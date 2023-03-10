@@ -35,6 +35,7 @@ from .utils import is_group
 from .utils import is_lcs
 from .utils import is_part
 from .utils import make_group
+from .utils import get_valid_property_name
 from .export_urdf import rotation_from_rpy
 
 # Typing hints.
@@ -75,6 +76,7 @@ def assembly_from_urdf(
     if robot.links:
         root_link = link_map[robot.get_root()]
         lcs_link = lcs_map[robot.get_root()]
+        # TODO: this is not accepted by Assembly4.
         update_placement_expression(root_link,
             f'LCS_Origin.Placement * AttachmentOffset * {lcs_link.Name}.Placement ^ -1')
     _add_visual(robot, link_map)
@@ -407,6 +409,7 @@ def _add_joint_variable(
         joint: DO,
         child_lcs: DO,
         ) -> str:
+    """Add a property and return its name."""
     urdf_joint = robot.joint_map[joint_name]
     if urdf_joint.joint_type == 'prismatic':
         unit = 'mm'
@@ -414,15 +417,7 @@ def _add_joint_variable(
         unit = 'deg'
     else:
         return ''
-    # `joint_name` may not be a valid property name in FreeCAD but the LCS was
-    # already created based on `joint_name`. Just try this first.
-    if child_lcs.Name.startswith('LCS_') and child_lcs.Name.endswith('_child'):
-        # Remove the `LCS_` prefix and `_child` suffix.
-        lcs_name = child_lcs.Name[len('LCS_'):-len('_child')]
-        var_name = f'{lcs_name}{f"_{unit}" if unit else ""}'
-    else:
-        # TODO: replace forbidden characters with `_`.
-        var_name = f'{joint_name}{f"_{unit}" if unit else ""}'
+    var_name = get_valid_property_name(f'{joint_name}{f"_{unit}" if unit else ""}')
     help_txt = f'{joint_name}{f" in {unit}" if unit else ""}'
     _, used_var_name = add_property(variable_container,
                                     'App::PropertyFloat', var_name,

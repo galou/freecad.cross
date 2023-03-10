@@ -19,7 +19,7 @@ from .utils import is_box
 from .utils import is_cylinder
 from .utils import is_robot
 from .utils import is_sphere
-from .utils import valid_filename
+from .utils import get_valid_filename
 
 
 def _supported_object_selected():
@@ -86,11 +86,11 @@ class _UrdfExportCommand:
                         xml = obj.Proxy.export_urdf()
                 elif hasattr(obj, 'Placement'):
                     has_mesh = True
-                    mesh_name = valid_filename(obj.Label) if hasattr(obj, 'Label') else 'mesh.dae'
+                    mesh_name = get_valid_filename(obj.Label) if hasattr(obj, 'Label') else 'mesh.dae'
                     package_name = '$package_name$'  # Will be replaced later by the GUI.
                     xml = urdf_collision_from_object(
                         obj,
-                        mesh_name=valid_filename(obj.Label) + '.dae',
+                        mesh_name=get_valid_filename(obj.Label) + '.dae',
                         package_name=package_name,
                         placement=placement,
                     )

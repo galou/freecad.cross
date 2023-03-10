@@ -8,7 +8,7 @@ from .utils import add_property
 from .utils import error
 from .utils import get_joints
 from .utils import is_robot
-from .utils import valid_urdf_name
+from .utils import get_valid_urdf_name
 from .utils import warn
 from .export_urdf import urdf_origin_from_placement
 
@@ -29,8 +29,9 @@ class Joint:
 
     def init_properties(self, obj):
         add_property(obj, 'App::PropertyString', '_Type', 'Internal',
-                     'The type')._Type = Joint.type
+                     'The type')
         obj.setPropertyStatus('_Type', ['Hidden', 'ReadOnly'])
+        obj._Type = self.type
 
         add_property(obj, 'App::PropertyEnumeration', 'Type', 'Elements', 'The kinematical type of the joint')
         obj.Type = Joint.type_enum
@@ -97,14 +98,14 @@ class Joint:
     def export_urdf(self) -> et.ElementTree:
         joint = self.joint
         joint_xml = et.fromstring('<joint/>')
-        joint_xml.attrib['name'] = valid_urdf_name(joint.Label)
+        joint_xml.attrib['name'] = get_valid_urdf_name(joint.Label)
         joint_xml.attrib['type'] = joint.Type
         if joint.Parent:
-            joint_xml.append(et.fromstring(f'<parent link="{valid_urdf_name(joint.Parent.Label)}"/>'))
+            joint_xml.append(et.fromstring(f'<parent link="{get_valid_urdf_name(joint.Parent.Label)}"/>'))
         else:
             joint_xml.append(et.fromstring('<parent link="NO_PARENT_DEFINED"/>'))
         if joint.Child:
-            joint_xml.append(et.fromstring(f'<child link="{valid_urdf_name(joint.Child.Label)}"/>'))
+            joint_xml.append(et.fromstring(f'<child link="{get_valid_urdf_name(joint.Child.Label)}"/>'))
         else:
             joint_xml.append(et.fromstring('<child link="NO_CHILD_DEFINED"/>'))
         joint_xml.append(urdf_origin_from_placement(joint.Origin))

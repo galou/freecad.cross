@@ -15,14 +15,18 @@ from .utils import hasallattr
 from .utils import is_primitive
 from .utils import is_robot
 from .utils import save_mesh_dae
-from .utils import valid_filename
-from .utils import valid_urdf_name
+from .utils import get_valid_filename
+from .utils import get_valid_urdf_name
 from .utils import warn
+
+# Typing hints.
+DO = fc.DocumentObject
+DOG = fc.DocumentObjectGroup
 
 
 def _get_placement_from(
-        moving_object: fc.DocumentObject,
-        ref_objects: List[fc.DocumentObject]) -> fc.Placement:
+        moving_object: DO,
+        ref_objects: List[DO]) -> fc.Placement:
     """Return the placement to put moving_object to ref_objects.
 
     Parameters
@@ -64,8 +68,9 @@ class Link:
 
     def init_properties(self, obj):
         add_property(obj, 'App::PropertyString', '_Type', 'Internal',
-                     'The type')._Type = self.type
+                     'The type')
         obj.setPropertyStatus('_Type', ['Hidden', 'ReadOnly'])
+        obj._Type = self.type
 
         add_property(obj, 'App::PropertyLinkList', 'Real', 'Elements',
                      'The real part objects of this link, optional')
@@ -85,13 +90,13 @@ class Link:
     def execute(self, obj):
         pass
 
-    def onBeforeChange(self, obj: fc.DocumentObjectGroup, prop: str) -> None:
+    def onBeforeChange(self, obj: DOG, prop: str) -> None:
         if not hasattr(self, 'link'):
             return
         if prop == 'Real':
             self.real_was_empty = hasattr(self.link, 'Real') and not(self.link.Real)
 
-    def onChanged(self, obj: fc.DocumentObjectGroup, prop: str) -> None:
+    def onChanged(self, obj: DOG, prop: str) -> None:
         if not hasattr(self, 'link'):
             return
         if prop == 'Real':
@@ -217,7 +222,7 @@ class Link:
                 return None
             return _get_placement_from(self.link.Collision[index], self.link.Visual)
 
-    def get_robot(self) -> fc.DocumentObject:
+    def get_robot(self) -> DO:
         """Return the Ros::Robot this link belongs to."""
         if not hasattr(self, 'link'):
             return
@@ -225,7 +230,7 @@ class Link:
             if is_robot(o):
                 return o
 
-    def get_ref_joint(self) -> fc.DocumentObject:
+    def get_ref_joint(self) -> DO:
         """Return the joint this link is the child of."""
         robot = self.get_robot()
         if robot is None:
@@ -254,7 +259,7 @@ class Link:
         """
 
         def get_xml(obj, urdf_function):
-            mesh_name = valid_filename(obj.Label) + '.dae'
+            mesh_name = get_valid_filename(obj.Label) + '.dae'
             visual_xml = urdf_function(
                     obj,
                     mesh_name=mesh_name,
@@ -267,7 +272,7 @@ class Link:
             return visual_xml
 
         link_xml = et.fromstring(
-                f'<link name="{valid_urdf_name(self.link.Label)}" />')
+                f'<link name="{get_valid_urdf_name(self.link.Label)}" />')
         for link in self.link.Visual:
             link_xml.append(get_xml(link, urdf_visual_from_object))
         for link in self.link.Collision:

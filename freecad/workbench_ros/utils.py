@@ -41,17 +41,31 @@ RESOURCES_PATH = MOD_PATH.joinpath('resources')
 UI_PATH = RESOURCES_PATH.joinpath('ui')
 ICON_PATH = RESOURCES_PATH.joinpath('icons')
 
-# List of invalid characters in a property name.
-INVALIDS_FOR_PROPERTY_NAME = '+-<>#$'
-
 
 def with_fc_gui() -> bool:
     return hasattr(fc, 'GuiUp') and fc.GuiUp
 
 
-def valid_filename(text: str) -> str:
+def get_valid_filename(text: str) -> str:
     """Return a string that is a valid file name."""
     valids = string.ascii_letters + string.digits + '_-.'
+    return ''.join(c if c in valids else '_' for c in text)
+
+
+# Adapted from https://github.com/FreeCAD/FreeCAD/blob
+#   /fe9ebfc4c5ea5cd26786627434b4158171a80a29/src/Base/Tools.cpp#L155
+# Function getIdentifier in Tools.cpp.
+# The difference is that an underscore is added if `text` starts with a number,
+# whereas getIdentifier replaces the first character.
+def get_valid_property_name(text: str) -> str:
+    """Return a valid property from any string."""
+    # Check for first character whether it's a digit.
+    if not text:
+        return '_'
+    if text[0] in string.digits:
+        text = '_' + text
+    # Strip illegal chars.
+    valids = string.ascii_letters + string.digits
     return ''.join(c if c in valids else '_' for c in text)
 
 
@@ -60,7 +74,7 @@ def xml_comment(comment: str) -> str:
     return f'{comment.replace("--", "⸗⸗")}'
 
 
-def valid_urdf_name(name: str) -> str:
+def get_valid_urdf_name(name: str) -> str:
     if not name:
         return 'no_label'
     return name.replace(' ', '_')
@@ -121,9 +135,10 @@ def strip_subelement(sub_fullpath: str) -> str:
     return sub_fullpath.rsplit('.', maxsplit=1)[0]
 
 
-def get_subobject_by_name(object_: DO,
-                          subobject_name: str,
-                          ) -> Optional[DO]:
+def get_subobject_by_name(
+        object_: DO,
+        subobject_name: str,
+        ) -> Optional[DO]:
     """Return the appropriate object from object_.OutListRecursive."""
     for o in object_.OutListRecursive:
         if o.Name == subobject_name:
@@ -168,25 +183,6 @@ def get_subobjects_by_full_name(
     return objects
 
 
-def is_valid_property_name(
-        name: str,
-        ) -> bool:
-    """Return True if the property name is legal."""
-    for c in INVALIDS_FOR_PROPERTY_NAME:
-        if c in name:
-            return False
-    return True
-
-
-def get_valid_property_name(
-        name: str,
-        ) -> str:
-    """Return a legal property name."""
-    for c in INVALIDS_FOR_PROPERTY_NAME:
-        name = name.replace(c, '_')
-    return name
-
-
 def add_property(
         obj: DO,
         type_: str,
@@ -194,9 +190,10 @@ def add_property(
         category: str,
         help_: str,
         ) -> tuple[DO, str]:
-    """Add a dynamic property to the object and return the object.
+    """Add a dynamic property to the object.
 
-    Return the `App::FeaturePython` object containing the property.
+    Return the `App::FeaturePython` object containing the property and the
+    real property name.
 
     """
     name = get_valid_property_name(name)
@@ -204,11 +201,22 @@ def add_property(
     if name not in obj.PropertiesList:
         return obj.addProperty(type_, name, category, tr(help_)), name
 
-    return_type_obj_and_value = 2
-    prop, _ = obj.getPropertyByName(name, return_type_obj_and_value)
-
-    # Return the object, similaryly to obj.addProperty.
     return obj, name
+
+
+def get_properties_of_category(
+        obj: DO,
+        category: str,
+        ) -> list[str]:
+    """Return the list of properties belonging to the category."""
+    properties: list[str] = []
+    try:
+        for p in obj.PropertyList:
+            if obj.getGroupOfProperty(p) == category:
+                properties.append(p)
+    except AttributeError:
+        return []
+    return properties
 
 
 def _has_ros_type(obj: DO, type_: str) -> bool:

@@ -232,7 +232,7 @@ class Robot:
             # TODO: return the root placement.
             return fc.Placement()
         return (parent_joint.Proxy.get_placement().inverse()
-                * link.CachedPlacement)
+                * link.MountedPlacement)
 
     def export_urdf(self) -> et.ElementTree:
         if not hasattr(self, 'robot'):

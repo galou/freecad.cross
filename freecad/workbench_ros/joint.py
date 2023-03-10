@@ -64,7 +64,7 @@ class Joint:
         if predecessor is None:
             # First joint in the chain.
             try:
-                return self.joint.Parent.CachedPlacement * self.joint.Origin
+                return self.joint.Parent.MountedPlacement * self.joint.Origin
             except (AttributeError, NotImplementedError):
                 error('Joint.get_placement(), ERROR')
                 return

@@ -83,9 +83,14 @@ class Link:
         add_property(obj, 'App::PropertyEnumeration', 'VisualPlacement', 'Elements', 'Placement of Visual')
         obj.VisualPlacement = Link.visual_placement_enum
 
-        # Placement in the robot frame when building.
-        add_property(obj, 'App::PropertyPlacement', 'CachedPlacement', 'Internal', 'Placement when building')
-        obj.setPropertyStatus('CachedPlacement', 'Hidden')
+        # Used when adding a link which shape in located at the origin but
+        # looks correctly placed. For example, when opening a STEP file or a
+        # mesh with all links at the mounted position.
+        # This placement is the transform from origin to the location of the
+        # joint that is parent of this link.
+        add_property(obj, 'App::PropertyPlacement', 'MountedPlacement',
+                     'Internal', 'Placement when building')
+        obj.setPropertyStatus('MountedPlacement', 'Hidden')
 
     def execute(self, obj):
         pass
@@ -104,9 +109,9 @@ class Link:
                 placement = self.get_real_placement(0)
                 warn(f'{placement = }')
                 if placement:
-                    self.link.CachedPlacement = placement
+                    self.link.MountedPlacement = placement
                 else:
-                    error('Internal error, cannot set CachedPlacement')
+                    error('Internal error, cannot set MountedPlacement')
 
     def onDocumentRestored(self, obj):
         # obj.Proxy = self

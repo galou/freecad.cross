@@ -84,10 +84,34 @@ def _add_links_lod(
     return old_and_new_objects
 
 
+def _add_joint_variable(
+        robot: DO,
+        joint: DO,
+        category: str,
+        ) -> str:
+    """Add a property to `robot` and return its name."""
+    if not is_joint(joint):
+        warn(f'Wrong object type. {joint.Name} ({joint.Label}) is not a ROS::Joint')
+        return
+    if joint.Type == 'prismatic':
+        unit = 'mm'
+    elif joint.Type in ['revolute', 'continuous']:
+        unit = 'deg'
+    else:
+        return ''
+    var_name = get_valid_property_name(f'{joint.Label}{f"_{unit}" if unit else ""}')
+    help_txt = f'{joint.Label}{f" in {unit}" if unit else ""}'
+    _, used_var_name = add_property(robot,
+                                    'App::PropertyFloat', var_name,
+                                    category, help_txt)
+    return used_var_name
+
+
 class Robot:
     """The Robot group."""
 
     type = 'Ros::Robot'
+    _category_of_joint_properties = 'JointValues'
 
     def __init__(self, obj):
         obj.Proxy = self
@@ -123,6 +147,7 @@ class Robot:
 
     def execute(self, obj: DO) -> None:
         self.reset_group()
+        self.add_joint_variables()
 
     def onChanged(self, obj: DO, prop: str) -> None:
         if not hasattr(self, 'robot'):
@@ -180,6 +205,20 @@ class Robot:
             # print(f'Removing {o.Name}')
             self.robot.Document.removeObject(o.Name)
         # TODO?: doc.recompute() if objects_to_remove or (set(current_linked_objects) != set(all_linked_objects))
+
+    def add_joint_variables(self) -> list[str]:
+        """Add a property for each actuated joint."""
+        try:
+            # Remove all old variables.
+            for p in get_properties_of_category(
+                    self.robot,
+                    self._category_of_joint_properties):
+                self.robot.removeProperty(p)
+            for joint in get_joints(self.robot.Group):
+                _add_joint_variable(self.robot, joint,
+                                    self._category_of_joint_properties)
+        except AttributeError:
+            pass
 
     def _get_link_placement(self,
             link: fc.DocumentObject,

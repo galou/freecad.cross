@@ -1,3 +1,8 @@
+# Generates an Assembly4 assembly and a classical "App::Part" from a URDF
+# robot.
+# An Assembly4 assembly is an "App::Part" with some special features but there
+# can be only one such assembly per FreeCAD document.
+#
 # The Assembly4 workbench mentioned here is
 # https://github.com/Zolko-123/FreeCAD_Assembly4.
 

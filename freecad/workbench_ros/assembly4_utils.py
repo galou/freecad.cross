@@ -82,3 +82,4 @@ def update_placement_expression(
     if not hasattr(obj, 'setExpression'):
         return
     obj.setExpression('Placement', expression)
+    obj.setEditorMode('Placement', ['ReadOnly'])

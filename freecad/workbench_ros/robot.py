@@ -17,7 +17,7 @@ from .utils import split_package_path
 from .utils import valid_urdf_name
 from .utils import warn
 
-# Typing hint aliases
+# Typing hints.
 DO = fc.DocumentObject
 
 
@@ -102,22 +102,24 @@ class Robot:
         obj.setPropertyStatus('Group', 'ReadOnly')  # Managed in self.reset_group().
 
         add_property(obj, 'App::PropertyLink', 'Assembly', 'Components',
-                    'The part object this robot is built upon')
+                     'The part object this robot is built upon')
         add_property(obj, 'App::PropertyBool', 'ShowReal', 'Components',
-                    'Whether to show the real parts').ShowReal = True
+                     'Whether to show the real parts').ShowReal = True
         add_property(obj, 'App::PropertyBool', 'ShowVisual', 'Components',
-                    'Whether to show the parts for URDF visual').ShowVisual = False
+                     'Whether to show the parts for URDF visual').ShowVisual = False
         add_property(obj, 'App::PropertyBool', 'ShowCollision', 'Components',
-                    'Whether to show the parts for URDF collision').ShowCollision = False
+                     'Whether to show the parts for URDF collision').ShowCollision = False
 
-        add_property(obj, 'App::PropertyPath', 'OutputPath', 'Export', 'The path to the ROS package to export files to')
+        add_property(obj, 'App::PropertyPath', 'OutputPath', 'Export',
+                     'The path to the ROS package to export files to')
 
     def execute(self, obj):
         self.reset_group()
 
     def onChanged(self, feature: DO, prop: str) -> None:
         if not hasattr(self, 'robot'):
-            # Implementation note: happens but how is it possible?
+            # Implementation note: happens because __init__ is not called on
+            # restore.
             return
         if prop in ['Group', 'ShowReal', 'ShowVisual', 'ShowCollision']:
             self.reset_group()
@@ -179,6 +181,7 @@ class Robot:
         parent_joint = link.Proxy.get_ref_joint()
         if parent_joint is None:
             # We have a root link (or an error).
+            # TODO: return the root placement.
             return fc.Placement()
         return (parent_joint.Proxy.get_placement().inverse()
                 * link.CachedPlacement)

@@ -50,17 +50,22 @@ def obj_from_geometry(
 def mesh_path_from_urdf(
         mesh_path: str,
         ) -> Optional[Path]:
-    if not mesh_path.startswith('package://'):
+    if (not (mesh_path.startswith('package://')
+             or mesh_path.startswith('file://'))):
         return
-    try:
-        pkg, _, rel_path = mesh_path[len('package://'):].partition('/')
-    except ValueError:
-        return
-    try:
-        pkg_path = get_package_share_directory(pkg)
-    except PackageNotFoundError:
-        return
-    return Path(pkg_path) / rel_path
+    if mesh_path.startswith('package://'):
+        try:
+            pkg, _, rel_path = mesh_path[len('package://'):].partition('/')
+        except ValueError:
+            return
+        try:
+            pkg_path = get_package_share_directory(pkg)
+        except PackageNotFoundError:
+            return
+        return Path(pkg_path) / rel_path
+    elif mesh_path.startswith('file://'):
+        print('startwith')
+        return Path(mesh_path[len('file://'):])
 
 
 def placement_from_origin(
@@ -76,7 +81,7 @@ def obj_from_box(
         geometry: Box,
         doc_or_group: [Doc | DO],
         ) -> tuple[DO, None]:
-    obj = add_object(doc_or_group, 'Part::Box', 'ros')
+    obj = add_object(doc_or_group, 'Part::Box', 'box')
     obj.Length = geometry.size[0] * 1000.0  # m to mm.
     obj.Width = geometry.size[1] * 1000.0
     obj.Height = geometry.size[2] * 1000.0
@@ -88,7 +93,7 @@ def obj_from_cylinder(
         geometry: Cylinder,
         doc_or_group: [Doc | DO],
         ) -> tuple[DO, None]:
-    obj = add_object(doc_or_group, 'Part::Cylinder', 'ros')
+    obj = add_object(doc_or_group, 'Part::Cylinder', 'cylinder')
     obj.Radius = geometry.radius * 1000.0  # m to mm.
     obj.Height = geometry.length * 1000.0  # m to mm.
     obj.Placement.Base.z -= geometry.length * 1000.0 / 2.0
@@ -101,7 +106,7 @@ def obj_from_mesh(
         ) -> tuple[DO, Path]:
     mesh_path = mesh_path_from_urdf(geometry.filename)
     if not mesh_path:
-        return
+        return None, None
     if mesh_path.suffix.lower() == '.dae':
         raw_mesh = read_mesh_dae(mesh_path)
     else:
@@ -128,6 +133,6 @@ def obj_from_sphere(
         geometry: Sphere,
         doc_or_group: [Doc | DO],
         ) -> tuple[DO, None]:
-    obj = add_object(doc_or_group, 'Part::Sphere', 'ros')
+    obj = add_object(doc_or_group, 'Part::Sphere', 'sphere')
     obj.Radius = geometry.radius * 1000.0  # m to mm.
     return obj, None

@@ -317,9 +317,14 @@ def _place_parent_lcs(
     if not is_lcs(lcs):
         raise RuntimeError('First argument must be an'
                            ' `PartDesign::CoordinateSystem`')
-    # Convert from meters to millimeters.
-    lcs.AttachmentOffset.Base = fc.Vector(joint.origin.position) * 1000.0
-    lcs.AttachmentOffset.Rotation = rotation_from_rpy(joint.origin.rpy)
+    lcs.AttachmentOffset = fc.Placement()
+    if not hasattr(joint, 'origin'):
+        return
+    if hasattr(joint.origin, 'position'):
+        # Convert from meters to millimeters.
+        lcs.AttachmentOffset.Base = fc.Vector(joint.origin.position) * 1000.0
+    if hasattr(joint.origin, 'rpy'):
+        lcs.AttachmentOffset.Rotation = rotation_from_rpy(joint.origin.rpy)
 
 
 def _get_parent_link(

@@ -1,3 +1,4 @@
+from math import degrees
 from typing import Optional
 import xml.etree.ElementTree as et
 
@@ -33,15 +34,30 @@ class Joint:
         obj.setPropertyStatus('_Type', ['Hidden', 'ReadOnly'])
         obj._Type = self.type
 
-        add_property(obj, 'App::PropertyEnumeration', 'Type', 'Elements', 'The kinematical type of the joint')
+        add_property(obj, 'App::PropertyEnumeration', 'Type', 'Elements',
+                     'The kinematical type of the joint')
         obj.Type = Joint.type_enum
-        add_property(obj, 'App::PropertyLink', 'Parent', 'Elements', 'Parent link (from the ROS Workbench)')
-        add_property(obj, 'App::PropertyLink', 'Child', 'Elements', 'Child link (from the ROS Workbench)')
-        add_property(obj, 'App::PropertyPlacement', 'Origin', 'Elements', 'Joint origin relative to the parent link')
-        add_property(obj, 'App::PropertyFloat', 'LowerLimit', 'Limits', 'Lower position limit (m or rad)')
-        add_property(obj, 'App::PropertyFloat', 'UpperLimit', 'Limits', 'Upper position limit (m or rad)')
-        add_property(obj, 'App::PropertyFloat', 'Effort', 'Limits', 'Maximal effort (N)')
-        add_property(obj, 'App::PropertyFloat', 'Velocity', 'Limits', 'Maximal velocity (m/s or rad/s)')
+        add_property(obj, 'App::PropertyLink', 'Parent', 'Elements',
+                     'Parent link (from the ROS Workbench)')
+        add_property(obj, 'App::PropertyLink', 'Child', 'Elements',
+                     'Child link (from the ROS Workbench)')
+        add_property(obj, 'App::PropertyPlacement', 'Origin', 'Elements',
+                     'Joint origin relative to the parent link')
+        add_property(obj, 'App::PropertyFloat', 'LowerLimit', 'Limits',
+                     'Lower position limit (m or rad)')
+        add_property(obj, 'App::PropertyFloat', 'UpperLimit', 'Limits',
+                     'Upper position limit (m or rad)')
+        add_property(obj, 'App::PropertyFloat', 'Effort', 'Limits',
+                     'Maximal effort (N)')
+        add_property(obj, 'App::PropertyFloat', 'Velocity', 'Limits',
+                     'Maximal velocity (m/s or rad/s)')
+        add_property(obj, 'App::PropertyFloat', 'Position', 'Value',
+                     'Joint position (m or rad)')
+        obj.setEditorMode('Position', ['ReadOnly'])
+
+        add_property(obj, 'App::PropertyPlacement', 'Placement', 'Internal',
+                     'Placement of the joint in the robot frame')
+        obj.setEditorMode('Placement', ['ReadOnly'])
 
     def onChanged(self, feature: fc.DocumentObjectGroup, prop: str) -> None:
         # print(f'Joint::onChanged({feature.Name}, {prop})') # DEBUG
@@ -76,6 +92,21 @@ class Joint:
         if pred_placement is None:
             return
         return pred_placement * self.joint.Origin
+
+    def get_actuation_placement(self, joint_value=None) -> fc.Placement:
+        """Return the transform due to actuation."""
+        # Only actuation around/about z supported.
+        if self.joint.Type == 'prismatic':
+            if joint_value is None:
+                joint_value = self.joint.Position * 1000.0
+            return fc.Placement(fc.Vector(0.0, 0.0, joint_value), fc.Rotation())
+        if self.joint.Type == 'revolute':
+            if joint_value is None:
+                joint_value = self.joint.Position
+            return fc.Placement(fc.Vector(),
+                                fc.Rotation(fc.Vector(0.0, 0.0, 1.0),
+                                            degrees(joint_value)))
+        return fc.Placement()
 
     def get_robot(self) -> fc.DocumentObject:
         """Return the Ros::Robot this joint belongs to."""

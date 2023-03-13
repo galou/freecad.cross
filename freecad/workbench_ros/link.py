@@ -1,5 +1,5 @@
 from pathlib import Path
-from typing import List
+from typing import Optional
 import xml.etree.ElementTree as et
 
 import FreeCAD as fc
@@ -10,8 +10,6 @@ from .utils import ICON_PATH
 from .utils import add_property
 from .utils import error
 from .utils import get_joints
-from .utils import get_placement
-from .utils import hasallattr
 from .utils import is_primitive
 from .utils import is_robot
 from .utils import save_mesh_dae
@@ -22,30 +20,7 @@ from .utils import warn
 # Typing hints.
 DO = fc.DocumentObject
 DOG = fc.DocumentObjectGroup
-
-
-def _get_placement_from(
-        moving_object: DO,
-        ref_objects: List[DO]) -> fc.Placement:
-    """Return the placement to put moving_object to ref_objects.
-
-    Parameters
-    ----------
-    - moving_object: object to be placed. Link.Visual or Link.Collision
-      expected.
-    - ref_objects: Link.Real or Link.Visual. Only the first item is used.
-
-    """
-    if (not ref_objects):
-        # Empty list.
-        return None
-    first_link_ref = ref_objects[0]
-    link_placement = first_link_ref.LinkPlacement
-    print(f'{link_placement = }') # DEBUG
-    own_placement = get_placement(moving_object)
-    print(f'{own_placement = }') # DEBUG
-    print(f'{link_placement * own_placement = }')
-    return link_placement * own_placement
+VPDO = 'FreeCADGui.ViewProviderDocumentObject'
 
 
 class Link:
@@ -53,20 +28,12 @@ class Link:
 
     type = 'Ros::Link'
 
-    # The names can be changed but not the order. Names can be added.
-    collision_placement_enum = ['Own', 'From Real', 'From Visual']
-    visual_placement_enum = ['Own', 'From Real']
-
-    def __init__(self, obj):
+    def __init__(self, obj: DOG):
         obj.Proxy = self
         self.link = obj
-        # Flag to detect when the first link in `Real` is added.
-        self.real_was_empty = False
-        # Placement at the time the first link in `Real` is added.
-        # The link is supposed to be added when the joint has position 0.0.
         self.init_properties(obj)
 
-    def init_properties(self, obj):
+    def init_properties(self, obj: DOG):
         add_property(obj, 'App::PropertyString', '_Type', 'Internal',
                      'The type')
         obj.setPropertyStatus('_Type', ['Hidden', 'ReadOnly'])
@@ -75,13 +42,15 @@ class Link:
         add_property(obj, 'App::PropertyLinkList', 'Real', 'Elements',
                      'The real part objects of this link, optional')
         add_property(obj, 'App::PropertyLinkList', 'Visual', 'Elements',
-                     'The part objects this link that consistute the URDF visual elements, optional')
+                     'The part objects this link that constitutes the URDF'
+                     ' visual elements, optional')
         add_property(obj, 'App::PropertyLinkList', 'Collision', 'Elements',
-                     'The part objects this link that consistute the URDF collision elements, optional')
-        add_property(obj, 'App::PropertyEnumeration', 'CollisionPlacement', 'Elements', 'Placement of Collision')
-        obj.CollisionPlacement = Link.collision_placement_enum
-        add_property(obj, 'App::PropertyEnumeration', 'VisualPlacement', 'Elements', 'Placement of Visual')
-        obj.VisualPlacement = Link.visual_placement_enum
+                     'The part objects this link that constitutes the URDF'
+                     ' collision elements, optional')
+
+        add_property(obj, 'App::PropertyPlacement', 'Placement', 'Internal',
+                     'Placement of elements in the robot frame')
+        obj.setEditorMode('Placement', ['ReadOnly'])
 
         # Used when adding a link which shape in located at the origin but
         # looks correctly placed. For example, when opening a STEP file or a
@@ -92,7 +61,7 @@ class Link:
                      'Internal', 'Placement when building')
         obj.setPropertyStatus('MountedPlacement', 'Hidden')
 
-    def execute(self, obj):
+    def execute(self, obj: DOG):
         pass
 
     def onBeforeChange(self, obj: DOG, prop: str) -> None:
@@ -104,16 +73,8 @@ class Link:
     def onChanged(self, obj: DOG, prop: str) -> None:
         if not hasattr(self, 'link'):
             return
-        if prop == 'Real':
-            if self.link.Real and self.real_was_empty:
-                placement = self.get_real_placement(0)
-                warn(f'{placement = }')
-                if placement:
-                    self.link.MountedPlacement = placement
-                else:
-                    error('Internal error, cannot set MountedPlacement')
 
-    def onDocumentRestored(self, obj):
+    def onDocumentRestored(self, obj: DOG):
         # obj.Proxy = self
         # self.link = obj
         # self.init_properties(obj)
@@ -125,109 +86,7 @@ class Link:
     def __setstate__(self, state):
         return None
 
-    def get_link_placement(self, lod: str, index: int):
-        """Return the placement of a linked object.
-
-        Linked objects are objects in {'Real', 'Visual', 'Collision'}, not
-        self or self.link.
-        The returned placement places the linked object at the correct position
-
-        Parameters
-        ----------
-        - lod: level of detail ∈ {'real', 'visual', 'collision'}.
-        - index: index of the object in self.{Real,Visual,Collision}.
-
-        """
-        function_map = {
-            'real': self.get_real_placement,
-            'visual': self.get_visual_placement,
-            'collision': self.get_collision_placement,
-        }
-        return function_map[lod.lower()](index)
-
-    def get_real_placement(self, index: int):
-        """Return the placement of a linked object in 'Real'.
-
-        The returned placement places the linked object at the correct position
-        when all joint positions are 0.
-
-        Parameters
-        ----------
-        - index: index of the object in self.Real.
-
-        """
-        if not hasattr(self, 'link'):
-            return None
-        if not hasattr(self.link, 'Real'):
-            return None
-        if not self.link.Real:
-            # Empty list.
-            return None
-        return get_placement(self.link.Real[index])
-
-    def get_visual_placement(self, index: int):
-        """Return the placement of a linked visual object.
-
-        The returned placement places the linked object at the correct position
-        when all joint positions are 0.
-
-        Parameters
-        ----------
-        - index: index of the object in self.Visual.
-
-        """
-        if not hasattr(self, 'link'):
-            return None
-        if not hasallattr(self.link, ['Visual', 'VisualPlacement']):
-            return None
-        if not self.link.Visual:
-            # Empty list.
-            return None
-        if self.link.VisualPlacement == Link.visual_placement_enum[0]:
-            # Own placement
-            return get_placement(self.link.Visual[index])
-        elif self.link.VisualPlacement == Link.visual_placement_enum[1]:
-            # From `Real`.
-            if not hasattr(self.link, 'Real'):
-                return None
-            return _get_placement_from(self.link.Visual[index], self.link.Real)
-
-    def get_collision_placement(self, index: int):
-        """Return the placement of a linked collision object.
-
-        The returned placement places the linked object at the correct position
-        when all joint positions are 0.
-
-        Parameters
-        ----------
-        - index: index of the object in self.Collision.
-
-        """
-        if not hasattr(self, 'link'):
-            return None
-        if not hasallattr(self.link, ['Collision', 'CollisionPlacement']):
-            return None
-        if not self.link.Collision:
-            # Empty list.
-            print('get_collision_placement(), not self.link.Collision') # DEBUG
-            return None
-        if self.link.CollisionPlacement == Link.collision_placement_enum[0]:
-            # Own placement
-            return get_placement(self.link.Collision[index])
-        elif self.link.CollisionPlacement == Link.collision_placement_enum[1]:
-            # From `Real`.
-            if not hasattr(self.link, 'Real'):
-                print('get_collision_placement(), no self.link.Real') # DEBUG
-                return None
-            return _get_placement_from(self.link.Collision[index], self.link.Real)
-        elif self.link.CollisionPlacement == Link.collision_placement_enum[2]:
-            # From `Visual`.
-            if not hasattr(self.link, 'Visual'):
-                print('get_collision_placement(), no self.link.Visual') # DEBUG
-                return None
-            return _get_placement_from(self.link.Collision[index], self.link.Visual)
-
-    def get_robot(self) -> DO:
+    def get_robot(self) -> Optional[DO]:
         """Return the Ros::Robot this link belongs to."""
         if not hasattr(self, 'link'):
             return
@@ -235,7 +94,7 @@ class Link:
             if is_robot(o):
                 return o
 
-    def get_ref_joint(self) -> DO:
+    def get_ref_joint(self) -> Optional[DO]:
         """Return the joint this link is the child of."""
         robot = self.get_robot()
         if robot is None:
@@ -247,37 +106,53 @@ class Link:
                 # one joint that has `link` as child.
                 return joint
 
+    def may_be_base_link(self) -> bool:
+        """Return True if the link is child of no joint."""
+        return self.get_ref_joint() is None
+
+    def is_tip_link(self) -> bool:
+        """Return True if the link is parent of no joint."""
+        robot = self.get_robot()
+        if robot is None:
+            return True
+        joints = get_joints(robot.Group)
+        for joint in joints:
+            if joint.Parent is self.link:
+                return False
+        return True
+
     def export_urdf(self,
-            package_path: Path,
-            package_name: Path,
-            placement: fc.Placement = fc.Placement()) -> et.ElementTree:
+                    package_path: Path,
+                    package_name: Path,
+                    placement: fc.Placement = fc.Placement(),
+                    ) -> et.ElementTree:
         """Return the xml for this link.
 
         Parameters
         ----------
         - package_path: the parent directory of the package.
         - package_name: the name of the package (also the name of the
-            directory).
+                        directory).
         - placement: the placement of the link relative to the joint of the
-            previous link.
+                     previous link.
 
         """
 
         def get_xml(obj, urdf_function):
             mesh_name = get_valid_filename(obj.Label) + '.dae'
             visual_xml = urdf_function(
-                    obj,
-                    mesh_name=mesh_name,
-                    package_name=str(package_name),
-                    placement=placement,
-                    )
+                obj,
+                mesh_name=mesh_name,
+                package_name=str(package_name),
+                placement=placement,
+                )
             if not is_primitive(obj):
                 mesh_path = package_path / package_name / 'meshes' / mesh_name
                 save_mesh_dae(obj.LinkedObject, mesh_path)
             return visual_xml
 
         link_xml = et.fromstring(
-                f'<link name="{get_valid_urdf_name(self.link.Label)}" />')
+            f'<link name="{get_valid_urdf_name(self.link.Label)}" />')
         for link in self.link.Visual:
             link_xml.append(get_xml(link, urdf_visual_from_object))
         for link in self.link.Collision:
@@ -287,7 +162,8 @@ class Link:
 
 class _ViewProviderLink:
     """A view provider for the Link container object """
-    def __init__(self, vobj):
+
+    def __init__(self, vobj: VPDO):
         vobj.Proxy = self
 
     def getIcon(self):
@@ -295,18 +171,17 @@ class _ViewProviderLink:
         # return 'link.svg'
         return str(ICON_PATH / 'link.svg')
 
-    def attach(self, vobj):
+    def attach(self, vobj: VPDO):
         self.ViewObject = vobj
         self.link = vobj.Object
 
-    def updateData(self, obj, prop):
+    def updateData(self, obj: VPDO, prop):
         return
 
-    def onChanged(self, vobj, prop):
+    def onChanged(self, vobj: VPDO, prop: str):
         return
 
-    def doubleClicked(self, vobj):
-        import FreeCADGui as fcgui
+    def doubleClicked(self, vobj: VPDO):
         gui_doc = vobj.Document
         if not gui_doc.getInEdit():
             gui_doc.setEdit(vobj.Object.Name)
@@ -314,14 +189,14 @@ class _ViewProviderLink:
             error('Task dialog already active')
         return True
 
-    def setEdit(self, vobj, mode):
+    def setEdit(self, vobj: VPDO, mode):
         import FreeCADGui as fcgui
         from .task_panel_link import TaskPanelLink
         task_panel = TaskPanelLink(self.link)
         fcgui.Control.showDialog(task_panel)
         return True
 
-    def unsetEdit(self, vobj, mode):
+    def unsetEdit(self, vobj: VPDO, mode):
         import FreeCADGui as fcgui
         fcgui.Control.closeDialog()
         return

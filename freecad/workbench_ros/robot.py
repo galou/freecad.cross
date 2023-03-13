@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from math import radians
 from pathlib import Path
-from typing import Optional
+from typing import Iterable, Optional
 import xml.etree.ElementTree as et
 
 import FreeCAD as fc
@@ -9,19 +10,24 @@ import FreeCAD as fc
 from .utils import ICON_PATH
 from .utils import add_property
 from .utils import error
+from .utils import get_chains
 from .utils import get_joints
 from .utils import get_links
 from .utils import get_properties_of_category
 from .utils import get_valid_property_name
 from .utils import get_valid_urdf_name
+from .utils import grouper
 from .utils import is_joint
 from .utils import is_link
+from .utils import is_robot
+from .utils import label_or
 from .utils import save_xml
 from .utils import split_package_path
 from .utils import warn
 
 # Typing hints.
 DO = fc.DocumentObject
+DOList = Iterable[fc.DocumentObject]
 
 
 def _existing_link(link: DO, obj: DO, lod: str) -> Optional[DO]:
@@ -67,6 +73,9 @@ def _add_links_lod(
         link_to_o = _existing_link(link, o, lod)
         if link_to_o is not None:
             # print(f' {o.Name} is already linked')
+            if link_to_o.LinkPlacement != link.Placement:
+                # Avoid recursive recompute.
+                link_to_o.LinkPlacement = link.Placement
             old_and_new_objects.append(link_to_o)
             continue
         name = f'{lod}_{link.Label}_'
@@ -75,8 +84,10 @@ def _add_links_lod(
         # print(f'Adding link {lod_link.Name} to {o.Name} into {link.Name}')
         if len(o.Parents) != 1:
             warn(f'Wrong object type. {o.Name}.Parents has no or more than one entries')
-        link_placement = link.Proxy.get_link_placement(lod, i) or fc.Placement()
-        lod_link.LinkPlacement = link_placement
+        # warn(f'Robot._add_links_lod({lod}), {link_placement=}') # DEBUG
+        if lod_link.LinkPlacement != link.Placement:
+            # Avoid recursive recompute.
+            lod_link.LinkPlacement = link.Placement
         lod_link.setLink(o)
         lod_link.adjustRelativeLinks(link)
         link.addObject(lod_link)
@@ -104,6 +115,19 @@ def _add_joint_variable(
     _, used_var_name = add_property(robot,
                                     'App::PropertyFloat', var_name,
                                     category, help_txt)
+    if joint.Type == 'prismatic':
+        # TODO: handle duplicated labels
+        formula = f'<<{robot.Label}>>.{var_name} * 0.001'
+        value = robot.getPropertyByName(var_name) * 0.001
+    elif joint.Type == 'revolute':
+        formula = f'<<{robot.Label}>>.{var_name} * pi / 180.0'
+        value = radians(robot.getPropertyByName(var_name))
+    if formula:
+        # TODO: fix the cyclic reference to robot
+        # joint.setExpression('Position', formula)
+        if joint.Position != value:
+            # Avoid recursive recompute.
+            joint.Position = value
     return used_var_name
 
 
@@ -111,7 +135,9 @@ class Robot:
     """The Robot group."""
 
     type = 'Ros::Robot'
-    _category_of_joint_properties = 'JointValues'
+    # Name of the category (or group) for the joint values, which are saved as
+    # properties of `self.robot`.
+    _category_of_joint_values = 'JointValues'
 
     def __init__(self, obj):
         obj.Proxy = self
@@ -146,8 +172,9 @@ class Robot:
                      'The path to the ROS package to export files to')
 
     def execute(self, obj: DO) -> None:
-        self.reset_group()
         self.add_joint_variables()
+        self.compute_poses()
+        self.reset_group()
 
     def onChanged(self, obj: DO, prop: str) -> None:
         if not hasattr(self, 'robot'):
@@ -171,7 +198,39 @@ class Robot:
         if state:
             self.type, self.previous_link_count = state
 
-    def reset_group(self):
+    def compute_poses(self) -> None:
+        """Compute the pose of all joints and links.
+
+        Compute the pose of all joints and links relative the the robot
+        root link.
+
+        """
+        chains = self.get_chains()
+        for chain in chains:
+            placement = fc.Placement()
+            for link, joint in grouper(chain, 2):
+                # TODO: some links and joints are already placed, re-use.
+                new_link_placement = placement * link.MountedPlacement
+                if link.Placement != new_link_placement:
+                    # Avoid recursive recompute.
+                    link.Placement = new_link_placement
+                if joint:
+                    new_joint_placement = placement * joint.Origin
+                    if joint.Placement != new_joint_placement:
+                        # Avoid recursive recompute.
+                        joint.Placement = new_joint_placement
+                    # For next link.
+                    placement = new_joint_placement * joint.Proxy.get_actuation_placement()
+
+    def get_chains(self) -> list[DOList]:
+        if not hasattr(self, 'robot') or not is_robot(self.robot):
+            warn(f'{label_or(self.robot)} is not a ROS::Robot', True)
+            return []
+        links = get_links(self.robot.Group)
+        joints = get_joints(self.robot.Group)
+        return get_chains(links, joints)
+
+    def reset_group(self) -> None:
         if ((not hasattr(self.robot, 'ShowReal'))
                 or (not hasattr(self.robot, 'ShowVisual'))
                 or (not hasattr(self.robot, 'ShowCollision'))):
@@ -208,21 +267,22 @@ class Robot:
 
     def add_joint_variables(self) -> list[str]:
         """Add a property for each actuated joint."""
+        self.jointvalue_map: dict[DO, str]
         try:
             # Remove all old variables.
             for p in get_properties_of_category(
                     self.robot,
-                    self._category_of_joint_properties):
+                    self._category_of_joint_values):
                 self.robot.removeProperty(p)
             for joint in get_joints(self.robot.Group):
                 _add_joint_variable(self.robot, joint,
-                                    self._category_of_joint_properties)
+                                    self._category_of_joint_values)
         except AttributeError:
             pass
 
     def _get_link_placement(self,
-            link: fc.DocumentObject,
-            ) -> Optional[fc.Placement]:
+                            link: fc.DocumentObject,
+                            ) -> Optional[fc.Placement]:
         """Return the placement of the link relative to the joint it's child of."""
         if not is_link(link):
             return
@@ -245,16 +305,20 @@ class Robot:
         # TODO: warn if package name doesn't end with `_description`.
         xml = et.fromstring('<robot/>')
         xml.attrib['name'] = get_valid_urdf_name(self.robot.Label)
-        xml.insert(et.Comment('Generated by the ROS Workbench for FreeCAD (https://github.com/galou/freecad.workbench_ros)'))
+        xml.insert(et.Comment('Generated by the ROS Workbench for'
+                              ' FreeCAD (https://github.com/galou/'
+                              'freecad.workbench_ros)'))
         for link in get_links(self.robot.Group):
             if not link.Real:
                 error(f"Link '{link.Label}' has no link in 'Real'", True)
                 continue
             if not hasattr(link, 'Proxy'):
-                error(f"Internal error with '{link.Label}', has no 'Proxy' attribute", True)
+                error(f"Internal error with '{link.Label}', has no 'Proxy' attribute",
+                      True)
                 return
             link_placement = self._get_link_placement(link)
-            xml.append(link.Proxy.export_urdf(package_parent, package_name, link_placement))
+            xml.append(link.Proxy.export_urdf(package_parent, package_name,
+                                              link_placement))
         for joint in get_joints(self.robot.Group):
             if not joint.Parent:
                 error(f"Joint '{joint.Label}' has no parent link", True)

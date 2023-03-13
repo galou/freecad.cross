@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-import copy
+from itertools import zip_longest
 import os
 from pathlib import Path
 import string
@@ -34,6 +34,7 @@ else:
 
 # Typing hints.
 DO = fc.DocumentObject
+DOList = Iterable[DO]
 
 # MOD_PATH = Path(os.path.join(fc.getResourceDir(), 'Mod', 'workbench_ros'))
 MOD_PATH = Path(os.path.dirname(__file__)).joinpath('../..').resolve()  # For development
@@ -148,7 +149,7 @@ def get_subobject_by_name(
 def get_subobjects_by_full_name(
         root_object: DO,
         subobject_fullpath: str,
-        ) -> list[DO]:
+        ) -> DOList:
     """Return the list of objects after root_object to the named object.
 
     The last part of ``subobject_fullpath`` is then a specific vertex, edge or
@@ -315,14 +316,65 @@ def has_placement(obj: DO) -> bool:
     return hasattr(obj, 'Placement') and isinstance(obj.Placement, fc.Placement)
 
 
-def get_links(objs: list[DO]) -> list[DO]:
+def get_links(objs: DOList) -> DOList:
     """Return only the objects that are Ros::Link instances."""
     return [o for o in objs if is_link(o)]
 
 
-def get_joints(objs: list[DO]) -> list[DO]:
+def get_joints(objs: DOList) -> DOList:
     """Return only the objects that are Ros::Joint instances."""
     return [o for o in objs if is_joint(o)]
+
+
+def get_chains(links: DOList, joints: DOList) -> list[DOList]:
+    base_links: DOList = []
+    tip_links: DOList = []
+    for link in links:
+        if link.Proxy.may_be_base_link():
+            base_links.append(link)
+        if link.Proxy.is_tip_link():
+            tip_links.append(link)
+    if len(base_links) > 1:
+        warn('Two root links found, not supported', True)
+        return []
+    chains: list[DOList] = []
+    for link in tip_links:
+        chain = get_chain(link)
+        if chain:
+            chains.append(chain)
+    return chains
+
+
+def get_chain(link: DO) -> DOList:
+    """Return the chain from base_link to link, excluded.
+
+    The chain start with the base link, then alternates a joint and a link. The
+    last item is the joint that has `link` as child.
+
+    """
+    chain: DOList = []
+    ref_joint = link.Proxy.get_ref_joint()
+    if not ref_joint:
+        # A root link.
+        return [link]
+    if not ref_joint.Parent:
+        warn(f'{label_or(ref_joint)} has no parent', True)
+        # Return only ref_joint to indicate an error.
+        return [ref_joint]
+    subchain = get_chain(ref_joint.Parent)
+    if subchain and is_joint(subchain[0]):
+        # Propagate the error of missing joint.Parent.
+        return subchain
+    chain += subchain + [ref_joint] + [link]
+    return chain
+
+
+def is_subchain(subchain: DOList, chain: DOList) -> bool:
+    """Return True if all items in `subchain` are in `chain`."""
+    for link_or_joint in subchain:
+        if link_or_joint not in chain:
+            return False
+    return True
 
 
 def hasallattr(obj: Any, attrs: list[str]):
@@ -338,11 +390,12 @@ def get_placement(obj: DO) -> fc.Placement:
     if not isinstance(obj, DO):
         raise RuntimeError('Not a DocumentObject')
     if obj.TypeId == 'App::Link':
-        if not obj.Parents:
+        if not obj.LinkedObject:
             # A link to nothing.
             return obj.LinkPlacement
         parent, subname = obj.Parents[0]
-        return parent.getSubObject(subname, retType=3)
+        return_type_placement = 3
+        return parent.getSubObject(subname, retType=return_type_placement)
     else:
         if hasattr(obj, 'getGlobalPlacement'):
             return obj.getGlobalPlacement()
@@ -483,3 +536,11 @@ def add_object(
     if is_container(container):
         container.addObject(obj)
     return obj
+
+
+def grouper(iterable, n, fillvalue=None):
+    "Collect data into fixed-length chunks or blocks"
+    # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx"
+    # From https://docs.python.org/3.8/library/itertools.html.
+    args = [iter(iterable)] * n
+    return zip_longest(*args, fillvalue=fillvalue)

@@ -127,8 +127,8 @@ class _ViewProviderJoint:
 
     def getIcon(self):
         # TODO: Solve why this doesn't work.
-        # return 'ros_9dotslogo_color.svg'
-        return str(ICON_PATH.joinpath('ros_9dotslogo_color.svg'))
+        # return 'joint.svg'
+        return str(ICON_PATH / 'joint.svg')
 
     def attach(self, vobj):
         """Setup the scene sub-graph of the view provider."""

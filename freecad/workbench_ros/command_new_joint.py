@@ -11,7 +11,7 @@ from .utils import is_robot_selected
 class _NewJointCommand:
     """The command definition to create a new Joint object."""
     def GetResources(self):
-        return {'Pixmap': str(ICON_PATH.joinpath('ros_9dotslogo_color.svg')),
+        return {'Pixmap': str(ICON_PATH.joinpath('joint.svg')),
                 'MenuText': QtCore.QT_TRANSLATE_NOOP("workbench_ros", 'New Joint'),
                 'Accel': 'N, L',
                 'ToolTip': QtCore.QT_TRANSLATE_NOOP('workbench_ros', 'Create a Joint.')}

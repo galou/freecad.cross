@@ -11,7 +11,7 @@ from .utils import is_robot_selected
 class _NewLinkCommand:
     """The command definition to create a new Link object."""
     def GetResources(self):
-        return {'Pixmap': str(ICON_PATH.joinpath('ros_9dotslogo_color.svg')),
+        return {'Pixmap': str(ICON_PATH.joinpath('link.svg')),
                 'MenuText': QtCore.QT_TRANSLATE_NOOP("workbench_ros", 'New Link'),
                 'Accel': 'N, L',
                 'ToolTip': QtCore.QT_TRANSLATE_NOOP('workbench_ros', 'Create a Link container.')}

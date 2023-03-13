@@ -24,6 +24,7 @@
 - [PyBullet]https://docs.google.com/document/d/10sXEhzFRSnvFcl3XxNGhnD4N2SedqwdAvK3dsihxVUA/edit#heading=h.sbnykoneq1me
 - `check_urdf` command-line tool from package `ros-galactic-urdfdom`
 - `check_urdf` node from package `ros-galactic-urdfdom`
+- [kinpy](https://github.com/neka-nat/kinpy), read URDF, forward kinematics
 
 # Displaying URDF files
 

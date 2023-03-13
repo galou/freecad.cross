@@ -292,8 +292,8 @@ class _ViewProviderLink:
 
     def getIcon(self):
         # TODO: Solve why this doesn't work.
-        # return 'ros_9dotslogo_color.svg'
-        return str(ICON_PATH.joinpath('ros_9dotslogo_color.svg'))
+        # return 'link.svg'
+        return str(ICON_PATH / 'link.svg')
 
     def attach(self, vobj):
         self.ViewObject = vobj

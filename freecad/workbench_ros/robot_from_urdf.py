@@ -9,16 +9,18 @@ import FreeCAD as fc
 try:
     from urdf_parser_py.urdf import Collision as UrdfCollision
     from urdf_parser_py.urdf import Joint as UrdfJoint
+    from urdf_parser_py.urdf import Link as UrdfLink
     from urdf_parser_py.urdf import Robot as UrdfRobot
     from urdf_parser_py.urdf import Visual as UrdfVisual
 
     from .urdf_parser_utils import obj_from_geometry
     from .urdf_parser_utils import placement_from_origin
 except ModuleNotFoundError:
+    UrdfCollision = Any
     UrdfJoint = Any
+    UrdfLink = Any
     UrdfRobot = Any
     UrdfVisual = Any
-    UrdfCollision = Any
 
 from .link import make_link
 from .robot import make_robot
@@ -46,15 +48,17 @@ def robot_from_urdf(
     """Creates a ROS::Robot from URDF."""
 
     robot, parts_group = _make_robot(doc, urdf_robot.name)
-    link_map: dict[str, RosLink] = {}
-    visual_map: dict[str, AppPart] = {}
-    collision_map: dict[str, AppPart] = {}
-    for link in robot.links:
+    # link_map: dict[str, RosLink] = {}
+    # visual_map: dict[str, AppPart] = {}
+    # collision_map: dict[str, AppPart] = {}
+    for urdf_link in urdf_robot.links:
         ros_link, visual_part, collision_part = _add_ros_link(
-                robot, parts_group, link.name)
-        link_map[link.name] = ros_link
-        visual_map[link.name] = visual_part
-        collision_map[link.name] = collision_part
+            robot, parts_group, urdf_link.name)
+        # link_map[urdf_link.name] = ros_link
+        # visual_map[urdf_link.name] = visual_part
+        # collision_map[urdf_link.name] = collision_part
+        _add_visual(urdf_link, parts_group, ros_link, visual_part)
+        _add_collision(urdf_link, parts_group, ros_link, collision_part)
     # joint_map: dict[str, RosJoint] = {}
 
 
@@ -99,18 +103,34 @@ def _add_ros_link(
 
     """
     doc = robot.Document
-    visual_part = doc.addObject('App::Part', f'visual_{name}')
-    collision_part = doc.addObject('App::Part', f'collision_{name}')
+    visual_part = add_object(parts_group, 'App::Part', f'visual_{name}_')
+    collision_part = add_object(parts_group, 'App::Part', f'collision_{name}_')
     ros_link = make_link(name, doc)
     ros_link.adjustRelativeLinks(robot)
     robot.addObject(ros_link)
+    # Implementation note: ros_link.Visual.append() doesn't work because ros_link.Visual
+    # is a new object on each evoking.
+    # TODO: make a function utils.make_link.
+    container = doc  # Should be `parts_group` but because of bug
+        # 'Object can only be in a single Group' must be added to `doc`.
+        # doc.recompute() doesn't help.
+    link_to_visual_part = add_object(container, 'App::Link',
+                                     f'visual_{name}')
+    link_to_visual_part.setLink(visual_part)
+    ros_link.Visual = [link_to_visual_part]
+
+    link_to_collision_part = add_object(container, 'App::Link',
+                                        f'collision_{name}')
+    link_to_collision_part.setLink(collision_part)
+    ros_link.Collision = [link_to_collision_part]
     return ros_link, visual_part, collision_part
 
 
 def _add_visual(
-        robot: UrdfRobot,
+        urdf_link: UrdfLink,
         parts_group: DOG,
-        link_map: dict[str, RosLink],
+        ros_link: RosLink,
+        visual_part: AppPart,
         ) -> None:
     """Add the visual geometries to an assembly.
 
@@ -121,36 +141,34 @@ def _add_visual(
     - link_map: a dict[urdf_link_name: "Ros::Link"].
 
     """
-    for link_name, ros_link in link_map.items():
-        _add_visual_geometries(parts_group, ros_link, link_name,
-                               robot.link_map[link_name].visuals)
+    name_linked_geom = f'{urdf_link.name}_visual'
+    return _add_geometries(parts_group, ros_link, visual_part, urdf_link.visuals, name_linked_geom)
 
 
-def _add_visual_geometries(
+def _add_collision(
+        urdf_link: UrdfLink,
         parts_group: DOG,
         ros_link: RosLink,
-        link_name: str,
-        geometries: VisualList,
-        ) -> tuple[list[DO], list[DO]]:
-    """Add the primitive shapes and meshes to a Ros::Link.
+        collision_part: AppPart,
+        ) -> None:
+    """Add the visual geometries to an assembly.
 
     Parameters
     ==========
 
-    - ros_link: a "RosLink" object.
-    - link_name: name of the URDF link.
-    - geometries: list of URDF geometries.
+    - robot: an UrdfRobot.
+    - link_map: a dict[urdf_link_name: "Ros::Link"].
 
     """
-    name_linked_geom = f'{link_name}_visual'
-    return _add_geometries(parts_group, ros_link, geometries, 'visual', name_linked_geom)
+    name_linked_geom = f'{urdf_link.name}_collision'
+    return _add_geometries(parts_group, ros_link, collision_part, urdf_link.collisions, name_linked_geom)
 
 
 def _add_geometries(
         parts_group: DOG,
         ros_link: DOG,
+        part: AppPart,
         geometries: [VisualList | CollisionList],
-        lod: str,
         name_linked_geom: str,
         ) -> tuple[list[DO], list[DO]]:
     """Add the geometries from URDF into `group` and an App::Link to it into `link`.
@@ -188,12 +206,7 @@ def _add_geometries(
                                   * geom_obj.Placement)
         # Add a reference to geom_obj to `ros_link.Visual` or
         # `ros_link.Collision`.
-        link_to_geom = add_object(parts_group, 'App::Link',
-                                               name_linked_geom)
+        link_to_geom = add_object(part, 'App::Link', name_linked_geom)
         link_to_geom.setLink(geom_obj)
         link_to_geom.Placement = geom_obj.Placement
-        if lod == 'visual':
-            ros_link.Visual.append(link_to_geom)
-        if lod == 'collision':
-            ros_link.Collision.append(link_to_geom)
     return geom_objs

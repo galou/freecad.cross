@@ -1,7 +1,3 @@
-import copy
-from typing import Optional
-import xml.etree.ElementTree as et
-from xml.dom import minidom
 
 import FreeCAD as fc
 import FreeCADGui as fcgui
@@ -17,20 +13,20 @@ except ModuleNotFoundError:
     pass
 
 
-class _UrdfImportCommand:
+class _AssemblyFromUrdfCommand:
     def GetResources(self):
         return {'Pixmap': 'urdf_import',
-                'MenuText': QtCore.QT_TRANSLATE_NOOP('workbench_ros', 'Import a URDF or xacro file'),  # TODO: translatable
-                'ToolTip': QtCore.QT_TRANSLATE_NOOP('workbench_ros', 'Import a URDF or xacro file'),
+                'MenuText': QtCore.QT_TRANSLATE_NOOP('workbench_ros', 'Create an assembly from a URDF or xacro file'),  # TODO: translatable
+                'ToolTip': QtCore.QT_TRANSLATE_NOOP('workbench_ros', 'Create an assembly from a URDF or xacro file'),
                 }
 
     def Activated(self):
         doc = fc.activeDocument()
         dialog = QtGui.QFileDialog(fcgui.getMainWindow(),
-                                   "Select URDF/xacro file to import part from" )
+                                   'Select URDF/xacro file to import part from')
         # set option "DontUseNativeDialog"=True, as native Filedialog shows
         # misbehavior on Unbuntu 18.04 LTS. It works case sensitively, what is not wanted...
-        dialog.setNameFilter("Supported Formats *.urdf *.xacro;;All files (*.*)")
+        dialog.setNameFilter('Supported Formats *.urdf *.xacro;;All files (*.*)')
         if dialog.exec_():
             if not doc:
                 doc = fc.newDocument()
@@ -44,4 +40,4 @@ class _UrdfImportCommand:
         return is_ros_found()
 
 
-fcgui.addCommand('UrdfImport', _UrdfImportCommand())
+fcgui.addCommand('AssemblyFromUrdf', _AssemblyFromUrdfCommand())

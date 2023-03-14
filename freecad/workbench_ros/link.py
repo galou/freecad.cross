@@ -208,15 +208,17 @@ class _ViewProviderLink:
         return None
 
 
-def makeLink(name):
+def make_link(name, doc: Optional[fc.Document] = None) -> DO:
     """Add a Ros::Link to the current document."""
-    doc = fc.activeDocument()
     if doc is None:
+        doc = fc.activeDocument()
+    if doc is None:
+        warn('No active document, doing nothing', False)
         return
     obj = doc.addObject('App::DocumentObjectGroupPython', name)
     Link(obj)
 
-    if fc.GuiUp:
+    if hasattr(fc, 'GuiUp') and fc.GuiUp:
         import FreeCADGui as fcgui
 
         _ViewProviderLink(obj.ViewObject)
@@ -225,7 +227,7 @@ def makeLink(name):
         sel = fcgui.Selection.getSelection()
         if sel:
             candidate = sel[0]
-            if hasattr(candidate, '_Type') and candidate._Type == 'Ros::Robot':
+            if is_robot(candidate):
                 obj.adjustRelativeLinks(candidate)
                 candidate.addObject(obj)
 

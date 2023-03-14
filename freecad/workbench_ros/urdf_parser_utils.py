@@ -71,10 +71,15 @@ def mesh_path_from_urdf(
 def placement_from_origin(
         origin: Pose,
         ) -> fc.Placement:
+    placement = fc.Placement()
     if origin is None:
-        return fc.Placement()
-    return fc.Placement(fc.Vector(origin.position) * 1000.0,
-                        rotation_from_rpy(origin.rpy))
+        return placement
+    if hasattr(origin, 'position'):
+        # Convert from meters to millimeters.
+        placement.Base = fc.Vector(origin.position) * 1000.0
+    if hasattr(origin, 'rpy'):
+        placement.Rotation = rotation_from_rpy(origin.rpy)
+    return placement
 
 
 def obj_from_box(

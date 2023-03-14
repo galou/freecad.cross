@@ -13,6 +13,10 @@ from .utils import get_valid_urdf_name
 from .utils import warn
 from .export_urdf import urdf_origin_from_placement
 
+# Typing hints.
+DO = fc.DocumentObject
+DOG = fc.DocumentObjectGroup
+
 
 class Joint:
     """The Ros::Joint object."""
@@ -59,7 +63,7 @@ class Joint:
                      'Placement of the joint in the robot frame')
         obj.setEditorMode('Placement', ['ReadOnly'])
 
-    def onChanged(self, feature: fc.DocumentObjectGroup, prop: str) -> None:
+    def onChanged(self, feature: DOG, prop: str) -> None:
         # print(f'Joint::onChanged({feature.Name}, {prop})') # DEBUG
         pass
 
@@ -108,7 +112,7 @@ class Joint:
                                             degrees(joint_value)))
         return fc.Placement()
 
-    def get_robot(self) -> fc.DocumentObject:
+    def get_robot(self) -> DO:
         """Return the Ros::Robot this joint belongs to."""
         if not hasattr(self, 'joint'):
             return
@@ -116,7 +120,7 @@ class Joint:
             if is_robot(o):
                 return o
 
-    def get_predecessor(self) -> fc.DocumentObject:
+    def get_predecessor(self) -> DO:
         """Return the predecessing joint."""
         robot = self.get_robot()
         if robot is None:
@@ -217,15 +221,18 @@ class _ViewProviderJoint:
         return None
 
 
-def makeJoint(name):
+def make_joint(name, doc: Optional[fc.Document] = None) -> DO:
     """Add a Ros::Joint to the current document."""
-    doc = fc.activeDocument()
     if doc is None:
+        doc = fc.activeDocument()
+    if doc is None:
+        warn('No active document, doing nothing', False)
         return
     obj = doc.addObject('Part::FeaturePython', name)
     Joint(obj)
 
     if fc.GuiUp:
+    #if hasattr(fc, 'GuiUp') and fc.GuiUp: # DEBUG
         import FreeCADGui as fcgui
 
         _ViewProviderJoint(obj.ViewObject)

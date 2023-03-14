@@ -23,7 +23,7 @@ class _NewJointCommand:
         fc.activeDocument().openTransaction('Create Joint')
         fcgui.doCommand('')
         fcgui.addModule('freecad.workbench_ros.joint')
-        fcgui.doCommand("_joint = freecad.workbench_ros.joint.makeJoint('Joint')")
+        fcgui.doCommand("_joint = freecad.workbench_ros.joint.make_joint('Joint')")
         fcgui.doCommand('FreeCADGui.ActiveDocument.setEdit(_joint.Name)')
 
 

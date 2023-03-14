@@ -35,6 +35,9 @@ else:
 # Typing hints.
 DO = fc.DocumentObject
 DOList = Iterable[DO]
+RosLink = DO  # A Ros::Link, i.e. a DocumentObject with Proxy "Link".
+RosJoint = DO  # A Ros::Joint, i.e. a DocumentObject with Proxy "Joint".
+RosRobot = DO  # A Ros::Robot, i.e. a DocumentObject with Proxy "Robot".
 
 # MOD_PATH = Path(os.path.join(fc.getResourceDir(), 'Mod', 'workbench_ros'))
 MOD_PATH = Path(os.path.dirname(__file__)).joinpath('../..').resolve()  # For development
@@ -313,22 +316,26 @@ def is_robot_selected() -> bool:
 
 def has_placement(obj: DO) -> bool:
     """Return True if obj has a Placement."""
-    return hasattr(obj, 'Placement') and isinstance(obj.Placement, fc.Placement)
+    return (hasattr(obj, 'Placement')
+            and isinstance(obj.Placement, fc.Placement))
 
 
-def get_links(objs: DOList) -> DOList:
+def get_links(objs: DOList) -> list[RosLink]:
     """Return only the objects that are Ros::Link instances."""
     return [o for o in objs if is_link(o)]
 
 
-def get_joints(objs: DOList) -> DOList:
+def get_joints(objs: DOList) -> list[RosJoint]:
     """Return only the objects that are Ros::Joint instances."""
     return [o for o in objs if is_joint(o)]
 
 
-def get_chains(links: DOList, joints: DOList) -> list[DOList]:
-    base_links: DOList = []
-    tip_links: DOList = []
+def get_chains(
+        links: list[RosLink],
+        joints: list[RosJoint],
+        ) -> list[DOList]:
+    base_links: list[RosLink] = []
+    tip_links: list[RosLink] = []
     for link in links:
         if link.Proxy.may_be_base_link():
             base_links.append(link)
@@ -345,7 +352,7 @@ def get_chains(links: DOList, joints: DOList) -> list[DOList]:
     return chains
 
 
-def get_chain(link: DO) -> DOList:
+def get_chain(link: RosLink) -> DOList:
     """Return the chain from base_link to link, excluded.
 
     The chain start with the base link, then alternates a joint and a link. The

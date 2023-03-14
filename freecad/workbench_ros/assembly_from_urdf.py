@@ -40,11 +40,15 @@ from .export_urdf import rotation_from_rpy
 
 # Typing hints.
 DO = fc.DocumentObject
+DOG = fc.DocumentObjectGroup
+AppLink = DO  # TypeId == "App::Link"
+AppPart = DO  # TypeId == "App::Part"
+LCS = DO  # Local coordinate systen, TypeId == "PartDesign::CoordinateSystem"
 # List of UrdfVisual or List of UrdfCollision.
 VisualList = Iterable[UrdfVisual]
 CollisionList = Iterable[UrdfCollision]
 # A pair of "App::CoordinateSystem", [parent, child].
-LcsPair = Tuple[DO, DO]
+LcsPair = Tuple[LCS, LCS]
 
 
 def assembly_from_urdf(
@@ -61,8 +65,10 @@ def assembly_from_urdf(
     """
     assembly, parts_group, var_container = _make_assembly_container(doc,
                                                                     robot.name)
-    link_map: dict[str, DO] = {}
-    lcs_map: dict[str, DO] = {}
+    # dict[urdf_link.name, 'App::Link']
+    link_map: dict[str, AppLink] = {}
+    # dict[urdf_link.name, 'PartDesign::CoordinateSystem']
+    lcs_map: dict[str, LCS] = {}
     for link in robot.links:
         fc_link, lcs = _add_link(assembly, parts_group, link.name)
         link_map[link.name] = fc_link
@@ -92,9 +98,9 @@ def assembly_from_urdf(
 
 def _make_assembly_container(
         doc: fc.Document,
-        emulate_assembly4: bool = True,
         name: str = 'robot',
-        ) -> tuple[DO, DO, DO]:
+        emulate_assembly4: bool = True,
+        ) -> tuple[AppPart, DO, DO]:
     """Create an App::Part.
 
     Return (assembly object, parts group, variable container).
@@ -206,7 +212,7 @@ def _add_link(
         ) -> Tuple[DO, DO]:
     """Add an App::Part to the group and a link to it to the assembly.
 
-    Return the link and its first LCS.
+    Return the "App::Link" and its first LCS.
 
     """
     if not is_part(assembly):
@@ -315,16 +321,12 @@ def _place_parent_lcs(
 
     """
     if not is_lcs(lcs):
-        raise RuntimeError('First argument must be an'
+        raise RuntimeError('First argument must be a'
                            ' `PartDesign::CoordinateSystem`')
-    lcs.AttachmentOffset = fc.Placement()
     if not hasattr(joint, 'origin'):
+        lcs.AttachmentOffset = fc.Placement()
         return
-    if hasattr(joint.origin, 'position'):
-        # Convert from meters to millimeters.
-        lcs.AttachmentOffset.Base = fc.Vector(joint.origin.position) * 1000.0
-    if hasattr(joint.origin, 'rpy'):
-        lcs.AttachmentOffset.Rotation = rotation_from_rpy(joint.origin.rpy)
+    lcs.AttachmentOffset = placement_from_origin(joint.origin)
 
 
 def _get_parent_link(
@@ -602,7 +604,7 @@ def _add_collision_geometries(
 
 
 def _add_geometries(
-        group: DO,
+        group: DOG,
         geometries: [VisualList | CollisionList],
         link: DO = None,
         name_linked_geom: str = '',
@@ -638,8 +640,9 @@ def _add_geometries(
         except NotImplementedError:
             continue
         geom_objs.append(geom_obj)
-        geom_obj.Placement = (placement_from_origin(geometry.origin)
-                              * geom_obj.Placement)
+        if hasattr(geometry, 'origin'):
+            geom_obj.Placement = (placement_from_origin(geometry.origin)
+                                  * geom_obj.Placement)
         if link is not None:
             # Make a FC link into `link`.
             original_part = link.LinkedObject

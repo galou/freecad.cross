@@ -23,7 +23,7 @@ class _NewRobotCommand:
         fc.activeDocument().openTransaction('Create Robot')
         fcgui.doCommand('')
         fcgui.addModule('freecad.workbench_ros.robot')
-        fcgui.doCommand("_robot = freecad.workbench_ros.robot.makeRobot('Robot')")
+        fcgui.doCommand("_robot = freecad.workbench_ros.robot.make_robot('Robot')")
         fcgui.doCommand('FreeCADGui.ActiveDocument.setEdit(_robot.Name)')
 
 

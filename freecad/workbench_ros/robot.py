@@ -27,10 +27,14 @@ from .utils import warn
 
 # Typing hints.
 DO = fc.DocumentObject
-DOList = Iterable[fc.DocumentObject]
+DOList = Iterable[DO]
+AppLink = DO  # TypeId == 'App::Link'.
+RosLink = DO  # A Ros::Link, i.e. a DocumentObject with Proxy "Link".
+RosJoint = DO  # A Ros::Joint, i.e. a DocumentObject with Proxy "Joint".
+RosRobot = DO  # A Ros::Robot, i.e. a DocumentObject with Proxy "Robot".
 
 
-def _existing_link(link: DO, obj: DO, lod: str) -> Optional[DO]:
+def _existing_link(link: RosLink, obj: DO, lod: str) -> Optional[AppLink]:
     """Return the link to obj if it exists in link.Group with the given lod.
 
     Return the link to obj if it exists in link.Group with the given level of
@@ -51,10 +55,10 @@ def _existing_link(link: DO, obj: DO, lod: str) -> Optional[DO]:
 
 
 def _add_links_lod(
-        link: DO,
-        objects: list[DO],
+        link: RosLink,
+        objects: DOList,
         lod: str,
-        ) -> list[DO]:
+        ) -> list[AppLink]:
     """Add a level of detail as links to real, visual or collision elements.
 
     Return the full list of linked objects (existing + created).
@@ -68,8 +72,8 @@ def _add_links_lod(
 
     """
     doc = link.Document
-    old_and_new_objects: list[DO] = []
-    for i, o in enumerate(objects):
+    old_and_new_objects: DOList = []
+    for o in objects:
         link_to_o = _existing_link(link, o, lod)
         if link_to_o is not None:
             # print(f' {o.Name} is already linked')
@@ -83,7 +87,8 @@ def _add_links_lod(
         lod_link.Label = name
         # print(f'Adding link {lod_link.Name} to {o.Name} into {link.Name}')
         if len(o.Parents) != 1:
-            warn(f'Wrong object type. {o.Name}.Parents has no or more than one entries')
+            warn(f'Wrong object type. {o.Name}.Parents'
+                 ' has no or more than one entries')
         # warn(f'Robot._add_links_lod({lod}), {link_placement=}') # DEBUG
         if lod_link.LinkPlacement != link.Placement:
             # Avoid recursive recompute.
@@ -96,13 +101,14 @@ def _add_links_lod(
 
 
 def _add_joint_variable(
-        robot: DO,
-        joint: DO,
+        robot: RosRobot,
+        joint: RosJoint,
         category: str,
         ) -> str:
     """Add a property to `robot` and return its name."""
     if not is_joint(joint):
-        warn(f'Wrong object type. {joint.Name} ({joint.Label}) is not a ROS::Joint')
+        warn(f'Wrong object type. {joint.Name} ({joint.Label})'
+             ' is not a ROS::Joint')
         return
     if joint.Type == 'prismatic':
         unit = 'mm'
@@ -110,21 +116,20 @@ def _add_joint_variable(
         unit = 'deg'
     else:
         return ''
-    var_name = get_valid_property_name(f'{joint.Label}{f"_{unit}" if unit else ""}')
+    # e.g. name_candidate = "q0_deg" or "q0".
+    name_candidate = f'{joint.Label}{f"_{unit}" if unit else ""}'
+    var_name = get_valid_property_name(name_candidate)
+    # e.g. help_txt = "q0 in deg" or "q0".
     help_txt = f'{joint.Label}{f" in {unit}" if unit else ""}'
     _, used_var_name = add_property(robot,
                                     'App::PropertyFloat', var_name,
                                     category, help_txt)
+    value: Optional[float] = None
     if joint.Type == 'prismatic':
-        # TODO: handle duplicated labels
-        formula = f'<<{robot.Label}>>.{var_name} * 0.001'
         value = robot.getPropertyByName(var_name) * 0.001
     elif joint.Type == 'revolute':
-        formula = f'<<{robot.Label}>>.{var_name} * pi / 180.0'
         value = radians(robot.getPropertyByName(var_name))
-    if formula:
-        # TODO: fix the cyclic reference to robot
-        # joint.setExpression('Position', formula)
+    if value is not None:
         if joint.Position != value:
             # Avoid recursive recompute.
             joint.Position = value
@@ -239,13 +244,13 @@ class Robot:
         links = get_links(self.robot.Group)  # ROS links.
 
         # List of linked objects from all Ros::Link in robot.Group.
-        current_linked_objects: list[DO] = []
+        current_linked_objects: list[AppLink] = []
         for link in links:
             for o in link.Group:
                 current_linked_objects.append(o)
 
         # Add objects from selected components.
-        all_linked_objects: list[DO] = []
+        all_linked_objects: list[AppLink] = []
         if self.robot.ShowReal:
             for link in links:
                 all_linked_objects += _add_links_lod(link, link.Real, 'real')
@@ -267,13 +272,13 @@ class Robot:
 
     def add_joint_variables(self) -> list[str]:
         """Add a property for each actuated joint."""
-        self.jointvalue_map: dict[DO, str]
         try:
             # Remove all old variables.
             for p in get_properties_of_category(
                     self.robot,
                     self._category_of_joint_values):
                 self.robot.removeProperty(p)
+            # Add a variable for each actuated joint.
             for joint in get_joints(self.robot.Group):
                 _add_joint_variable(self.robot, joint,
                                     self._category_of_joint_values)
@@ -384,15 +389,17 @@ class _ViewProviderRobot:
         return None
 
 
-def makeRobot(name):
+def make_robot(name, doc: Optional[fc.Document] = None) -> DO:
     """Add a Ros::Robot to the current document."""
-    doc = fc.activeDocument()
     if doc is None:
+        doc = fc.activeDocument()
+    if doc is None:
+        warn('No active document, doing nothing', False)
         return
     obj = doc.addObject('App::DocumentObjectGroupPython', name)
     Robot(obj)
 
-    if fc.GuiUp:
+    if hasattr(fc, 'GuiUp') and fc.GuiUp:
         _ViewProviderRobot(obj.ViewObject)
 
     doc.recompute()

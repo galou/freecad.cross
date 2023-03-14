@@ -23,7 +23,7 @@ class _NewLinkCommand:
         fc.activeDocument().openTransaction('Create Link')
         fcgui.doCommand('')
         fcgui.addModule('freecad.workbench_ros.link')
-        fcgui.doCommand("_link = freecad.workbench_ros.link.makeLink('Link')")
+        fcgui.doCommand("_link = freecad.workbench_ros.link.make_link('Link')")
         fcgui.doCommand('FreeCADGui.ActiveDocument.setEdit(_link.Name)')
 
 

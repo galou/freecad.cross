@@ -33,5 +33,12 @@ def add_ros_python_library() -> bool:
         return False
     major = sys.version_info.major
     minor = sys.version_info.minor
-    sys.path.append(f'/opt/ros/{os.environ["ROS_DISTRO"]}/lib/python{major}.{minor}/site-packages')
+    base = f'/opt/ros/{os.environ["ROS_DISTRO"]}'
+    p = Path(f'{base}/lib/python{major}.{minor}/site-packages')
+    if p.exists():
+        sys.path.append(str(p))
+    # Humble and later.
+    p = Path(f'{base}/local/lib/python{major}.{minor}/dist-packages')
+    if p.exists():
+        sys.path.append(str(p))
     return True

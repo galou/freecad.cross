@@ -31,14 +31,7 @@ def add_ros_python_library() -> bool:
         warn('The environment variable `ROS_DISTRO`'
              ' is not set, some functionalities will be missing')
         return False
-    major = sys.version_info.major
-    minor = sys.version_info.minor
-    base = f'/opt/ros/{os.environ["ROS_DISTRO"]}'
-    p = Path(f'{base}/lib/python{major}.{minor}/site-packages')
-    if p.exists():
-        sys.path.append(str(p))
-    # Humble and later.
-    p = Path(f'{base}/local/lib/python{major}.{minor}/dist-packages')
-    if p.exists():
-        sys.path.append(str(p))
+    if 'PYTHONPATH' in os.environ:
+        for p in os.environ['PYTHONPATH'].split(':'):
+            sys.path.append(p)
     return True

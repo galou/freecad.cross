@@ -32,6 +32,19 @@ def add_ros_python_library() -> bool:
              ' is not set, some functionalities will be missing')
         return False
     if 'PYTHONPATH' in os.environ:
-        for p in os.environ['PYTHONPATH'].split(':'):
-            sys.path.append(p)
+        for path in os.environ['PYTHONPATH'].split(':'):
+            if path not in sys.path:
+                sys.path.append(path)
+    # On some systems (e.g. FreeCAD 0.21 on Ubuntu 20), $PYTHONPATH is not
+    # taken into account in FreeCAD.
+    major = sys.version_info.major
+    minor = sys.version_info.minor
+    base = f'/opt/ros/{os.environ["ROS_DISTRO"]}'
+    for path in [
+        Path(f'{base}/lib/python{major}.{minor}/site-packages'),
+        # Humble and later.
+        Path(f'{base}/local/lib/python{major}.{minor}/dist-packages'),
+        ]:
+        if path.exists() and (str(path) not in sys.path):
+            sys.path.append(str(path))
     return True

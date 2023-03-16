@@ -5,7 +5,6 @@
 - URDF editor integrated in Robot
 - Import xacro that only defines macros by asking for the  macro to use and values for its parameters
 - Workcell builder (xacro export without touching the original URDF/xacro files)
-- Fix visibility of 'Parts' and others
 - Fix ViewProvider for joint
 - Fix Attachment for the root link in `assembly_from_urdf`
 - Add two coordinate systems for each Ros::Joint (parent = urdf_joint.origin, child = parent * get_actuation_placement())

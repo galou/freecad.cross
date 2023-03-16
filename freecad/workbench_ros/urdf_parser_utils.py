@@ -64,7 +64,6 @@ def mesh_path_from_urdf(
             return
         return Path(pkg_path) / rel_path
     elif mesh_path.startswith('file://'):
-        print('startwith')
         return Path(mesh_path[len('file://'):])
 
 

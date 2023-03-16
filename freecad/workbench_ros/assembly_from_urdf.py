@@ -225,6 +225,7 @@ def _add_link(
     # We use an underscore to let the label free for the link in `assembly`.
     part, lcs = _make_part(assembly.Document, name + '_')
     parts_group.addObject(part)
+    part.Visibility = False
     # Make a link
     link = assembly.newObject('App::Link', name)
     link.setLink(part)
@@ -576,7 +577,7 @@ def _add_visual_geometries(
 
     """
     visual_group = make_group(link.Document, 'Visuals', visible=False)
-    group = make_group(visual_group, f'{link_name} Visuals')
+    group = make_group(visual_group, f'{link_name} Visuals', visible=False)
     name_linked_geom = f'{link_name}_visual'
     return _add_geometries(group, geometries, link, name_linked_geom)
 
@@ -598,7 +599,8 @@ def _add_collision_geometries(
 
     """
     collision_group = make_group(link.Document, 'Collisions', visible=False)
-    group = make_group(collision_group, f'{link_name} Collisions')
+    group = make_group(collision_group, f'{link_name} Collisions',
+                       visible=False)
     name_linked_geom = f'{link_name}_collision'
     return _add_geometries(group, geometries, link, name_linked_geom)
 
@@ -640,6 +642,7 @@ def _add_geometries(
         except NotImplementedError:
             continue
         geom_objs.append(geom_obj)
+        geom_obj.Visibility = False
         if hasattr(geometry, 'origin'):
             geom_obj.Placement = (placement_from_origin(geometry.origin)
                                   * geom_obj.Placement)

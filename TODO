@@ -1,5 +1,4 @@
-- robot_from_urdf
-- Base Robot on `App::Part`
+- Add the possiblity to place a robot.
 - URDF export
 - Avoid duplicating mesh objects
 - URDF editor integrated in Robot

@@ -24,8 +24,9 @@ class Joint:
     type = 'Ros::Joint'
 
     # The names cannot be changed because they are used as-is in the generated
-    # URDF. The order can be changed an influence the order in the GUI.
-    type_enum = ['revolute', 'continuous', 'prismatic', 'fixed', 'floating', 'planar']
+    # URDF. The order can be changed and influences the order in the GUI.
+    # The first element is the default.
+    type_enum = ['fixed', 'prismatic', 'revolute', 'continuous', 'planar', 'floating']
 
     def __init__(self, obj):
         obj.Proxy = self
@@ -64,7 +65,6 @@ class Joint:
         obj.setEditorMode('Placement', ['ReadOnly'])
 
     def onChanged(self, feature: DOG, prop: str) -> None:
-        # print(f'Joint::onChanged({feature.Name}, {prop})') # DEBUG
         pass
 
     def onDocumentRestored(self, obj):
@@ -84,15 +84,15 @@ class Joint:
         if predecessor is None:
             # First joint in the chain.
             try:
-                return self.joint.Parent.MountedPlacement * self.joint.Origin
+                return self.joint.Origin
             except (AttributeError, NotImplementedError):
                 error('Joint.get_placement(), ERROR')
                 return
         if predecessor is self.joint:
-            error(f'Joint.get_placement(), ERROR, `{self.joint.Name}` is predecessor of itself')
+            error(f'Joint.get_placement(), ERROR, `{self.joint.Name}`'
+                  ' is predecessor of itself', True)
             return
         pred_placement = predecessor.Proxy.get_placement()
-        warn(f'{self.joint.Name}: {pred_placement=}') # DEBUG
         if pred_placement is None:
             return
         return pred_placement * self.joint.Origin
@@ -230,9 +230,10 @@ def make_joint(name, doc: Optional[fc.Document] = None) -> DO:
         return
     obj = doc.addObject('Part::FeaturePython', name)
     Joint(obj)
+    # Default to type "fixed".
+    obj.Type = 'fixed'
 
-    if fc.GuiUp:
-    #if hasattr(fc, 'GuiUp') and fc.GuiUp: # DEBUG
+    if hasattr(fc, 'GuiUp') and fc.GuiUp:
         import FreeCADGui as fcgui
 
         _ViewProviderJoint(obj.ViewObject)

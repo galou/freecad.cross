@@ -59,7 +59,6 @@ class Link:
         # joint that is parent of this link.
         add_property(obj, 'App::PropertyPlacement', 'MountedPlacement',
                      'Internal', 'Placement when building')
-        obj.setPropertyStatus('MountedPlacement', 'Hidden')
 
     def execute(self, obj: DOG):
         pass

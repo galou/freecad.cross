@@ -13,7 +13,10 @@ try:
     from urdf_parser_py.urdf import Robot as UrdfRobot
     from urdf_parser_py.urdf import Visual as UrdfVisual
 
+    from .urdf_parser_utils import axis_to_z
     from .urdf_parser_utils import obj_from_geometry
+    from .urdf_parser_utils import placement_along_z_from_joint
+    from .urdf_parser_utils import placement_from_joint
     from .urdf_parser_utils import placement_from_origin
 except ModuleNotFoundError:
     UrdfCollision = Any
@@ -22,9 +25,11 @@ except ModuleNotFoundError:
     UrdfRobot = Any
     UrdfVisual = Any
 
+from .joint import make_joint
 from .link import make_link
 from .robot import make_robot
 from .utils import add_object
+from .utils import get_joints
 from .utils import make_group
 
 # Typing hints.
@@ -48,18 +53,22 @@ def robot_from_urdf(
     """Creates a ROS::Robot from URDF."""
 
     robot, parts_group = _make_robot(doc, urdf_robot.name)
-    # link_map: dict[str, RosLink] = {}
+    link_map: dict[str, RosLink] = {}
     # visual_map: dict[str, AppPart] = {}
     # collision_map: dict[str, AppPart] = {}
     for urdf_link in urdf_robot.links:
         ros_link, visual_part, collision_part = _add_ros_link(
-            robot, parts_group, urdf_link.name)
-        # link_map[urdf_link.name] = ros_link
+            urdf_link, robot, parts_group)
+        link_map[urdf_link.name] = ros_link
         # visual_map[urdf_link.name] = visual_part
         # collision_map[urdf_link.name] = collision_part
         _add_visual(urdf_link, parts_group, ros_link, visual_part)
         _add_collision(urdf_link, parts_group, ros_link, collision_part)
-    # joint_map: dict[str, RosJoint] = {}
+    joint_map: dict[str, RosJoint] = {}
+    for urdf_joint in urdf_robot.joints:
+        ros_joint = _add_ros_joint(urdf_joint, robot, link_map)
+        joint_map[urdf_joint.name] = ros_joint
+    _compensate_joint_placement(robot, urdf_robot, joint_map)
 
 
 def _make_robot(
@@ -76,6 +85,9 @@ def _make_robot(
     """
 
     robot = make_robot(name, doc)
+    robot.ShowReal = False
+    robot.ShowVisual = True
+    robot.ShowCollision = False
     # Create a group 'Parts' to hold all parts in the assembly document.
     parts_group = make_group(doc, 'URDF Parts', visible=False)
 
@@ -83,9 +95,9 @@ def _make_robot(
 
 
 def _add_ros_link(
+        urdf_link: UrdfLink,
         robot: RosRobot,
         parts_group: DOG,
-        name: str,
         ) -> Tuple[DO, DO, DO]:
     """Add two App::Part to the group and links to them to the robot.
 
@@ -102,28 +114,85 @@ def _add_ros_link(
     - name: name of the link if the URDF description.
 
     """
+    name = urdf_link.name
     doc = robot.Document
     visual_part = add_object(parts_group, 'App::Part', f'visual_{name}_')
+    visual_part.Visibility = False
     collision_part = add_object(parts_group, 'App::Part', f'collision_{name}_')
+    collision_part.Visibility = False
     ros_link = make_link(name, doc)
     ros_link.adjustRelativeLinks(robot)
     robot.addObject(ros_link)
     # Implementation note: ros_link.Visual.append() doesn't work because ros_link.Visual
     # is a new object on each evoking.
-    # TODO: make a function utils.make_link.
-    container = doc  # Should be `parts_group` but because of bug
-        # 'Object can only be in a single Group' must be added to `doc`.
-        # doc.recompute() doesn't help.
+    # Should be `parts_group` but because of bug
+    # 'Object can only be in a single Group' must be added to `doc`.
+    # doc.recompute() doesn't help.
+    # Interstingly, in the GUI, you can add to `parts_group` then reference
+    # in `ros_link.Visual` but not in the opposite order.
+    container = doc
     link_to_visual_part = add_object(container, 'App::Link',
                                      f'visual_{name}')
+    # TODO: make a function utils.make_link.
     link_to_visual_part.setLink(visual_part)
+    link_to_visual_part.Visibility = False
     ros_link.Visual = [link_to_visual_part]
 
     link_to_collision_part = add_object(container, 'App::Link',
                                         f'collision_{name}')
     link_to_collision_part.setLink(collision_part)
+    link_to_collision_part.Visibility = False
     ros_link.Collision = [link_to_collision_part]
     return ros_link, visual_part, collision_part
+
+
+def _add_ros_joint(
+        urdf_joint: UrdfJoint,
+        robot: RosRobot,
+        link_map: dict[str, RosLink],
+        ) -> RosJoint:
+    doc = robot.Document
+    ros_joint = make_joint(urdf_joint.name, doc)
+    ros_joint.adjustRelativeLinks(robot)
+    robot.addObject(ros_joint)
+    ros_joint.Parent = link_map[urdf_joint.parent]
+    ros_joint.Child = link_map[urdf_joint.child]
+    ros_joint.Type = urdf_joint.type
+    ros_joint.Origin = placement_along_z_from_joint(urdf_joint)
+    return ros_joint
+
+
+def _compensate_joint_placement(
+        robot: RosRobot,
+        urdf_robot: UrdfRobot,
+        joint_map: dict[str, RosJoint],
+        ) -> None:
+    chains = robot.Proxy.get_chains()
+    already_compensated_joints: set[RosJoint] = set()
+    for chain in chains:
+        ros_joints = get_joints(chain)
+        previous_rotation_to_z = fc.Rotation()
+        for ros_joint in ros_joints:
+            name = list(joint_map.keys())[list(joint_map.values()).index(ros_joint)]
+            urdf_joint = urdf_robot.joint_map[name]
+            rotation_to_z = axis_to_z(urdf_joint)
+            if ros_joint in already_compensated_joints:
+                previous_rotation_to_z = rotation_to_z
+                continue
+            already_compensated_joints.add(ros_joint)
+            _set_child_placement(urdf_joint, ros_joint)
+            ros_joint.Origin = previous_rotation_to_z.inverted() * ros_joint.Origin
+            previous_rotation_to_z = rotation_to_z
+
+
+def _set_child_placement(
+        urdf_joint: UrdfJoint,
+        ros_joint: RosJoint,
+        ) -> None:
+    """Set Child.MountedPlacement to compensate for joints not along z."""
+    if not ros_joint.Child:
+        return
+    ros_joint.Child.MountedPlacement.Rotation = axis_to_z(urdf_joint).inverted()
 
 
 def _add_visual(
@@ -200,6 +269,7 @@ def _add_geometries(
             geom_obj, _ = obj_from_geometry(geometry.geometry, parts_group)
         except NotImplementedError:
             continue
+        geom_obj.Visibility = False
         geom_objs.append(geom_obj)
         if hasattr(geometry, 'origin'):
             geom_obj.Placement = (placement_from_origin(geometry.origin)

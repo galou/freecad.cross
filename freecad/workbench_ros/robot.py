@@ -76,7 +76,6 @@ def _add_links_lod(
     for o in objects:
         link_to_o = _existing_link(link, o, lod)
         if link_to_o is not None:
-            # print(f' {o.Name} is already linked')
             if link_to_o.LinkPlacement != link.Placement:
                 # Avoid recursive recompute.
                 link_to_o.LinkPlacement = link.Placement
@@ -85,11 +84,9 @@ def _add_links_lod(
         name = f'{lod}_{link.Label}_'
         lod_link = doc.addObject('App::Link', name)
         lod_link.Label = name
-        # print(f'Adding link {lod_link.Name} to {o.Name} into {link.Name}')
         if len(o.Parents) != 1:
             warn(f'Wrong object type. {o.Name}.Parents'
                  ' has no or more than one entries')
-        # warn(f'Robot._add_links_lod({lod}), {link_placement=}') # DEBUG
         if lod_link.LinkPlacement != link.Placement:
             # Avoid recursive recompute.
             lod_link.LinkPlacement = link.Placement
@@ -115,6 +112,7 @@ def _add_joint_variable(
     elif joint.Type in ['revolute', 'continuous']:
         unit = 'deg'
     else:
+        # Non-simple joints not supported yet.
         return ''
     # e.g. name_candidate = "q0_deg" or "q0".
     name_candidate = f'{joint.Label}{f"_{unit}" if unit else ""}'
@@ -161,8 +159,6 @@ class Robot:
         # Managed in self.reset_group().
         obj.setPropertyStatus('Group', 'ReadOnly')
 
-        add_property(obj, 'App::PropertyLink', 'Assembly', 'Components',
-                     'The part object this robot is built upon')
         add_property(obj, 'App::PropertyBool', 'ShowReal', 'Components',
                      'Whether to show the real parts')
         obj.ShowReal = True
@@ -272,18 +268,22 @@ class Robot:
 
     def add_joint_variables(self) -> list[str]:
         """Add a property for each actuated joint."""
+        variables: list[str] = []
         try:
             # Remove all old variables.
             for p in get_properties_of_category(
                     self.robot,
                     self._category_of_joint_values):
                 self.robot.removeProperty(p)
-            # Add a variable for each actuated joint.
+            # Add a variable for each actuated (supported) joint.
             for joint in get_joints(self.robot.Group):
-                _add_joint_variable(self.robot, joint,
-                                    self._category_of_joint_values)
+                var = _add_joint_variable(self.robot, joint,
+                                          self._category_of_joint_values)
+                if var:
+                    variables.append(var)
         except AttributeError:
             pass
+        return variables
 
     def _get_link_placement(self,
                             link: fc.DocumentObject,
@@ -349,8 +349,8 @@ class _ViewProviderRobot:
 
     def getIcon(self):
         # TODO: Solve why this doesn't work.
-        # return 'ros_9dotslogo_color.svg'
-        return str(ICON_PATH.joinpath('ros_9dotslogo_color.svg'))
+        # return 'robot.svg'
+        return str(ICON_PATH.joinpath('robot.svg'))
 
     def attach(self, vobj):
         self.ViewObject = vobj

@@ -36,7 +36,6 @@ from .utils import is_lcs
 from .utils import is_part
 from .utils import make_group
 from .utils import get_valid_property_name
-from .export_urdf import rotation_from_rpy
 
 # Typing hints.
 DO = fc.DocumentObject

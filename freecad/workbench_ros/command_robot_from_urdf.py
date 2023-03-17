@@ -15,7 +15,7 @@ except ModuleNotFoundError:
 
 class _UrdfImportCommand:
     def GetResources(self):
-        return {'Pixmap': 'urdf_import',
+        return {'Pixmap': 'robot_from_urdf',
                 'MenuText': QtCore.QT_TRANSLATE_NOOP('workbench_ros', 'Import a URDF or xacro file'),  # TODO: translatable
                 'ToolTip': QtCore.QT_TRANSLATE_NOOP('workbench_ros', 'Import a URDF or xacro file'),
                 }

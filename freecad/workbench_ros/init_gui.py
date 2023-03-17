@@ -2,14 +2,14 @@ import os
 
 import FreeCADGui as fcgui
 
+from . import command_assembly_from_urdf
 from . import command_box_from_bounding_box
-from . import command_robot_from_urdf
 from . import command_new_joint
 from . import command_new_link
 from . import command_new_robot
-from . import command_urdf_export
-from . import command_urdf_import
+from . import command_robot_from_urdf
 from . import command_sphere_from_bounding_box
+from . import command_urdf_export
 from .utils import ICON_PATH
 
 
@@ -29,15 +29,16 @@ class RosWorkbench(fcgui.Workbench):
         This is the place to import all the commands.
 
         """
+        # The order here defines the order of the icons in the GUI.
         commands = [
             'NewRobot',  # Defined in ./command_new_robot.py
             'NewLink',  # Defined in ./command_new_link.py
             'NewJoint',  # Defined in ./command_new_joint.py
             'BoxFromBoundingBox',  # Defined in ./box_from_bounding_box.py.
             'SphereFromBoundingBox',  # Defined in ./sphere_from_bounding_box.py.
-            'UrdfExport',  # Defined in ./command_urdf_export.py.
             'UrdfImport',  # Defined in ./command_robot_from_urdf.py.
-            'AssemblyFromUrdf',  # Defined in ./command_urdf_import.py.
+            'AssemblyFromUrdf',  # Defined in ./command_assembly_from_urdf.py.
+            'UrdfExport',  # Defined in ./command_urdf_export.py.
             ]
         self.appendToolbar('ROS', commands)
         self.appendMenu('ROS', commands)

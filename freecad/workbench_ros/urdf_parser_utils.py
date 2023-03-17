@@ -12,9 +12,10 @@ import Mesh as fcmesh  # FreeCAD.
 from ament_index_python.packages import PackageNotFoundError
 from ament_index_python.packages import get_package_share_directory
 
-from urdf_parser_py import xml_reflection as xmlr
 from urdf_parser_py.urdf import Box
 from urdf_parser_py.urdf import Cylinder
+from urdf_parser_py.urdf import Joint as UrdfJoint
+from urdf_parser_py.urdf import Joint as UrdfLink
 from urdf_parser_py.urdf import Mesh
 from urdf_parser_py.urdf import Pose
 from urdf_parser_py.urdf import Sphere
@@ -70,6 +71,7 @@ def mesh_path_from_urdf(
 def placement_from_origin(
         origin: Pose,
         ) -> fc.Placement:
+    """Return the FreeCAD placement corresponding to URDF origin."""
     placement = fc.Placement()
     if origin is None:
         return placement
@@ -78,6 +80,50 @@ def placement_from_origin(
         placement.Base = fc.Vector(origin.position) * 1000.0
     if hasattr(origin, 'rpy'):
         placement.Rotation = rotation_from_rpy(origin.rpy)
+    return placement
+
+
+def placement_from_link(
+        link: UrdfLink,
+        ) -> fc.Placement:
+    """Return the FreeCAD placement corresponding to the URDF link."""
+    if not hasattr(link, 'origin'):
+        return fc.Placement()
+    return placement_from_origin(link.origin)
+
+
+def placement_from_joint(
+        joint: UrdfJoint,
+        ) -> fc.Placement:
+    """Return the FreeCAD placement corresponding to the URDF joint."""
+    if not hasattr(joint, 'origin'):
+        return fc.Placement()
+    return placement_from_origin(joint.origin)
+
+
+def axis_to_z(
+        joint: UrdfJoint,
+        ) -> fc.Placement:
+    """Return the rotation to bring `joint.axis` to z."""
+    if hasattr(joint, 'axis') and (joint.axis is not None):
+        axis = fc.Vector(joint.axis)
+    else:
+        # URDF's default axis.
+        if joint.type in ['prismatic', 'revolute', 'continuous', 'planar']:
+            axis = fc.Vector(1.0, 0.0, 0.0)
+        else:
+            axis = fc.Vector(0.0, 0.0, 1.0)
+    zaxis = fc.Vector(0.0, 0.0, 1.0)
+    # Orient to bring the joint axis along z.
+    return fc.Rotation(zaxis, axis)
+
+
+def placement_along_z_from_joint(
+        joint: UrdfJoint,
+        ) -> fc.Placement:
+    """Return the joint placement so that its axis is along z."""
+    placement = placement_from_joint(joint)
+    placement.Rotation *= axis_to_z(joint)
     return placement
 
 

@@ -10,7 +10,7 @@ from .utils import ICON_PATH
 class _NewRobotCommand:
     """The command definition to create a new Robot object."""
     def GetResources(self):
-        return {'Pixmap': str(ICON_PATH.joinpath('ros_9dotslogo_color.svg')),
+        return {'Pixmap': 'robot',
                 'MenuText': QtCore.QT_TRANSLATE_NOOP("workbench_ros", 'New Robot'),
                 'Accel': 'N, R',
                 'ToolTip': QtCore.QT_TRANSLATE_NOOP('workbench_ros', 'Create a Robot container.')}

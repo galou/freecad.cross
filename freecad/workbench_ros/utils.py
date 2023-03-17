@@ -245,6 +245,12 @@ def is_joint(obj: DO) -> bool:
     return _has_ros_type(obj, 'Ros::Joint')
 
 
+def is_simple_joint(obj: DO) -> bool:
+    """Return True if prismatic, revolute, or continuous."""
+    return (is_joint(obj)
+            and (obj.Type in ['prismatic', 'revolute', 'continuous']))
+
+
 def _is_derived_from(obj: DO, typeid: str) -> bool:
     """Return True if the object is a object of the given type."""
     if not isinstance(obj, DO):
@@ -546,7 +552,7 @@ def add_object(
 
 
 def grouper(iterable, n, fillvalue=None):
-    "Collect data into fixed-length chunks or blocks"
+    """Collect data into fixed-length chunks or blocks."""
     # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx"
     # From https://docs.python.org/3.8/library/itertools.html.
     args = [iter(iterable)] * n

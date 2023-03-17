@@ -15,7 +15,7 @@ except ModuleNotFoundError:
 
 class _AssemblyFromUrdfCommand:
     def GetResources(self):
-        return {'Pixmap': 'urdf_import',
+        return {'Pixmap': 'assembly_from_urdf',
                 'MenuText': QtCore.QT_TRANSLATE_NOOP('workbench_ros', 'Create an assembly from a URDF or xacro file'),  # TODO: translatable
                 'ToolTip': QtCore.QT_TRANSLATE_NOOP('workbench_ros', 'Create an assembly from a URDF or xacro file'),
                 }

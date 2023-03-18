@@ -137,7 +137,10 @@ def _add_joint_variable(
 class Robot:
     """The Robot group."""
 
-    type = 'Ros::Robot'
+    # The member is often used in workbenches, particularly in the Draft
+    # workbench, to identify the object type.
+    Type = 'Ros::Robot'
+
     # Name of the category (or group) for the joint values, which are saved as
     # properties of `self.robot`.
     _category_of_joint_values = 'JointValues'
@@ -145,7 +148,7 @@ class Robot:
     def __init__(self, obj):
         obj.Proxy = self
         self.robot = obj
-        self.type = 'Ros::Robot'
+        self.Type = 'Ros::Robot'
         self.previous_link_count = 0
 
         self.init_properties(obj)
@@ -154,7 +157,7 @@ class Robot:
         add_property(obj, 'App::PropertyString', '_Type', 'Internal',
                      'The type')
         obj.setPropertyStatus('_Type', ['Hidden', 'ReadOnly'])
-        obj._Type = self.type
+        obj._Type = self.Type
 
         # Managed in self.reset_group().
         obj.setPropertyStatus('Group', 'ReadOnly')
@@ -193,11 +196,11 @@ class Robot:
         self.init_properties(obj)
 
     def __getstate__(self):
-        return (self.type, self.previous_link_count)
+        return (self.Type, self.previous_link_count)
 
     def __setstate__(self, state):
         if state:
-            self.type, self.previous_link_count = state
+            self.Type, self.previous_link_count = state
 
     def compute_poses(self) -> None:
         """Compute the pose of all joints and links.

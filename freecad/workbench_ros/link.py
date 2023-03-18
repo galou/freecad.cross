@@ -26,7 +26,9 @@ VPDO = 'FreeCADGui.ViewProviderDocumentObject'
 class Link:
     """The Link group."""
 
-    type = 'Ros::Link'
+    # The member is often used in workbenches, particularly in the Draft
+    # workbench, to identify the object type.
+    Type = 'Ros::Link'
 
     def __init__(self, obj: DOG):
         obj.Proxy = self
@@ -37,7 +39,7 @@ class Link:
         add_property(obj, 'App::PropertyString', '_Type', 'Internal',
                      'The type')
         obj.setPropertyStatus('_Type', ['Hidden', 'ReadOnly'])
-        obj._Type = self.type
+        obj._Type = self.Type
 
         add_property(obj, 'App::PropertyLinkList', 'Real', 'Elements',
                      'The real part objects of this link, optional')
@@ -80,10 +82,11 @@ class Link:
         self.__init__(obj)
 
     def __getstate__(self):
-        return None
+        return self.Type
 
     def __setstate__(self, state):
-        return None
+        if state:
+            self.Type, = state
 
     def get_robot(self) -> Optional[DO]:
         """Return the Ros::Robot this link belongs to."""

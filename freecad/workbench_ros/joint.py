@@ -21,7 +21,9 @@ DOG = fc.DocumentObjectGroup
 class Joint:
     """The Ros::Joint object."""
 
-    type = 'Ros::Joint'
+    # The member is often used in workbenches, particularly in the Draft
+    # workbench, to identify the object type.
+    Type = 'Ros::Joint'
 
     # The names cannot be changed because they are used as-is in the generated
     # URDF. The order can be changed and influences the order in the GUI.
@@ -37,7 +39,7 @@ class Joint:
         add_property(obj, 'App::PropertyString', '_Type', 'Internal',
                      'The type')
         obj.setPropertyStatus('_Type', ['Hidden', 'ReadOnly'])
-        obj._Type = self.type
+        obj._Type = self.Type
 
         add_property(obj, 'App::PropertyEnumeration', 'Type', 'Elements',
                      'The kinematical type of the joint')
@@ -73,10 +75,11 @@ class Joint:
         self.init_properties(obj)
 
     def __getstate__(self):
-        return None
+        return self.Type
 
     def __setstate__(self, state):
-        return None
+        if state:
+            self.Type, = state
 
     def get_placement(self) -> Optional[fc.Placement]:
         """Return the absolute joint placement."""

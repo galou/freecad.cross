@@ -96,7 +96,7 @@ def warn(text: str, gui: bool = False) -> None:
     fc.Console.PrintWarning(text + '\n')
     if gui and fc.GuiUp:
         diag = QtGui.QMessageBox(QtGui.QMessageBox.Warning,
-                                 u'ROS Workbench', text)
+                                 'ROS Workbench', text)
         diag.setWindowModality(QtCore.Qt.ApplicationModal)
         diag.exec_()
 
@@ -105,8 +105,8 @@ def error(text: str, gui: bool = False) -> None:
     """Log an error to the user."""
     fc.Console.PrintError(text + '\n')
     if gui and fc.GuiUp:
-        diag = QtGui.QMessageBox(QtGui.QMessageBox.Error,
-                                 u'FreeCAD - ROS Workbench', text)
+        diag = QtGui.QMessageBox(QtGui.QMessageBox.Critical,
+                                 'FreeCAD - ROS Workbench', text)
         diag.setWindowModality(QtCore.Qt.ApplicationModal)
         diag.exec_()
 

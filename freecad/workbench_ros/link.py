@@ -82,7 +82,7 @@ class Link:
         self.__init__(obj)
 
     def __getstate__(self):
-        return self.Type
+        return self.Type,
 
     def __setstate__(self, state):
         if state:
@@ -124,24 +124,21 @@ class Link:
         return True
 
     def export_urdf(self,
-                    package_path: Path,
+                    package_parent: Path,
                     package_name: Path,
-                    placement: fc.Placement = fc.Placement(),
                     ) -> et.ElementTree:
         """Return the xml for this link.
 
         Parameters
         ----------
-        - package_path: the parent directory of the package.
+        - package_parent: the parent directory of the package.
         - package_name: the name of the package (also the name of the
                         directory).
-        - placement: the placement of the link relative to the joint of the
-                     previous link.
 
         """
 
-        def get_xml(obj, urdf_function):
-            mesh_name = get_valid_filename(obj.Label) + '.dae'
+        def get_xml(obj, urdf_function, placement):
+            mesh_name = get_valid_filename(obj.LinkedObject.Label) + '.dae'
             visual_xml = urdf_function(
                 obj,
                 mesh_name=mesh_name,
@@ -149,16 +146,20 @@ class Link:
                 placement=placement,
                 )
             if not is_primitive(obj):
-                mesh_path = package_path / package_name / 'meshes' / mesh_name
+                mesh_path = package_parent / package_name / 'meshes' / mesh_name
                 save_mesh_dae(obj.LinkedObject, mesh_path)
             return visual_xml
 
         link_xml = et.fromstring(
             f'<link name="{get_valid_urdf_name(self.link.Label)}" />')
         for link in self.link.Visual:
-            link_xml.append(get_xml(link, urdf_visual_from_object))
+            for obj in link.LinkedObject.Group:
+                link_xml.append(get_xml(obj, urdf_visual_from_object,
+                                        self.link.MountedPlacement))
         for link in self.link.Collision:
-            link_xml.append(get_xml(link, urdf_collision_from_object))
+            for obj in link.LinkedObject.Group:
+                link_xml.append(get_xml(obj, urdf_collision_from_object,
+                                        self.link.MountedPlacement))
         return link_xml
 
 

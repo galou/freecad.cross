@@ -1,11 +1,12 @@
-from typing import List, Tuple, Union
+from __future__ import annotations
 
 import FreeCAD as fc
 
 from pivy import coin
 
 
-def transform_from_placement(placement: [fc.Placement, fc.Vector, fc.Rotation]) -> coin.SoTransform:
+def transform_from_placement(placement: [fc.Placement | fc.Vector | fc.Rotation],
+                             ) -> coin.SoTransform:
     """Return the SoTransform equivalent to the placement.
 
     # Should show a cone entering a cylinder.
@@ -36,8 +37,8 @@ def transform_from_placement(placement: [fc.Placement, fc.Vector, fc.Rotation]) 
 
 
 def arrow_group(
-        points: List[fc.Vector],
-        color: Tuple[float] = (0.0, 0.0, 1.0),
+        points: list[fc.Vector],
+        color: tuple[float] = (0.0, 0.0, 1.0),
         scale: float = 1.0):
     """Return the SoSeparator of an arrow between two points.
 
@@ -69,8 +70,9 @@ def arrow_group(
 
     # Transform to bring the cylinder with origin at bottom, along x.
     along_x = coin.SoTransform()
-    along_x.translation = cylinder.height.getValue() / 2.0, 0.0, 0.0  # After the rotation.
-    along_x.rotation = 0.0, 0.0, 0.7071067811865476, -0.7071067811865475  # Rotation about z, -90°.
+    # Translation after the rotation.
+    along_x.translation = cylinder.height.getValue() / 2.0, 0.0, 0.0
+    along_x.rotation = fc.Rotation(fc.Vector(0.0, 0.0, 1.0), -90).Q
 
     cylinder_sep = coin.SoSeparator()
     cylinder_sep.addChild(along_x)
@@ -83,11 +85,12 @@ def arrow_group(
 
     # Transform to bring the top of the cone to p1.
     cone_trans = coin.SoTransform()
-    cone_trans.translation = v.Length - (cone.height.getValue() / 2.0), 0.0, 0.0  # After the rotation.
-    cone_trans.rotation = 0.0, 0.0, 0.7071067811865476, -0.7071067811865475  # Rotation about z, -90°.
+    # Translation after the rotation.
+    cone_trans.translation = v.Length - (cone.height.getValue() / 2.0), 0.0, 0.0
+    cone_trans.rotation = fc.Rotation(fc.Vector(0.0, 0.0, 1.0), -90).Q
 
     cone_sep = coin.SoSeparator()
-    cone_sep.addChild(cone_trans) # Translation will be done first.
+    cone_sep.addChild(cone_trans)  # Translation will be done first.
     cone_sep.addChild(cone)
 
     # Transform to the first point (with orientation).

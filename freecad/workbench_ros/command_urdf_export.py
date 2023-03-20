@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import copy
 from typing import Optional
 import xml.etree.ElementTree as et
@@ -22,6 +24,11 @@ from .utils import is_sphere
 from .utils import get_valid_filename
 
 
+# Typing hints.
+DO = fc.DocumentObject
+SO = 'Gui.SelectionObject'  # Could not get the class from Python.
+
+
 def _supported_object_selected():
     for obj in fcgui.Selection.getSelection():
         if hasattr(obj, 'Placement'):
@@ -29,6 +36,28 @@ def _supported_object_selected():
         if is_robot(obj):
             return True
     return False
+
+
+def _get_subobjects_and_placements(
+        selection: list[SO],
+        ) -> list[tuple[DO, fc.Placement]]:
+    outlist: list[tuple[DO, fc.Placement]] = []
+    for selection_object in selection:
+        root_obj = selection_object.Object
+        sub_fullpaths = selection_object.SubElementNames
+        if not sub_fullpaths:
+            # An object is selected, not a face, edge, vertex.
+            sub_fullpaths = ('',)
+        for sub_fullpath in sub_fullpaths:
+            subobjects = get_subobjects_by_full_name(root_obj, sub_fullpath)
+            if subobjects:
+                obj = subobjects[-1]
+            else:
+                obj = root_obj
+            # One or more subelements are selected.
+            placement = get_global_placement(root_obj, sub_fullpath)
+            outlist.append((obj, placement))
+    return outlist
 
 
 class _UrdfExportCommand:
@@ -52,51 +81,41 @@ class _UrdfExportCommand:
         txt = ''
         has_mesh = False
         exported_objects: list[fc.DocumentObject] = []
-        for selection_object in selection:
-            root_obj = selection_object.Object
-            sub_fullpaths = selection_object.SubElementNames
-            if not sub_fullpaths:
-                # An object is selected, not a face, edge, vertex.
-                obj = root_obj
-                placement = get_global_placement(root_obj, '')
-            for sub_fullpath in sub_fullpaths:
-                obj = get_subobjects_by_full_name(root_obj,
-                                                  sub_fullpath)[-1]
-                # One or more subelements are selected.
-                placement = get_global_placement(root_obj, sub_fullpath)
-                if not hasattr(obj, 'TypeId'):
-                    # For now, only objects with 'TypeId' are supported.
-                    continue
-                if obj in exported_objects:
-                    # Object already exported.
-                    continue
-                exported_objects.append(obj)
-                xml: Optional[et.ElementTree] = None
-                if is_box(obj):
-                    xml = urdf_collision_from_box(obj, placement,
-                                                  ignore_obj_placement=True)
-                elif is_sphere(obj):
-                    xml = urdf_collision_from_sphere(obj, placement,
-                                                     ignore_obj_placement=True)
-                elif is_cylinder(obj):
-                    xml = urdf_collision_from_cylinder(
-                            obj, placement, ignore_obj_placement=True)
-                elif is_robot(obj):
-                    if hasattr(obj, 'Proxy'):
-                        xml = obj.Proxy.export_urdf()
-                elif hasattr(obj, 'Placement'):
-                    has_mesh = True
-                    mesh_name = get_valid_filename(obj.Label) if hasattr(obj, 'Label') else 'mesh.dae'
-                    package_name = '$package_name$'  # Will be replaced later by the GUI.
-                    xml = urdf_collision_from_object(
-                        obj,
-                        mesh_name=get_valid_filename(obj.Label) + '.dae',
-                        package_name=package_name,
-                        placement=placement,
-                    )
-                if xml:
-                    txt += f'  <!-- {obj.Label} -->\n'
-                    txt += et.tostring(xml).decode('utf-8')
+        for obj, placement in _get_subobjects_and_placements(selection):
+            if not hasattr(obj, 'TypeId'):
+                # For now, only objects with 'TypeId' are supported.
+                continue
+            if obj in exported_objects:
+                # Object already exported.
+                continue
+            exported_objects.append(obj)
+            xml: Optional[et.ElementTree] = None
+            if is_box(obj):
+                xml = urdf_collision_from_box(obj, placement,
+                                              ignore_obj_placement=True)
+            elif is_sphere(obj):
+                xml = urdf_collision_from_sphere(obj, placement,
+                                                 ignore_obj_placement=True)
+            elif is_cylinder(obj):
+                xml = urdf_collision_from_cylinder(
+                    obj, placement, ignore_obj_placement=True)
+            elif is_robot(obj):
+                if hasattr(obj, 'Proxy'):
+                    xml = obj.Proxy.export_urdf()
+            elif hasattr(obj, 'Placement'):
+                has_mesh = True
+                mesh_name = (get_valid_filename(obj.Label) if hasattr(obj, 'Label')
+                             else 'mesh.dae')
+                package_name = '$package_name$'  # Will be replaced later by the GUI.
+                xml = urdf_collision_from_object(
+                    obj,
+                    mesh_name=mesh_name,
+                    package_name=package_name,
+                    placement=placement,
+                )
+            if xml:
+                txt += f'  <!-- {obj.Label} -->\n'
+                txt += et.tostring(xml).decode('utf-8')
         if txt:
             if 'dummy>' in txt:
                 fc.Console.PrintError('Object labels cannot contain '

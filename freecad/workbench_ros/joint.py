@@ -16,6 +16,7 @@ from .export_urdf import urdf_origin_from_placement
 # Typing hints.
 DO = fc.DocumentObject
 DOG = fc.DocumentObjectGroup
+VPDO = 'FreeCADGui.ViewProviderDocumentObject'
 
 
 class Joint:
@@ -30,12 +31,12 @@ class Joint:
     # The first element is the default.
     type_enum = ['fixed', 'prismatic', 'revolute', 'continuous', 'planar', 'floating']
 
-    def __init__(self, obj):
+    def __init__(self, obj: DOG):
         obj.Proxy = self
         self.joint = obj
         self.init_properties(obj)
 
-    def init_properties(self, obj):
+    def init_properties(self, obj: DOG):
         add_property(obj, 'App::PropertyString', '_Type', 'Internal',
                      'The type')
         obj.setPropertyStatus('_Type', ['Hidden', 'ReadOnly'])
@@ -66,16 +67,16 @@ class Joint:
                      'Placement of the joint in the robot frame')
         obj.setEditorMode('Placement', ['ReadOnly'])
 
-    def onChanged(self, feature: DOG, prop: str) -> None:
+    def onChanged(self, obj: DOG, prop: str) -> None:
         pass
 
-    def onDocumentRestored(self, obj):
+    def onDocumentRestored(self, obj: DOG):
         obj.Proxy = self
         self.joint = obj
         self.init_properties(obj)
 
     def __getstate__(self):
-        return self.Type
+        return self.Type,
 
     def __setstate__(self, state):
         if state:
@@ -160,8 +161,15 @@ class Joint:
 class _ViewProviderJoint:
     """A view provider for the Joint container object """
 
-    def __init__(self, vobj):
+    def __init__(self, vobj: VPDO):
         vobj.Proxy = self
+        self.set_properties(vobj)
+
+    def set_properties(self, vobj: VPDO):
+        """Set properties of the view provider."""
+        add_property(vobj, 'App::PropertyBool', 'ShowJointAxis',
+                     'Display Options',
+                     "Toggle the display of the joint's Z-axis")
 
     def getIcon(self):
         # TODO: Solve why this doesn't work.
@@ -173,29 +181,47 @@ class _ViewProviderJoint:
         pass
 
     def updateData(self,
-            obj: 'FeaturePython',
-            prop: str):
-        from .coin_utils import arrow_group
+                   obj: DOG,
+                   prop: str):
 
         vobj = obj.ViewObject
-        root_node = vobj.RootNode
         if not hasattr(vobj, 'Visibility'):
             return
-        if not vobj.Visibility:
+        if not vobj.Visibility or not hasattr(vobj, 'ShowJointAxis'):
             # root_node.removeAllChildren() # This segfaults when loading the document.
             return
-        if prop == 'Origin':
-            placement = obj.Proxy.get_placement()
-            if placement is None:
-                return
-            p0 = placement.Base
-            p1 = placement * fc.Vector(0.0, 0.0, 1000.0)
-            arrow = arrow_group([p0, p1], scale=0.2)
-            root_node.removeAllChildren()
-            root_node.addChild(arrow)
+        if prop in ['Placement']:
+            self.draw_arrow(vobj, vobj.Visibility and vobj.ShowJointAxis)
+        # Implementation note: no need to react on prop == 'Origin' because
+        # this triggers a change in 'Placement'.
 
-    def onChanged(self, vobj, prop):
+    def onChanged(self, vobj: VPDO, prop: str):
+        if prop == 'ShowJointAxis':
+            self.draw_arrow(vobj, vobj.ShowJointAxis)
         return
+
+    def draw_arrow(self, vobj: VPDO, visible: bool):
+        from .coin_utils import arrow_group
+
+        if not hasattr(vobj, 'RootNode'):
+            return
+        root_node = vobj.RootNode
+        root_node.removeAllChildren()
+        if not visible:
+            return
+        if not hasattr(vobj.Object, 'Placement'):
+            return
+        placement = vobj.Object.Placement
+        if placement is None:
+            return
+        if vobj.Object.Type == 'fixed':
+            color = (0.0, 0.0, 0.7)
+        else:
+            color = (0.0, 0.0, 1.0)
+        p0 = placement.Base
+        p1 = placement * fc.Vector(0.0, 0.0, 1000.0)
+        arrow = arrow_group([p0, p1], scale=0.2, color=color)
+        root_node.addChild(arrow)
 
     def doubleClicked(self, vobj):
         gui_doc = vobj.Document

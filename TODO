@@ -1,3 +1,5 @@
+- Add method to define link.MountedPlacement
+- Fix urdf export for robot
 - Add the possiblity to place a robot.
 - Workcell builder (xacro export without touching the original URDF/xacro files)
 - Avoid duplicating mesh objects

@@ -85,9 +85,9 @@ def _make_robot(
     """
 
     robot = make_robot(name, doc)
-    robot.ShowReal = False
-    robot.ShowVisual = True
-    robot.ShowCollision = False
+    robot.ViewObject.ShowReal = False
+    robot.ViewObject.ShowVisual = True
+    robot.ViewObject.ShowCollision = False
     # Create a group 'Parts' to hold all parts in the assembly document.
     parts_group = make_group(doc, 'URDF Parts', visible=False)
 

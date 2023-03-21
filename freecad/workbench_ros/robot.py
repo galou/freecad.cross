@@ -159,13 +159,6 @@ class Robot:
         # Managed in self.reset_group().
         obj.setPropertyStatus('Group', 'ReadOnly')
 
-        add_property(obj, 'App::PropertyBool', 'ShowReal', 'Components',
-                     'Whether to show the real parts')
-        add_property(obj, 'App::PropertyBool', 'ShowVisual', 'Components',
-                     'Whether to show the parts for URDF visual')
-        add_property(obj, 'App::PropertyBool', 'ShowCollision', 'Components',
-                     'Whether to show the parts for URDF collision')
-
         add_property(obj, 'App::PropertyPath', 'OutputPath', 'Export',
                      'The path to the ROS package to export files to')
 
@@ -179,7 +172,7 @@ class Robot:
             # Implementation note: happens because __init__ is not called on
             # restore.
             return
-        if prop in ['Group', 'ShowReal', 'ShowVisual', 'ShowCollision']:
+        if prop in ['Group']:
             self.execute(obj)
 
     def onDocumentRestored(self, obj):
@@ -228,32 +221,33 @@ class Robot:
         return get_chains(links, joints)
 
     def reset_group(self) -> None:
-        if ((not hasattr(self.robot, 'ShowReal'))
-                or (not hasattr(self.robot, 'ShowVisual'))
-                or (not hasattr(self.robot, 'ShowCollision'))):
+        if ((not hasattr(self.robot, 'ViewObject'))
+                or (not hasattr(self.robot.ViewObject, 'ShowReal'))
+                or (not hasattr(self.robot.ViewObject, 'ShowVisual'))
+                or (not hasattr(self.robot.ViewObject, 'ShowCollision'))):
             return
 
         links = get_links(self.robot.Group)  # ROS links.
+
+        # Add objects from selected components.
+        all_linked_objects: list[AppLink] = []
+        if self.robot.ViewObject.ShowReal:
+            for link in links:
+                all_linked_objects += _add_links_lod(link, link.Real, 'real')
+
+        if self.robot.ViewObject.ShowVisual:
+            for link in links:
+                all_linked_objects += _add_links_lod(link, link.Visual, 'visual')
+
+        if self.robot.ViewObject.ShowCollision:
+            for link in links:
+                all_linked_objects += _add_links_lod(link, link.Collision, 'collision')
 
         # List of linked objects from all Ros::Link in robot.Group.
         current_linked_objects: list[AppLink] = []
         for link in links:
             for o in link.Group:
                 current_linked_objects.append(o)
-
-        # Add objects from selected components.
-        all_linked_objects: list[AppLink] = []
-        if self.robot.ShowReal:
-            for link in links:
-                all_linked_objects += _add_links_lod(link, link.Real, 'real')
-
-        if self.robot.ShowVisual:
-            for link in links:
-                all_linked_objects += _add_links_lod(link, link.Visual, 'visual')
-
-        if self.robot.ShowCollision:
-            for link in links:
-                all_linked_objects += _add_links_lod(link, link.Collision, 'collision')
 
         # Remove objects that do not belong to `all_linked_objects`.
         objects_to_remove = set(current_linked_objects) - set(all_linked_objects)
@@ -341,6 +335,13 @@ class _ViewProviderRobot:
                      'Display Options',
                      'Toggle the display of the Z-axis for all child joints')
 
+        add_property(vobj, 'App::PropertyBool', 'ShowReal', 'Display Options',
+                     'Whether to show the real parts')
+        add_property(vobj, 'App::PropertyBool', 'ShowVisual', 'Display Options',
+                     'Whether to show the parts for URDF visual')
+        add_property(vobj, 'App::PropertyBool', 'ShowCollision', 'Display Options',
+                     'Whether to show the parts for URDF collision')
+
     def updateData(self, obj: DO, prop: str):
         return
 
@@ -350,6 +351,9 @@ class _ViewProviderRobot:
                 for j in get_joints(vobj.Object.Group):
                     if hasattr(j.ViewObject, 'ShowJointAxis'):
                         j.ViewObject.ShowJointAxis = vobj.ShowJointAxes
+        if prop in ['ShowReal', 'ShowVisual', 'ShowCollision']:
+            robot : DO = vobj.Object
+            robot.Proxy.execute(robot)
 
     def doubleClicked(self, vobj: VPDO):
         gui_doc = vobj.Document
@@ -387,12 +391,12 @@ def make_robot(name, doc: Optional[fc.Document] = None) -> DO:
         return
     obj = doc.addObject('App::DocumentObjectGroupPython', name)
     Robot(obj)
-    obj.ShowReal = True
-    obj.ShowVisual = False
-    obj.ShowCollision = False
 
     if hasattr(fc, 'GuiUp') and fc.GuiUp:
         _ViewProviderRobot(obj.ViewObject)
+        obj.ViewObject.ShowReal = True
+        obj.ViewObject.ShowVisual = False
+        obj.ViewObject.ShowCollision = False
 
     doc.recompute()
     return obj

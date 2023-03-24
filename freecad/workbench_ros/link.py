@@ -119,7 +119,7 @@ class Link:
         if ((not hasattr(self, 'link'))
                 or (not is_link(self.link))):
             return
-        removed_objects: set[DO] = []
+        removed_objects: set[DO] = set()
         # Group is managed by us and the containing robot.
         for o in self.link.Group:
             if is_freecad_link(o):
@@ -135,7 +135,7 @@ class Link:
             kept, removed = _skim_links_joints_from(self.link.Real)
             if self.link.Real != kept:
                 self.link.Real = kept
-            warn_unsupported(removed_objects, by='ROS::Link', gui=True)
+            warn_unsupported(removed, by='ROS::Link', gui=True)
             removed_objects.update(removed)
         except AttributeError:
             pass
@@ -143,7 +143,7 @@ class Link:
             kept, removed = _skim_links_joints_from(self.link.Visual)
             if self.link.Visual != kept:
                 self.link.Visual = kept
-            warn_unsupported(removed_objects, by='ROS::Link', gui=True)
+            warn_unsupported(removed, by='ROS::Link', gui=True)
             removed_objects.update(removed)
         except AttributeError:
             pass
@@ -151,7 +151,7 @@ class Link:
             kept, removed = _skim_links_joints_from(self.link.Collision)
             if self.link.Collision != kept:
                 self.link.Collision = kept
-            warn_unsupported(removed_objects, by='ROS::Link', gui=True)
+            warn_unsupported(removed, by='ROS::Link', gui=True)
             removed_objects.update(removed)
         except AttributeError:
             pass

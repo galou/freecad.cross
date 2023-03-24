@@ -216,7 +216,9 @@ class Robot:
                     placement = new_joint_placement * joint.Proxy.get_actuation_placement()
 
     def get_chains(self) -> list[DOList]:
-        if not hasattr(self, 'robot') or not is_robot(self.robot):
+        if not hasattr(self, 'robot'):
+            return []
+        if not is_robot(self.robot):
             warn(f'{label_or(self.robot)} is not a ROS::Robot', True)
             return []
         links = get_links(self.robot.Group)
@@ -224,7 +226,8 @@ class Robot:
         return get_chains(links, joints)
 
     def reset_group(self) -> None:
-        if ((not hasattr(self.robot, 'ViewObject'))
+        if ((not hasattr(self, 'robot'))
+                or (not hasattr(self.robot, 'ViewObject'))
                 or (not hasattr(self.robot.ViewObject, 'ShowReal'))
                 or (not hasattr(self.robot.ViewObject, 'ShowVisual'))
                 or (not hasattr(self.robot.ViewObject, 'ShowCollision'))):
@@ -259,22 +262,22 @@ class Robot:
             self.robot.Document.removeObject(o.Name)
         # TODO?: doc.recompute() if objects_to_remove or (set(current_linked_objects) != set(all_linked_objects))
 
-    def cleanup_group(self) -> DOList:
-        """Remove and return all objects not supported by ROS::Robot."""
+    def cleanup_group(self) -> DO:
+        """Remove the last object not supported by ROS::Robot.
+
+        Recursion provoked by modifying `Group` will take care of removing
+        the remaining unsupported objects.
+
+        """
         if ((not hasattr(self, 'robot'))
                 or (not is_robot(self.robot))):
             return
-        removed_objects: DOList = []
-        # Group is managed by `self`.
-        for o in self.robot.Group:
+        for o in self.robot.Group[::-1]:
             if is_link(o) or is_joint(o):
                 # Supported.
                 continue
             warn_unsupported(o, by='ROS::Robot', gui=True)
-            # implementation note: removeobject doesn't raise any exception
-            # and `o` exists even if already removed from the group.
-            removed_objects += self.robot.removeObject(o)
-        return removed_objects
+            return self.robot.removeObject(o)
 
     def add_joint_variables(self) -> list[str]:
         """Add a property for each actuated joint."""

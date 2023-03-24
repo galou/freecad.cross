@@ -117,13 +117,13 @@ def warn_unsupported(objects: [DO, DOList],
                      ) -> None:
     """Warn the user of an unsupported object type."""
     if not isinstance(objects, list):
-        objects = list(objects)
+        objects = [objects]
     for o in objects:
         by_txt = f' by {by}' if by else ''
         try:
             label = o.Label
         except AttributeError:
-            label = 'not_a_FreeCAD_object'
+            label = str(o)
         try:
             warn(f'Object "{label}" of type {o.TypeId}'
                  f' not supported{by_txt}\n',

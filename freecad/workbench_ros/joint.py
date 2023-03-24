@@ -84,15 +84,17 @@ class Joint:
             return
 
         try:
-            if not is_link(self.joint.Child):
+            if self.joint.Child and (not is_link(self.joint.Child)):
                 warn_unsupported(self.joint.Child, by='ROS::Joint', gui=True)
+                # Reject the current child.
                 self.joint.Child = None
         except AttributeError:
             pass
 
         try:
-            if not is_link(self.joint.Parent):
+            if self.joint.Parent and (not is_link(self.joint.Parent)):
                 warn_unsupported(self.joint.Parent, by='ROS::Joint', gui=True)
+                # Reject the current parent.
                 self.joint.Parent = None
         except AttributeError:
             pass

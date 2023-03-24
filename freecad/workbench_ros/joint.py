@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from math import degrees
-from typing import Optional
+from typing import Iterable, Optional
 import xml.etree.ElementTree as et
 
 import FreeCAD as fc
@@ -8,15 +10,19 @@ from .utils import ICON_PATH
 from .utils import add_property
 from .utils import error
 from .utils import get_joints
+from .utils import is_joint
+from .utils import is_link
 from .utils import is_robot
 from .utils import get_valid_urdf_name
 from .utils import warn
+from .utils import warn_unsupported
 from .export_urdf import urdf_origin_from_placement
 
 # Typing hints.
 DO = fc.DocumentObject
-DOG = fc.DocumentObjectGroup
+DOList = Iterable[DO]
 VPDO = 'FreeCADGui.ViewProviderDocumentObject'
+RosJoint = DO  # A Ros::Joint, i.e. a DocumentObject with Proxy "Joint".
 
 
 class Joint:
@@ -31,12 +37,12 @@ class Joint:
     # The first element is the default.
     type_enum = ['fixed', 'prismatic', 'revolute', 'continuous', 'planar', 'floating']
 
-    def __init__(self, obj: DOG):
+    def __init__(self, obj: RosJoint):
         obj.Proxy = self
         self.joint = obj
         self.init_properties(obj)
 
-    def init_properties(self, obj: DOG):
+    def init_properties(self, obj: RosJoint):
         add_property(obj, 'App::PropertyString', '_Type', 'Internal',
                      'The type')
         obj.setPropertyStatus('_Type', ['Hidden', 'ReadOnly'])
@@ -67,10 +73,31 @@ class Joint:
                      'Placement of the joint in the robot frame')
         obj.setEditorMode('Placement', ['ReadOnly'])
 
-    def onChanged(self, obj: DOG, prop: str) -> None:
-        pass
+    def onChanged(self, obj: RosJoint, prop: str) -> None:
+        if prop in ['Child', 'Parent']:
+            self.cleanup_children()
 
-    def onDocumentRestored(self, obj: DOG):
+    def cleanup_children(self) -> DOList:
+        """Remove and return all objects not supported by ROS::Joint."""
+        if ((not hasattr(self, 'joint'))
+                or not is_joint(self.joint)):
+            return
+
+        try:
+            if not is_link(self.joint.Child):
+                warn_unsupported(self.joint.Child, by='ROS::Joint', gui=True)
+                self.joint.Child = None
+        except AttributeError:
+            pass
+
+        try:
+            if not is_link(self.joint.Parent):
+                warn_unsupported(self.joint.Parent, by='ROS::Joint', gui=True)
+                self.joint.Parent = None
+        except AttributeError:
+            pass
+
+    def onDocumentRestored(self, obj: RosJoint):
         obj.Proxy = self
         self.joint = obj
         self.init_properties(obj)
@@ -181,7 +208,7 @@ class _ViewProviderJoint:
         pass
 
     def updateData(self,
-                   obj: DOG,
+                   obj: RosJoint,
                    prop: str):
 
         vobj = obj.ViewObject

@@ -111,6 +111,27 @@ def error(text: str, gui: bool = False) -> None:
         diag.exec_()
 
 
+def warn_unsupported(objects: [DO, DOList],
+                     by: str = '',
+                     gui: bool = False,
+                     ) -> None:
+    """Warn the user of an unsupported object type."""
+    if not isinstance(objects, list):
+        objects = list(objects)
+    for o in objects:
+        by_txt = f' by {by}' if by else ''
+        try:
+            label = o.Label
+        except AttributeError:
+            label = 'not_a_FreeCAD_object'
+        try:
+            warn(f'Object "{label}" of type {o.TypeId}'
+                 f' not supported{by_txt}\n',
+                 gui=gui)
+        except AttributeError:
+            warn(f'Object "{label}" not supported{by_txt}\n', gui=gui)
+
+
 def strip_subelement(sub_fullpath: str) -> str:
     """Return sub_fullpath without the last sub-element.
 

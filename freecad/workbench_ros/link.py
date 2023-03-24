@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 from pathlib import Path
-from typing import Optional
+from typing import Iterable, Optional
 import xml.etree.ElementTree as et
 
 import FreeCAD as fc
@@ -10,17 +12,46 @@ from .utils import ICON_PATH
 from .utils import add_property
 from .utils import error
 from .utils import get_joints
+from .utils import is_freecad_link
+from .utils import is_joint
+from .utils import is_link
 from .utils import is_primitive
 from .utils import is_robot
 from .utils import save_mesh_dae
 from .utils import get_valid_filename
 from .utils import get_valid_urdf_name
 from .utils import warn
+from .utils import warn_unsupported
 
 # Typing hints.
 DO = fc.DocumentObject
-DOG = fc.DocumentObjectGroup
+DOList = Iterable[DO]
 VPDO = 'FreeCADGui.ViewProviderDocumentObject'
+RosLink = DO  # A Ros::Link, i.e. a DocumentObject with Proxy "Link".
+RosJoint = DO  # A Ros::Joint, i.e. a DocumentObject with Proxy "Joint".
+RosRobot = DO  # A Ros::Robot, i.e. a DocumentObject with Proxy "Robot".
+
+
+def _skim_links_joints_from(group) -> tuple[DOList, DOList]:
+    """Remove all Ros::Link and Ros::Joint from the list.
+
+    `group` is a property that looks like a list but behaves differently
+    (behaves like a tuple and is a copy of the original property content,
+     so cannot be set here).
+
+    Return (kept_objects, removed_objects).
+
+    """
+    removed_objects: DOList = []
+    kept_objects: DOList = list(group)
+    # Implementation note: reverse order required.
+    for i, o in reversed(list(enumerate(kept_objects))):
+        if is_link(o) or is_joint(o):
+            warn_unsupported(o, by='ROS::Link', gui=True)
+            # Implementation note: cannot use `kept_objects.remove`, this would
+            # lose the object.
+            removed_objects.append(kept_objects.pop(i))
+    return kept_objects, removed_objects
 
 
 class Link:
@@ -30,12 +61,12 @@ class Link:
     # workbench, to identify the object type.
     Type = 'Ros::Link'
 
-    def __init__(self, obj: DOG):
+    def __init__(self, obj: RosLink):
         obj.Proxy = self
         self.link = obj
         self.init_properties(obj)
 
-    def init_properties(self, obj: DOG):
+    def init_properties(self, obj: RosLink):
         add_property(obj, 'App::PropertyString', '_Type', 'Internal',
                      'The type')
         obj.setPropertyStatus('_Type', ['Hidden', 'ReadOnly'])
@@ -62,23 +93,17 @@ class Link:
         add_property(obj, 'App::PropertyPlacement', 'MountedPlacement',
                      'Internal', 'Placement when building')
 
-    def execute(self, obj: DOG):
+    def execute(self, obj: RosLink):
         pass
 
-    def onBeforeChange(self, obj: DOG, prop: str) -> None:
-        if not hasattr(self, 'link'):
-            return
-        if prop == 'Real':
-            self.real_was_empty = hasattr(self.link, 'Real') and not(self.link.Real)
+    def onBeforeChange(self, obj: RosLink, prop: str) -> None:
+        pass
 
-    def onChanged(self, obj: DOG, prop: str) -> None:
-        if not hasattr(self, 'link'):
-            return
+    def onChanged(self, obj: RosLink, prop: str) -> None:
+        if prop in ['Group', 'Real', 'Visual', 'Collision']:
+            self.cleanup_children()
 
-    def onDocumentRestored(self, obj: DOG):
-        # obj.Proxy = self
-        # self.link = obj
-        # self.init_properties(obj)
+    def onDocumentRestored(self, obj: RosLink):
         self.__init__(obj)
 
     def __getstate__(self):
@@ -87,6 +112,50 @@ class Link:
     def __setstate__(self, state):
         if state:
             self.Type, = state
+
+    def cleanup_children(self) -> DOList:
+        """Remove and return all objects not supported by ROS::Link."""
+
+        if ((not hasattr(self, 'link'))
+                or (not is_link(self.link))):
+            return
+        removed_objects: set[DO] = []
+        # Group is managed by us and the containing robot.
+        for o in self.link.Group:
+            if is_freecad_link(o):
+                # Supported, and managed by us.
+                continue
+            warn_unsupported(o, by='ROS::Link', gui=True)
+            # implementation note: removeobject doesn't raise any exception
+            # and `o` exists even if already removed from the group.
+            removed_objects.update(self.link.removeObject(o))
+
+        # Clean-up `Visual`, `Real`, `Collision`.
+        try:
+            kept, removed = _skim_links_joints_from(self.link.Real)
+            if self.link.Real != kept:
+                self.link.Real = kept
+            warn_unsupported(removed_objects, by='ROS::Link', gui=True)
+            removed_objects.update(removed)
+        except AttributeError:
+            pass
+        try:
+            kept, removed = _skim_links_joints_from(self.link.Visual)
+            if self.link.Visual != kept:
+                self.link.Visual = kept
+            warn_unsupported(removed_objects, by='ROS::Link', gui=True)
+            removed_objects.update(removed)
+        except AttributeError:
+            pass
+        try:
+            kept, removed = _skim_links_joints_from(self.link.Collision)
+            if self.link.Collision != kept:
+                self.link.Collision = kept
+            warn_unsupported(removed_objects, by='ROS::Link', gui=True)
+            removed_objects.update(removed)
+        except AttributeError:
+            pass
+        return list(removed_objects)
 
     def get_robot(self) -> Optional[DO]:
         """Return the Ros::Robot this link belongs to."""

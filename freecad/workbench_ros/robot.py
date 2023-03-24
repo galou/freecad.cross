@@ -19,11 +19,13 @@ from .utils import get_valid_property_name
 from .utils import get_valid_urdf_name
 from .utils import grouper
 from .utils import is_joint
+from .utils import is_link
 from .utils import is_robot
 from .utils import label_or
 from .utils import save_xml
 from .utils import split_package_path
 from .utils import warn
+from .utils import warn_unsupported
 
 # Typing hints.
 DO = fc.DocumentObject
@@ -162,12 +164,13 @@ class Robot:
         add_property(obj, 'App::PropertyPath', 'OutputPath', 'Export',
                      'The path to the ROS package to export files to')
 
-    def execute(self, obj: DO) -> None:
+    def execute(self, obj: RosRobot) -> None:
+        self.cleanup_group()
         self.add_joint_variables()
         self.compute_poses()
         self.reset_group()
 
-    def onChanged(self, obj: DO, prop: str) -> None:
+    def onChanged(self, obj: RosRobot, prop: str) -> None:
         if not hasattr(self, 'robot'):
             # Implementation note: happens because __init__ is not called on
             # restore.
@@ -256,6 +259,23 @@ class Robot:
             self.robot.Document.removeObject(o.Name)
         # TODO?: doc.recompute() if objects_to_remove or (set(current_linked_objects) != set(all_linked_objects))
 
+    def cleanup_group(self) -> DOList:
+        """Remove and return all objects not supported by ROS::Robot."""
+        if ((not hasattr(self, 'robot'))
+                or (not is_robot(self.robot))):
+            return
+        removed_objects: DOList = []
+        # Group is managed by `self`.
+        for o in self.robot.Group:
+            if is_link(o) or is_joint(o):
+                # Supported.
+                continue
+            warn_unsupported(o, by='ROS::Robot', gui=True)
+            # implementation note: removeobject doesn't raise any exception
+            # and `o` exists even if already removed from the group.
+            removed_objects += self.robot.removeObject(o)
+        return removed_objects
+
     def add_joint_variables(self) -> list[str]:
         """Add a property for each actuated joint."""
         variables: list[str] = []
@@ -342,7 +362,7 @@ class _ViewProviderRobot:
         add_property(vobj, 'App::PropertyBool', 'ShowCollision', 'Display Options',
                      'Whether to show the parts for URDF collision')
 
-    def updateData(self, obj: DO, prop: str):
+    def updateData(self, obj: RosRobot, prop: str):
         return
 
     def onChanged(self, vobj: VPDO, prop: str):
@@ -352,7 +372,7 @@ class _ViewProviderRobot:
                     if hasattr(j.ViewObject, 'ShowJointAxis'):
                         j.ViewObject.ShowJointAxis = vobj.ShowJointAxes
         if prop in ['ShowReal', 'ShowVisual', 'ShowCollision']:
-            robot : DO = vobj.Object
+            robot: RosRobot = vobj.Object
             robot.Proxy.execute(robot)
 
     def doubleClicked(self, vobj: VPDO):
@@ -382,7 +402,7 @@ class _ViewProviderRobot:
         return None
 
 
-def make_robot(name, doc: Optional[fc.Document] = None) -> DO:
+def make_robot(name, doc: Optional[fc.Document] = None) -> RosRobot:
     """Add a Ros::Robot to the current document."""
     if doc is None:
         doc = fc.activeDocument()

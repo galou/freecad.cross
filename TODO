@@ -1,3 +1,4 @@
+- Add `package.xml` and `CMakeLists.txt` and remove showing of the URDF xml in the GUI when exporting a robot
 - Remove the task panels when creating a new robot and a new link
 - Add method to define link.MountedPlacement
 - Add the possiblity to place a robot.

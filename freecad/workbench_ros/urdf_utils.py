@@ -16,14 +16,14 @@ from .freecad_utils import get_leafs_and_subnames
 from .freecad_utils import has_placement
 from .freecad_utils import is_box
 from .freecad_utils import is_cylinder
+from .freecad_utils import is_group
+from .freecad_utils import is_lcs
+from .freecad_utils import is_link as is_fclink
+from .freecad_utils import is_part
 from .freecad_utils import is_sphere
 from .freecad_utils import label_or
 from .freecad_utils import warn
 from .utils import get_valid_filename
-from .utils import is_group
-from .utils import is_lcs
-from .utils import is_link as is_fclink
-from .utils import is_part
 from .utils import xml_comment
 
 

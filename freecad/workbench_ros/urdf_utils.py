@@ -1,30 +1,51 @@
-"""Contains various helper functions to export to URDF from FreeCAD.
-"""
+"""Contains various helper functions to export to URDF from FreeCAD."""
 
+from __future__ import annotations
+
+from dataclasses import dataclass
 import math
 from pathlib import Path
-from typing import Iterable, List, Optional, Tuple, Union
+from typing import Iterable, Tuple, Optional
 import xml.etree.ElementTree as et
 
 import FreeCAD as fc
 
 import numpy as np
 
-from .utils import has_placement
-from .utils import is_box
-from .utils import is_cylinder
-from .utils import is_sphere
-from .utils import label_or
-from .utils import warn
+from .freecad_utils import get_leafs_and_subnames
+from .freecad_utils import has_placement
+from .freecad_utils import is_box
+from .freecad_utils import is_cylinder
+from .freecad_utils import is_sphere
+from .freecad_utils import label_or
+from .freecad_utils import warn
+from .utils import get_valid_filename
+from .utils import is_group
+from .utils import is_lcs
+from .utils import is_link as is_fclink
+from .utils import is_part
 from .utils import xml_comment
 
 
-# Hint for a URDF rotation.
-Rpy = Tuple[float, float, float]
+# Typing hints.
+DO = fc.DocumentObject
+DOList = Iterable[DO]
+PartBox = DO  # TypeId == 'Part::Box'
+PartCyl = DO  # TypeId == 'Part::Cylinder'
+PartSphere = DO  # TypeId == 'Part::Sphere'
+Rpy = Tuple[float, float, float]  # URDF rotation, Roll-Pitch-Yaw.
 QuatList = Tuple[float, float, float, float]  # (qx, qy, qz, qw).
 
 # Small number to test whether a number is close to zero.
 _EPS = np.finfo(float).eps * 4.0
+
+
+@dataclass
+class XmlForExport:
+    xml: et.Element
+    object: DO
+    placement: fc.Placement
+    mesh_filename: str = ''
 
 
 def quaternion_matrix(quaternion: QuatList) -> np.ndarray:
@@ -122,7 +143,7 @@ def urdf_geometry_box(length_x: float, length_y: float, length_z: float) -> et.E
 
 
 def urdf_box_placement_from_object(
-        box: 'PrimitivePy',
+        box: PartBox,
         placement: Optional[fc.Placement] = None) -> fc.Placement:
     """Return the FreeCAD placement of the box center.
 
@@ -154,7 +175,7 @@ def urdf_geometry_sphere(radius: float) -> et.Element:
 
 
 def urdf_sphere_placement_from_object(
-        sphere: 'PrimitivePy',
+        sphere: PartSphere,
         placement: Optional[fc.Placement] = None) -> fc.Placement:
     """Return the FreeCAD placement of the sphere center.
 
@@ -181,7 +202,7 @@ def urdf_geometry_cylinder(radius: float, length: float) -> et.Element:
 
 
 def urdf_cylinder_placement_from_object(
-        cyl: 'PrimitivePy',
+        cyl: PartCyl,
         placement: Optional[fc.Placement] = None) -> fc.Placement:
     """Return the FreeCAD placement of the cylinder center.
 
@@ -198,7 +219,7 @@ def urdf_cylinder_placement_from_object(
 
 
 def _urdf_generic_from_box(
-        box: 'PrimitivePy',
+        box: PartBox,
         generic: str,
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False) -> et.Element:
@@ -231,7 +252,7 @@ def _urdf_generic_from_box(
 
 
 def urdf_visual_from_box(
-        box: 'PrimitivePy',
+        box: PartBox,
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False) -> et.Element:
     """Return the xml element for visual for a FreeCAD's box.
@@ -251,7 +272,7 @@ def urdf_visual_from_box(
 
 
 def urdf_collision_from_box(
-        box: 'PrimitivePy',
+        box: PartBox,
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False) -> et.Element:
     """Return the xml element for collision for a FreeCAD's box.
@@ -271,7 +292,7 @@ def urdf_collision_from_box(
 
 
 def _urdf_generic_from_sphere(
-        sphere: 'PrimitivePy',
+        sphere: PartSphere,
         generic: str,
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False) -> et.Element:
@@ -300,7 +321,7 @@ def _urdf_generic_from_sphere(
 
 
 def urdf_visual_from_sphere(
-        sphere: 'PrimitivePy',
+        sphere: PartSphere,
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False) -> et.Element:
     """Return the xml element for visual for a FreeCAD's sphere.
@@ -320,7 +341,7 @@ def urdf_visual_from_sphere(
 
 
 def urdf_collision_from_sphere(
-        sphere: 'PrimitivePy',
+        sphere: PartSphere,
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False) -> et.Element:
     """Return the xml element for collision for a FreeCAD's sphere.
@@ -340,7 +361,7 @@ def urdf_collision_from_sphere(
 
 
 def _urdf_generic_from_cylinder(
-        cyl: 'PrimitivePy',
+        cyl: PartCyl,
         generic: str,
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False) -> et.Element:
@@ -372,7 +393,7 @@ def _urdf_generic_from_cylinder(
 
 
 def urdf_visual_from_cylinder(
-        cyl: 'PrimitivePy',
+        cyl: PartCyl,
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False) -> et.Element:
     """Return the xml element for visual for a FreeCAD's cylinder.
@@ -392,7 +413,7 @@ def urdf_visual_from_cylinder(
 
 
 def urdf_collision_from_cylinder(
-        cyl: 'PrimitivePy',
+        cyl: PartCyl,
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False) -> et.Element:
     """Return the xml element for collision for a FreeCAD's cylinder.
@@ -450,7 +471,8 @@ def _urdf_generic_mesh(
 
     """
     if (not placement) and (not has_placement(obj)):
-        raise RuntimeError("Argument must be a FreeCAD object with a 'Placement' attribute")
+        raise RuntimeError("Argument must be a FreeCAD object"
+                           " with a 'Placement' attribute")
     parent = et.fromstring(f'<{generic}/>')
     # TODO: handle links
     parent.append(et.Comment(xml_comment(obj.Label)))
@@ -508,17 +530,22 @@ def urdf_collision_mesh(
 def _urdf_generic_from_object(
         obj: fc.DocumentObject,
         generic: str,
-        mesh_name: Optional[str] = None,
         package_name: Optional[str] = None,
-        placement: fc.Placement = fc.Placement(),
-        ) -> et.ElementTree:
-    """Return the xml element for visual or collision for a FreeCAD object.
+        placement: Optional[fc.Placement] = None,
+        ) -> list[XmlForExport]:
+    """Return the xml elements for visual or collision for a FreeCAD object.
 
     For meshes, the URDF just contains a reference to the object, the mesh is
-    not exported.
+    not exported here.
+
+    Returns (list of xml elements, list of objects, list of placements,
+             list of mesh file names).
+    The path is `None` for primitive types (box, sphere, cylinder). The path is
+    the filename with extension for meshes, not the full path.
 
     Parameters
     ----------
+
     - obj: the FreeCAD object.
     - mesh_name: name of the mesh file without directory, so that the final
         mesh reference is `package://{package_name}/meshes/{mesh_name}`.
@@ -528,29 +555,58 @@ def _urdf_generic_from_object(
         be added to this.
 
     """
-    if is_box(obj):
-        return _urdf_generic_from_box(obj, generic, placement)
-    elif is_sphere(obj):
-        return _urdf_generic_from_sphere(obj, generic, placement)
-    elif is_cylinder(obj):
-        return _urdf_generic_from_cylinder(obj, generic, placement)
-    elif mesh_name and package_name:
-        return _urdf_generic_mesh(obj, mesh_name, package_name, generic, placement)
+    out_data: list[XmlForExport] = []
+    for subobj, subname in get_leafs_and_subnames(obj):
+        linked_object, linked_matrix = subobj.getLinkedObject(
+            recursive=True,
+            transform=True,
+            matrix=fc.Matrix())
+        if not placement:
+            this_placement = fc.Placement(linked_matrix)
+        else:
+            this_placement = placement * fc.Placement(linked_matrix)
+        filename = ''
+        if is_box(linked_object):
+            # We ignore the object placement because it's given by linked_matrix.
+            xml = _urdf_generic_from_box(linked_object, generic,
+                                         this_placement, ignore_obj_placement=True)
+        elif is_sphere(linked_object):
+            # We ignore the object placement because it's given by linked_matrix.
+            xml = _urdf_generic_from_sphere(linked_object, generic,
+                                            this_placement, ignore_obj_placement=True)
+        elif is_cylinder(linked_object):
+            # We ignore the object placement because it's given by linked_matrix.
+            xml = _urdf_generic_from_cylinder(linked_object, generic,
+                                              this_placement, ignore_obj_placement=True)
+        else:
+            # TODO: manage duplicate labels.
+            filename = (get_valid_filename(obj.getLinkedObject(recursive=True).Label)
+                        + '.dae')
+            if not package_name:
+                warn('Internal error, `package_name` empty'
+                     ' but mesh found, using "package"')
+                package_name = 'package'
+            xml = _urdf_generic_mesh(linked_object, filename, package_name, generic,
+                                     this_placement)
+        out_data.append(XmlForExport(xml, linked_object, this_placement, filename))
+    return out_data
 
 
 def urdf_visual_from_object(
         obj: fc.DocumentObject,
-        mesh_name: Optional[str] = None,
         package_name: Optional[str] = None,
         placement: Optional[fc.Placement] = None,
-        ) -> et.ElementTree:
-    """Return the xml element for visual or collision for a FreeCAD object.
+        ) -> list[XmlForExport]:
+    """Return the xml element for visual for a FreeCAD object.
 
     For meshes, the URDF just contains a reference to the object, the mesh is
     not exported.
 
+    Returns (list of xml elements, list of objects, list of placements).
+
     Parameters
     ----------
+
     - obj: the FreeCAD object.
     - mesh_name: name of the mesh file without directory, so that the final
         mesh reference is `package://{package_name}/meshes/{mesh_name}`.
@@ -559,22 +615,24 @@ def urdf_visual_from_object(
         If not given, obj.Placement will be used.
 
     """
-    return _urdf_generic_from_object(obj, 'visual', mesh_name, package_name, placement)
+    return _urdf_generic_from_object(obj, 'visual', package_name, placement)
 
 
 def urdf_collision_from_object(
         obj: fc.DocumentObject,
-        mesh_name: Optional[str] = None,
-        package_name: Optional[str] = None,
+        package_name: str = '',
         placement: Optional[fc.Placement] = None,
-        ) -> et.ElementTree:
-    """Return the xml element for collision or collision for a FreeCAD object.
+        ) -> list[XmlForExport]:
+    """Return the xml element for collision for a FreeCAD object.
 
     For meshes, the URDF just contains a reference to the object, the mesh is
     not exported.
 
+    Returns (list of xml elements, list of objects, list of placements).
+
     Parameters
     ----------
+
     - obj: the FreeCAD object.
     - mesh_name: name of the mesh file without directory, so that the final
         mesh reference is `package://{package_name}/meshes/{mesh_name}`.
@@ -583,10 +641,12 @@ def urdf_collision_from_object(
         If not given, obj.Placement will be used.
 
     """
-    return _urdf_generic_from_object(obj, 'collision', mesh_name, package_name, placement)
+    return _urdf_generic_from_object(obj, 'collision', package_name, placement)
 
 
-def export_group_with_lcs(group: fc.DocumentObjectGroup, package_path: Union[str, Path]) -> bool:
+def export_group_with_lcs(group: fc.DocumentObjectGroup,
+                          package_path: [str | Path],
+                          ) -> bool:
     """Export a group containing a link to an assembly and links to LCS.
 
     Export a group containing a link to an assembly and links to local
@@ -595,23 +655,18 @@ def export_group_with_lcs(group: fc.DocumentObjectGroup, package_path: Union[str
     link associated to each joint as well as the relative link poses.
 
     """
-    if (not hasattr(group, 'TypeId')) or (group.TypeId != 'App::DocumentObjectGroup'):
-        raise ValueError('First argument must be a group, i.e. "App::DocumentObjectGroup"')
+    if not is_group(group):
+        raise ValueError('First argument must be a group, i.e.'
+                         ' "App::DocumentObjectGroup"')
     fc_links = group.Group
-    urdf_joints: List[fc.DocumentObject] = []
     for fc_link in fc_links:
-        if not hasattr(fc_link, 'TypeId'):
-            # I don't know what `fc_link` is.
-            warn(f'"{label_or(fc_link)}" has unexpected type, ignoring')
-            continue
-        if fc_link.TypeId != 'App::Link':
-            # fc_link is not a link, cannot handle it.
+        if not is_fclink(fc_link):
             warn(f'"{label_or(fc_link)}" is not a link, ignoring')
             continue
         linked_object = fc_link.LinkedObject
-        if ((not hasattr(linked_object, 'TypeId'))
-                or (linked_object.TypeId not in ('PartDesign::CoordinateSystem', 'App::Part'))):
+        if not (is_lcs(linked_object) or is_part(linked_object)):
             # linked_object is not a coordinate system, cannot handle it.
-            warn(f'Linked object of "{label_or(fc_link)}" is not a coordinate system or part, ignoring')
+            warn(f'Linked object of "{label_or(fc_link)}" is'
+                 ' not a coordinate system or part, ignoring')
             continue
     return True

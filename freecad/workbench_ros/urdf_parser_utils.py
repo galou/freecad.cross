@@ -20,11 +20,11 @@ from urdf_parser_py.urdf import Mesh
 from urdf_parser_py.urdf import Pose
 from urdf_parser_py.urdf import Sphere
 
-from .utils import add_object
-from .utils import is_group
-from .utils import read_mesh_dae
-from .utils import scale_mesh_object
-from .export_urdf import rotation_from_rpy
+from .freecad_utils import add_object
+from .freecad_utils import is_group
+from .mesh_utils import read_mesh_dae
+from .mesh_utils import scale_mesh_object
+from .urdf_utils import rotation_from_rpy
 
 # Typing hints.
 Doc = fc.Document
@@ -163,12 +163,15 @@ def obj_from_mesh(
         raw_mesh = fcmesh.read(str(mesh_path))
     if is_group(doc_or_group):
         doc = doc_or_group.Document
+        group = doc_or_group
     else:
         doc = doc_or_group
+        group = None
     mesh_obj = doc.addObject('Mesh::Feature', mesh_path.name)
     mesh_obj.Label = mesh_path.name
-    if is_group(doc_or_group):
-        doc_or_group.addObject(mesh_obj)
+    mesh_obj.Label2 = str(mesh_path.expanduser())
+    if group:
+        group.addObject(mesh_obj)
     mesh_obj.Mesh = raw_mesh
     if mesh_path.suffix.lower() in ['.stl', '.obj']:
         scale_mesh_object(mesh_obj, 1000.0)  # m to mm.

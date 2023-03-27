@@ -4,7 +4,7 @@ from typing import List, Optional, Tuple
 
 import FreeCAD as fc
 
-from .utils import add_property
+from .freecad_utils import add_property
 
 # Typing hints.
 DO = fc.DocumentObject

@@ -29,13 +29,13 @@ except ModuleNotFoundError:
 from .assembly4_utils import add_asm4_properties
 from .assembly4_utils import new_variable_container
 from .assembly4_utils import update_placement_expression
-from .utils import add_property
-from .utils import is_freecad_link
-from .utils import is_group
-from .utils import is_lcs
-from .utils import is_part
-from .utils import make_group
-from .utils import get_valid_property_name
+from .freecad_utils import add_property
+from .freecad_utils import is_link as is_freecad_link
+from .freecad_utils import is_group
+from .freecad_utils import is_lcs
+from .freecad_utils import is_part
+from .freecad_utils import make_group
+from .freecad_utils import get_valid_property_name
 
 # Typing hints.
 DO = fc.DocumentObject

@@ -324,8 +324,8 @@ def export(exportList,filename,tessellation=1,colors=None):
         node = collada.scene.Node("node"+str(objind), children=[geomnode])
         scenenodes.append(node)
         objind += 1
-    myscene = collada.scene.Scene("myscene", scenenodes)
+    myscene = collada.scene.Scene('myscene', scenenodes)
     colmesh.scenes.append(myscene)
     colmesh.scene = myscene
     colmesh.write(filename)
-    FreeCAD.Console.PrintMessage(translate("Arch","file %s successfully created.") % filename)
+    FreeCAD.Console.PrintMessage(translate('Arch', f'File {filename} successfully created.\n'))

@@ -4,12 +4,13 @@ from typing import Iterable, Optional
 
 import FreeCAD as fc
 
-from .utils import is_box
-from .utils import is_cylinder
-from .utils import is_freecad_link
-from .utils import is_mesh
-from .utils import is_part
-from .utils import is_sphere
+from .freecad_utils import get_leafs_and_subnames
+from .freecad_utils import is_box
+from .freecad_utils import is_cylinder
+from .freecad_utils import is_link
+from .freecad_utils import is_mesh
+from .freecad_utils import is_part
+from .freecad_utils import is_sphere
 
 
 # Typing hints.
@@ -44,7 +45,7 @@ def deep_copy_object(obj: DO,
         copy_of_obj = doc.copyObject(obj)
         copy_of_obj.Placement = placement * copy_of_obj.Placement
         return [copy_of_obj]
-    if is_freecad_link(obj):
+    if is_link(obj):
         return deep_copy_object(obj.LinkedObject, doc, placement * obj.Placement)
 
 
@@ -75,12 +76,15 @@ def deep_copy_part(part: AppPart,
 
     # `part.Shape` contains all objects with a shape except meshes.
     # `part.Shape` is already placed with `part.Placement`.
+    # However, it has not `Shape` attribute if it has only meshes.
     # Maybe only on recent FreeCAD versions (works with 0.21)?
     # Implementation note: part.Shape returns a copy.
-    copy_of_shape = doc.addObject('Part::Feature', part.Label + '_shape')
-    copy_of_shape.Shape = part.Shape
-    copy_of_shape.Placement = placement * copy_of_shape.Placement
-    objects: DOList = [copy_of_shape]
+    objects: DOList = []
+    if hasattr(part, 'Shape'):
+        copy_of_shape = doc.addObject('Part::Feature', part.Label + '_shape')
+        copy_of_shape.Shape = part.Shape
+        copy_of_shape.Placement = placement * copy_of_shape.Placement
+        objects.append(copy_of_shape)
     mesh_copies = get_placed_mesh_copies(part)
     for mesh in mesh_copies:
         mesh.Placement = placement * mesh.Placement
@@ -115,6 +119,7 @@ def get_meshes_and_placements(part: AppPart
     """
     outlist: list[tuple[MeshFeature, fc.Placement]] = []
     for sobj, subname in get_leafs_and_subnames(part):
+        # Cf. DocumentObjectPyImp.cpp::getSubObject (l.417).
         return_type_placement = 3
         if is_mesh(sobj):
             outlist.append((sobj, part.getSubObject(subname, return_type_placement)))
@@ -122,38 +127,6 @@ def get_meshes_and_placements(part: AppPart
             outlist.append((sobj.LinkedObject,
                             part.getSubObject(subname, return_type_placement)))
     return outlist
-
-
-def get_leafs_and_subnames(obj: DO) -> list[tuple[DO, str]]:
-    """Return all leaf subobjects and their path.
-
-    Return a list of (object, path), where path (also called subname) can be
-    used to retrieve the physical placement of the object, for example with
-    `obj.getSubObject()`.
-
-    Parameters
-    ----------
-    - obj: a FreeCAD object that has the attribute `getSubObjects()`.
-           If the object doesn't have `getSubObjects()`, it's considered a leaf
-           and (obj, '') is returned.
-
-    """
-    def get_subobjects_recursive(
-            obj: DO,
-            subname: str,
-            ) -> list[tuple[DO, str]]:
-        if (not hasattr(obj, 'getSubObjects')) or (not obj.getSubObjects()):
-            # A leaf node.
-            return [(obj, subname)]
-        outlist: list[tuple[DO, str]] = []
-        subnames = obj.getSubObjects()
-        for name in subnames:
-            o = obj.getSubObjectList(name)[-1]
-            outlist += get_subobjects_recursive(o, f'{subname}{name}')
-
-        return outlist
-
-    return get_subobjects_recursive(obj, '')
 
 
 def deep_copy_mesh(mesh: MeshFeature,

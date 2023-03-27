@@ -7,24 +7,24 @@ import xml.etree.ElementTree as et
 
 import FreeCAD as fc
 
+from .freecad_utils import add_property
+from .freecad_utils import error
+from .freecad_utils import get_properties_of_category
+from .freecad_utils import get_valid_property_name
+from .freecad_utils import label_or
+from .freecad_utils import warn
 from .utils import ICON_PATH
-from .utils import add_property
-from .utils import error
 from .utils import get_chains
 from .utils import get_joints
 from .utils import get_links
-from .utils import get_properties_of_category
 from .utils import get_valid_filename
-from .utils import get_valid_property_name
 from .utils import get_valid_urdf_name
 from .utils import grouper
 from .utils import is_joint
 from .utils import is_link
 from .utils import is_robot
-from .utils import label_or
 from .utils import save_xml
 from .utils import split_package_path
-from .utils import warn
 from .utils import warn_unsupported
 
 # Typing hints.
@@ -298,15 +298,14 @@ class Robot:
             pass
         return variables
 
-    def export_urdf(self) -> et.Element:
-        if not hasattr(self, 'robot'):
-            return et.ElementTree()
-        if not hasattr(self.robot, 'OutputPath'):
-            return et.ElementTree()
+    def export_urdf(self) -> Optional[et.Element]:
+        if ((not hasattr(self, 'robot'))
+                or (not hasattr(self.robot, 'OutputPath'))):
+            return
         output_path = Path(self.robot.OutputPath)
         if str(output_path) == '.':
             warn('Property `OutputPath` cannot be empty', True)
-            return et.ElementTree()
+            return
         package_parent, package_name = split_package_path(output_path)
         output_path.mkdir(parents=True, exist_ok=True)
         # TODO: warn if package name doesn't end with `_description`.

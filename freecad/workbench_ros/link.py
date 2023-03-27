@@ -6,21 +6,21 @@ import xml.etree.ElementTree as et
 
 import FreeCAD as fc
 
-from .export_urdf import urdf_collision_from_object
-from .export_urdf import urdf_visual_from_object
+from .freecad_utils import add_property
+from .freecad_utils import error
+from .freecad_utils import is_link as is_freecad_link
+from .freecad_utils import warn
+from .mesh_utils import save_mesh_dae
+from .urdf_utils import urdf_collision_from_object
+from .urdf_utils import urdf_visual_from_object
+from .urdf_utils import XmlForExport
 from .utils import ICON_PATH
-from .utils import add_property
-from .utils import error
 from .utils import get_joints
-from .utils import is_freecad_link
+from .utils import get_valid_urdf_name
 from .utils import is_joint
 from .utils import is_link
 from .utils import is_primitive
 from .utils import is_robot
-from .utils import save_mesh_dae
-from .utils import get_valid_filename
-from .utils import get_valid_urdf_name
-from .utils import warn
 from .utils import warn_unsupported
 
 # Typing hints.
@@ -52,6 +52,27 @@ def _skim_links_joints_from(group) -> tuple[DOList, DOList]:
             # lose the object.
             removed_objects.append(kept_objects.pop(i))
     return kept_objects, removed_objects
+
+
+def _get_xmls_and_export_meshes(obj,
+                                urdf_function,
+                                placement,
+                                package_parent: [Path | str] = Path(),
+                                package_name: str = '',
+                                ) -> list[et.Element]:
+    export_data: XmlForExport = urdf_function(
+        obj,
+        package_name=str(package_name),
+        placement=placement,
+        )
+    visual_xmls: list[et.Element] = []
+    for export_datum in export_data:
+        if not is_primitive(export_datum.object):
+            mesh_path = (package_parent / package_name
+                         / 'meshes' / export_datum.mesh_filename)
+            save_mesh_dae(export_datum.object, mesh_path)
+        visual_xmls.append(export_datum.xml)
+    return visual_xmls
 
 
 class Link:
@@ -194,7 +215,7 @@ class Link:
 
     def export_urdf(self,
                     package_parent: Path,
-                    package_name: Path,
+                    package_name: [Path | str],
                     ) -> et.ElementTree:
         """Return the xml for this link.
 
@@ -206,29 +227,24 @@ class Link:
 
         """
 
-        def get_xml(obj, urdf_function, placement):
-            mesh_name = get_valid_filename(obj.LinkedObject.Label) + '.dae'
-            visual_xml = urdf_function(
-                obj,
-                mesh_name=mesh_name,
-                package_name=str(package_name),
-                placement=placement,
-                )
-            if not is_primitive(obj):
-                mesh_path = package_parent / package_name / 'meshes' / mesh_name
-                save_mesh_dae(obj.LinkedObject, mesh_path)
-            return visual_xml
-
         link_xml = et.fromstring(
             f'<link name="{get_valid_urdf_name(self.link.Label)}" />')
-        for link in self.link.Visual:
-            for obj in link.LinkedObject.Group:
-                link_xml.append(get_xml(obj, urdf_visual_from_object,
-                                        self.link.MountedPlacement))
-        for link in self.link.Collision:
-            for obj in link.LinkedObject.Group:
-                link_xml.append(get_xml(obj, urdf_collision_from_object,
-                                        self.link.MountedPlacement))
+        for obj in self.link.Visual:
+            for xml in _get_xmls_and_export_meshes(
+                    obj,
+                    urdf_visual_from_object,
+                    self.link.MountedPlacement,
+                    package_parent,
+                    package_name):
+                link_xml.append(xml)
+        for obj in self.link.Collision:
+            for xml in _get_xmls_and_export_meshes(
+                    obj,
+                    urdf_collision_from_object,
+                    self.link.MountedPlacement,
+                    package_parent,
+                    package_name):
+                link_xml.append(xml)
         return link_xml
 
 

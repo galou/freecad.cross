@@ -16,7 +16,6 @@ try:
     from .urdf_parser_utils import axis_to_z
     from .urdf_parser_utils import obj_from_geometry
     from .urdf_parser_utils import placement_along_z_from_joint
-    from .urdf_parser_utils import placement_from_joint
     from .urdf_parser_utils import placement_from_origin
 except ModuleNotFoundError:
     UrdfCollision = Any
@@ -25,12 +24,12 @@ except ModuleNotFoundError:
     UrdfRobot = Any
     UrdfVisual = Any
 
+from .freecad_utils import add_object
+from .freecad_utils import make_group
 from .joint import make_joint
 from .link import make_link
 from .robot import make_robot
-from .utils import add_object
 from .utils import get_joints
-from .utils import make_group
 
 # Typing hints.
 DO = fc.DocumentObject
@@ -211,7 +210,11 @@ def _add_visual(
 
     """
     name_linked_geom = f'{urdf_link.name}_visual'
-    return _add_geometries(parts_group, ros_link, visual_part, urdf_link.visuals, name_linked_geom)
+    return _add_geometries(parts_group,
+                           ros_link,
+                           visual_part,
+                           urdf_link.visuals,
+                           name_linked_geom)
 
 
 def _add_collision(

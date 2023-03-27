@@ -6,17 +6,17 @@ import xml.etree.ElementTree as et
 
 import FreeCAD as fc
 
+from .freecad_utils import add_property
+from .freecad_utils import error
+from .freecad_utils import warn
+from .urdf_utils import urdf_origin_from_placement
 from .utils import ICON_PATH
-from .utils import add_property
-from .utils import error
 from .utils import get_joints
+from .utils import get_valid_urdf_name
 from .utils import is_joint
 from .utils import is_link
 from .utils import is_robot
-from .utils import get_valid_urdf_name
-from .utils import warn
 from .utils import warn_unsupported
-from .export_urdf import urdf_origin_from_placement
 
 # Typing hints.
 DO = fc.DocumentObject
@@ -110,25 +110,6 @@ class Joint:
     def __setstate__(self, state):
         if state:
             self.Type, = state
-
-    def get_placement(self) -> Optional[fc.Placement]:
-        """Return the absolute joint placement."""
-        predecessor = self.get_predecessor()
-        if predecessor is None:
-            # First joint in the chain.
-            try:
-                return self.joint.Origin
-            except (AttributeError, NotImplementedError):
-                error('Joint.get_placement(), ERROR')
-                return
-        if predecessor is self.joint:
-            error(f'Joint.get_placement(), ERROR, `{self.joint.Name}`'
-                  ' is predecessor of itself', True)
-            return
-        pred_placement = predecessor.Proxy.get_placement()
-        if pred_placement is None:
-            return
-        return pred_placement * self.joint.Origin
 
     def get_actuation_placement(self, joint_value=None) -> fc.Placement:
         """Return the transform due to actuation."""

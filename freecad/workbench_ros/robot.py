@@ -353,6 +353,7 @@ class Robot:
         _export_templates(package_parent, package_name)
         return xml
 
+
 class _ViewProviderRobot:
     """A view provider for the Robot container object """
 
@@ -400,10 +401,6 @@ class _ViewProviderRobot:
         return True
 
     def setEdit(self, vobj: VPDO, mode):
-        #import FreeCADGui as fcgui
-        #from .task_panel_robot import TaskPanelRobot
-        #task_panel = TaskPanelRobot(self.robot)
-        #fcgui.Control.showDialog(task_panel)
         return True
 
     def unsetEdit(self, vobj: VPDO, mode):

@@ -4,11 +4,10 @@ import FreeCADGui as fcgui
 
 from PySide import QtCore  # FreeCAD's PySide!
 
-from .utils import ICON_PATH
-
 
 class _NewRobotCommand:
     """The command definition to create a new Robot object."""
+
     def GetResources(self):
         return {'Pixmap': 'robot',
                 'MenuText': QtCore.QT_TRANSLATE_NOOP("workbench_ros", 'New Robot'),

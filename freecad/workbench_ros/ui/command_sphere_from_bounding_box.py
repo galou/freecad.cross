@@ -1,15 +1,13 @@
 import FreeCAD as fc
 import FreeCADGui as fcgui
 
-from PySide import QtCore  # FreeCAD's PySide!
-
-from .utils import error
-from .utils import tr
+from ..utils import error
+from ..utils import tr
 
 
 class SphereFromBoundingBoxCommand:
     def GetResources(self):
-        return {'Pixmap': 'sphere_from_bbox',
+        return {'Pixmap': 'sphere_from_bbox.svg',
                 'MenuText': tr('Sphere from bounding box'),
                 'ToolTip': tr('Add a Part::Cube corresponding to the bounding box of the selected objects'),
                 }

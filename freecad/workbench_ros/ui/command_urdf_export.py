@@ -11,17 +11,17 @@ import FreeCADGui as fcgui
 from PySide import QtGui  # FreeCAD's PySide!
 from PySide import QtCore  # FreeCAD's PySide!
 
-from .urdf_utils import urdf_collision_from_box
-from .urdf_utils import urdf_collision_from_cylinder
-from .urdf_utils import urdf_collision_from_object
-from .urdf_utils import urdf_collision_from_sphere
-from .placement_utils import get_global_placement
-from .freecad_utils import get_subobjects_by_full_name
-from .utils import is_box
-from .utils import is_cylinder
-from .utils import is_robot
-from .utils import is_sphere
-from .utils import get_valid_filename
+from ..urdf_utils import urdf_collision_from_box
+from ..urdf_utils import urdf_collision_from_cylinder
+from ..urdf_utils import urdf_collision_from_object
+from ..urdf_utils import urdf_collision_from_sphere
+from ..placement_utils import get_global_placement
+from ..freecad_utils import get_subobjects_by_full_name
+from ..utils import is_box
+from ..utils import is_cylinder
+from ..utils import is_robot
+from ..utils import is_sphere
+from ..utils import get_valid_filename
 
 
 # Typing hints.

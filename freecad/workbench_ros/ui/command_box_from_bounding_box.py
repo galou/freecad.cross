@@ -1,10 +1,8 @@
 import FreeCAD as fc
 import FreeCADGui as fcgui
 
-from PySide import QtCore  # FreeCAD's PySide!
-
-from .utils import error
-from .utils import tr
+from ..utils import error
+from ..utils import tr
 
 
 class BoxFromBoundingBoxCommand:

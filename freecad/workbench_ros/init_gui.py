@@ -1,24 +1,23 @@
-import os
 
 import FreeCADGui as fcgui
 
-from . import command_assembly_from_urdf
-from . import command_box_from_bounding_box
-from . import command_new_joint
-from . import command_new_link
-from . import command_new_robot
-from . import command_robot_from_urdf
-from . import command_sphere_from_bounding_box
-from . import command_urdf_export
+from .ui import command_assembly_from_urdf
+from .ui import command_box_from_bounding_box
+from .ui import command_new_joint
+from .ui import command_new_link
+from .ui import command_new_robot
+from .ui import command_robot_from_urdf
+from .ui import command_sphere_from_bounding_box
+from .ui import command_urdf_export
 from .utils import ICON_PATH
 
 
 class RosWorkbench(fcgui.Workbench):
-    """Class which gets initiated at startup of the gui."""
+    """Class which gets initiated at startup of the GUI."""
 
     MenuText = 'ROS workbench'
     ToolTip = 'ROS-related workbench'
-    Icon = str(ICON_PATH.joinpath('ros_9dotslogo_color.svg'))
+    Icon = str(ICON_PATH / 'ros_9dotslogo_color.svg')
 
     def GetClassName(self):
         return 'Gui::PythonWorkbench'

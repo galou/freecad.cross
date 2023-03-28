@@ -5,11 +5,14 @@ import FreeCADGui as fcgui
 from PySide import QtGui  # FreeCAD's PySide!
 from PySide import QtCore  # FreeCAD's PySide!
 
-from .robot_from_urdf import robot_from_urdf
-from .ros_utils import is_ros_found
+from ..freecad_utils import warn
+from ..robot_from_urdf import robot_from_urdf
+from ..ros_utils import is_ros_found
 try:
-    from .urdf_loader import UrdfLoader
-except ModuleNotFoundError:
+    from ..urdf_loader import UrdfLoader
+except ModuleNotFoundError as e:
+    # TODO: Warn the user more nicely.
+    warn(e, gui=False)
     pass
 
 

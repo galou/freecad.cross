@@ -80,6 +80,7 @@ class _UrdfExportCommand:
             return
         txt = ''
         has_mesh = False
+        show_xml = True
         exported_objects: list[fc.DocumentObject] = []
         for obj, placement in _get_subobjects_and_placements(selection):
             if not hasattr(obj, 'TypeId'):
@@ -102,6 +103,7 @@ class _UrdfExportCommand:
             elif is_robot(obj):
                 if hasattr(obj, 'Proxy'):
                     xml = obj.Proxy.export_urdf()
+                    show_xml = False
             elif hasattr(obj, 'Placement'):
                 has_mesh = True
                 mesh_name = (get_valid_filename(obj.Label) if hasattr(obj, 'Label')
@@ -135,13 +137,14 @@ class _UrdfExportCommand:
                 package_name_lineedit = QtGui.QLineEdit('$package_name$')
                 package_name_lineedit.editingFinished.connect(lambda: set_package_name())
                 layout.addWidget(package_name_lineedit)
-            #txt_view = QtGui.QPlainTextEdit(txt)
-            #txt_view.setReadOnly(True)
-            #txt_view.setMinimumWidth(main_win.width() // 2)
-            #txt_view.setMinimumHeight(main_win.height() // 2)
-            #txt_view.setLineWrapMode(QtGui.QPlainTextEdit.NoWrap)
-            #layout.addWidget(txt_view)
-            #dialog.exec_()
+            if show_xml:
+                txt_view = QtGui.QPlainTextEdit(txt)
+                txt_view.setReadOnly(True)
+                txt_view.setMinimumWidth(main_win.width() // 2)
+                txt_view.setMinimumHeight(main_win.height() // 2)
+                txt_view.setLineWrapMode(QtGui.QPlainTextEdit.NoWrap)
+                layout.addWidget(txt_view)
+                dialog.exec_()
 
     def IsActive(self):
         return _supported_object_selected()

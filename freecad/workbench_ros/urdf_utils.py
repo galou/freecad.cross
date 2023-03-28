@@ -580,8 +580,8 @@ def _urdf_generic_from_object(
                                               this_placement, ignore_obj_placement=True)
         else:
             # TODO: manage duplicate labels.
-            filename = (get_valid_filename(obj.getLinkedObject(recursive=True).Label)
-                        + '.dae')
+            label = label_or(obj.getLinkedObject(recursive=True), 'mesh')
+            filename = get_valid_filename(label) + '.dae'
             if not package_name:
                 warn('Internal error, `package_name` empty'
                      ' but mesh found, using "package"')

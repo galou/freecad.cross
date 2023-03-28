@@ -10,7 +10,6 @@ from .freecad_utils import add_property
 from .freecad_utils import error
 from .freecad_utils import warn
 from .urdf_utils import urdf_origin_from_placement
-from .utils import ICON_PATH
 from .utils import get_joints
 from .utils import get_valid_urdf_name
 from .utils import is_joint
@@ -182,9 +181,7 @@ class _ViewProviderJoint:
                      "Toggle the display of the joint's Z-axis")
 
     def getIcon(self):
-        # TODO: Solve why this doesn't work.
-        # return 'joint.svg'
-        return str(ICON_PATH / 'joint.svg')
+        return 'joint.svg'
 
     def attach(self, vobj):
         """Setup the scene sub-graph of the view provider."""

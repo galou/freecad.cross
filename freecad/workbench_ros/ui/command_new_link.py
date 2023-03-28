@@ -2,8 +2,7 @@ import FreeCAD as fc
 
 import FreeCADGui as fcgui
 
-from PySide import QtCore  # FreeCAD's PySide!
-
+from ..gui_utils import tr
 from ..utils import is_robot_selected
 
 
@@ -12,9 +11,9 @@ class _NewLinkCommand:
 
     def GetResources(self):
         return {'Pixmap': 'link.svg',
-                'MenuText': QtCore.QT_TRANSLATE_NOOP("workbench_ros", 'New Link'),
+                'MenuText': tr('New Link'),
                 'Accel': 'N, L',
-                'ToolTip': QtCore.QT_TRANSLATE_NOOP('workbench_ros', 'Create a Link container.')}
+                'ToolTip': tr('Create a Link container.')}
 
     def IsActive(self):
         return is_robot_selected()

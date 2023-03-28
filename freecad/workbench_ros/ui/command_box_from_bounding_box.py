@@ -2,14 +2,15 @@ import FreeCAD as fc
 import FreeCADGui as fcgui
 
 from ..utils import error
-from ..utils import tr
+from ..gui_utils import tr
 
 
 class BoxFromBoundingBoxCommand:
     def GetResources(self):
-        return {'Pixmap': 'box_from_bbox',
+        return {'Pixmap': 'box_from_bbox.svg',
                 'MenuText': tr('Box from bounding box'),
-                'ToolTip': tr('Add a Part::Cube corresponding to the bounding box of the selected objects'),
+                'ToolTip': tr('Add a Part::Cube corresponding to the'
+                              ' bounding box of the selected objects'),
                 }
 
     def Activated(self):

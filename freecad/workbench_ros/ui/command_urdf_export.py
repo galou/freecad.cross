@@ -11,17 +11,17 @@ import FreeCADGui as fcgui
 from PySide import QtGui  # FreeCAD's PySide!
 from PySide import QtCore  # FreeCAD's PySide!
 
+from ..freecad_utils import get_subobjects_by_full_name
+from ..freecad_utils import is_box
+from ..freecad_utils import is_cylinder
+from ..freecad_utils import is_sphere
+from ..gui_utils import tr
+from ..placement_utils import get_global_placement
 from ..urdf_utils import urdf_collision_from_box
 from ..urdf_utils import urdf_collision_from_cylinder
 from ..urdf_utils import urdf_collision_from_object
 from ..urdf_utils import urdf_collision_from_sphere
-from ..placement_utils import get_global_placement
-from ..freecad_utils import get_subobjects_by_full_name
-from ..utils import is_box
-from ..utils import is_cylinder
 from ..utils import is_robot
-from ..utils import is_sphere
-from ..utils import get_valid_filename
 
 
 # Typing hints.
@@ -61,10 +61,12 @@ def _get_subobjects_and_placements(
 
 
 class _UrdfExportCommand:
+    """Command to export the selected objects to URDF."""
+
     def GetResources(self):
-        return {'Pixmap': 'urdf_export',
-                'MenuText': QtCore.QT_TRANSLATE_NOOP('workbench_ros', 'Export to URDF'),  # TODO: translatable
-                'ToolTip': QtCore.QT_TRANSLATE_NOOP('workbench_ros', 'Export selected elements to URDF'),
+        return {'Pixmap': 'urdf_export.svg',
+                'MenuText': tr('Export to URDF'),
+                'ToolTip': tr('Export selected elements to URDF'),
                 }
 
     def Activated(self):
@@ -106,8 +108,6 @@ class _UrdfExportCommand:
                     show_xml = False
             elif hasattr(obj, 'Placement'):
                 has_mesh = True
-                mesh_name = (get_valid_filename(obj.Label) if hasattr(obj, 'Label')
-                             else 'mesh.dae')
                 package_name = '$package_name$'  # Will be replaced later by the GUI.
                 xml = urdf_collision_from_object(
                     obj,

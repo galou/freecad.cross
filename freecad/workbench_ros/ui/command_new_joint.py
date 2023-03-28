@@ -2,8 +2,7 @@ import FreeCAD as fc
 
 import FreeCADGui as fcgui
 
-from PySide import QtCore  # FreeCAD's PySide!
-
+from ..gui_utils import tr
 from ..utils import is_robot_selected
 
 
@@ -12,9 +11,8 @@ class _NewJointCommand:
 
     def GetResources(self):
         return {'Pixmap': 'joint.svg',
-                'MenuText': QtCore.QT_TRANSLATE_NOOP("workbench_ros", 'New Joint'),
-                'Accel': 'N, L',
-                'ToolTip': QtCore.QT_TRANSLATE_NOOP('workbench_ros', 'Create a Joint.')}
+                'Accel': 'N, J',
+                'ToolTip': tr('Create a Joint.')}
 
     def IsActive(self):
         return is_robot_selected()

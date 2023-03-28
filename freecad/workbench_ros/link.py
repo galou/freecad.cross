@@ -14,7 +14,6 @@ from .mesh_utils import save_mesh_dae
 from .urdf_utils import urdf_collision_from_object
 from .urdf_utils import urdf_visual_from_object
 from .urdf_utils import XmlForExport
-from .utils import ICON_PATH
 from .utils import get_joints
 from .utils import get_valid_urdf_name
 from .utils import is_joint
@@ -255,9 +254,7 @@ class _ViewProviderLink:
         vobj.Proxy = self
 
     def getIcon(self):
-        # TODO: Solve why this doesn't work.
-        # return 'link.svg'
-        return str(ICON_PATH / 'link.svg')
+        return 'link.svg'
 
     def attach(self, vobj: VPDO):
         self.ViewObject = vobj

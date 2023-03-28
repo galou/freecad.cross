@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 from itertools import zip_longest
-import os
 from pathlib import Path
 import string
 from typing import Any, Iterable
@@ -22,17 +21,6 @@ from .freecad_utils import is_sphere
 from .freecad_utils import label_or
 from .freecad_utils import warn
 
-if hasattr(fc, 'GuiUp') and fc.GuiUp:
-    import FreeCADGui as fcgui
-
-    from PySide import QtGui  # FreeCAD's PySide!
-
-    def tr(text: str) -> str:
-        return QtGui.QApplication.translate('workbench_ros', text)
-else:
-    def tr(text: str) -> str:
-        return text
-
 # Typing hints.
 DO = fc.DocumentObject
 DOList = Iterable[DO]
@@ -40,11 +28,10 @@ RosLink = DO  # A Ros::Link, i.e. a DocumentObject with Proxy "Link".
 RosJoint = DO  # A Ros::Joint, i.e. a DocumentObject with Proxy "Joint".
 RosRobot = DO  # A Ros::Robot, i.e. a DocumentObject with Proxy "Robot".
 
-# MOD_PATH = Path(os.path.join(fc.getResourceDir(), 'Mod', 'workbench_ros'))
-MOD_PATH = Path(os.path.dirname(__file__)).joinpath('../..').resolve()  # For development
-RESOURCES_PATH = MOD_PATH.joinpath('resources')
-UI_PATH = RESOURCES_PATH.joinpath('ui')
-ICON_PATH = RESOURCES_PATH.joinpath('icons')
+MOD_PATH = Path(fc.getUserAppDataDir()) / 'Mod/freecad.workbench_ros'
+RESOURCES_PATH = MOD_PATH / 'resources'
+UI_PATH = RESOURCES_PATH / 'ui'
+ICON_PATH = RESOURCES_PATH / 'icons'
 
 
 def get_valid_filename(text: str) -> str:
@@ -124,6 +111,7 @@ def is_robot_selected() -> bool:
         return False
     if fc.activeDocument() is None:
         return False
+    import FreeCADGui as fcgui
     sel = fcgui.Selection.getSelection()
     if not sel:
         return False

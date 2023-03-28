@@ -3,10 +3,10 @@ import FreeCAD as fc
 import FreeCADGui as fcgui
 
 from PySide import QtGui  # FreeCAD's PySide!
-from PySide import QtCore  # FreeCAD's PySide!
 
 from ..assembly_from_urdf import assembly_from_urdf
 from ..ros_utils import is_ros_found
+from ..gui_utils import tr
 try:
     from .urdf_loader import UrdfLoader
 except ModuleNotFoundError:
@@ -15,9 +15,9 @@ except ModuleNotFoundError:
 
 class _AssemblyFromUrdfCommand:
     def GetResources(self):
-        return {'Pixmap': 'assembly_from_urdf',
-                'MenuText': QtCore.QT_TRANSLATE_NOOP('workbench_ros', 'Create an assembly from a URDF or xacro file'),  # TODO: translatable
-                'ToolTip': QtCore.QT_TRANSLATE_NOOP('workbench_ros', 'Create an assembly from a URDF or xacro file'),
+        return {'Pixmap': 'assembly_from_urdf.svg',
+                'MenuText': tr('Create an assembly from a URDF or xacro file'),
+                'ToolTip': tr('Create an assembly from a URDF or xacro file'),
                 }
 
     def Activated(self):
@@ -25,7 +25,7 @@ class _AssemblyFromUrdfCommand:
         dialog = QtGui.QFileDialog(fcgui.getMainWindow(),
                                    'Select URDF/xacro file to import part from')
         # set option "DontUseNativeDialog"=True, as native Filedialog shows
-        # misbehavior on Unbuntu 18.04 LTS. It works case sensitively, what is not wanted...
+        # misbehavior on Unbuntu 18.04. It works case sensitively, what isn't wanted
         dialog.setNameFilter('Supported Formats *.urdf *.xacro;;All files (*.*)')
         if dialog.exec_():
             if not doc:

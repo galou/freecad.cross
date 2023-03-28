@@ -13,7 +13,6 @@ from .freecad_utils import get_properties_of_category
 from .freecad_utils import get_valid_property_name
 from .freecad_utils import label_or
 from .freecad_utils import warn
-from .utils import ICON_PATH
 from .utils import RESOURCES_PATH
 from .utils import get_chains
 from .utils import get_joints
@@ -361,9 +360,7 @@ class _ViewProviderRobot:
         vobj.Proxy = self
 
     def getIcon(self):
-        # TODO: Solve why this doesn't work.
-        # return 'robot.svg'
-        return str(ICON_PATH.joinpath('robot.svg'))
+        return 'robot.svg'
 
     def attach(self, vobj: VPDO):
         self.ViewObject = vobj

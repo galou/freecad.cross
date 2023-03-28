@@ -140,7 +140,7 @@ def get_chains(
         if link.Proxy.is_tip_link():
             tip_links.append(link)
     if len(base_links) > 1:
-        warn('Two root links found, not supported', True)
+        # At least two root links found, not supported.
         return []
     chains: list[DOList] = []
     for link in tip_links:

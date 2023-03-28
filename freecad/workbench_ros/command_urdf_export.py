@@ -109,7 +109,6 @@ class _UrdfExportCommand:
                 package_name = '$package_name$'  # Will be replaced later by the GUI.
                 xml = urdf_collision_from_object(
                     obj,
-                    mesh_name=mesh_name,
                     package_name=package_name,
                     placement=placement,
                 )
@@ -136,13 +135,13 @@ class _UrdfExportCommand:
                 package_name_lineedit = QtGui.QLineEdit('$package_name$')
                 package_name_lineedit.editingFinished.connect(lambda: set_package_name())
                 layout.addWidget(package_name_lineedit)
-            txt_view = QtGui.QPlainTextEdit(txt)
-            txt_view.setReadOnly(True)
-            txt_view.setMinimumWidth(main_win.width() // 2)
-            txt_view.setMinimumHeight(main_win.height() // 2)
-            txt_view.setLineWrapMode(QtGui.QPlainTextEdit.NoWrap)
-            layout.addWidget(txt_view)
-            dialog.exec_()
+            #txt_view = QtGui.QPlainTextEdit(txt)
+            #txt_view.setReadOnly(True)
+            #txt_view.setMinimumWidth(main_win.width() // 2)
+            #txt_view.setMinimumHeight(main_win.height() // 2)
+            #txt_view.setLineWrapMode(QtGui.QPlainTextEdit.NoWrap)
+            #layout.addWidget(txt_view)
+            #dialog.exec_()
 
     def IsActive(self):
         return _supported_object_selected()

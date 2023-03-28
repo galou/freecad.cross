@@ -278,10 +278,10 @@ class _ViewProviderLink:
         return True
 
     def setEdit(self, vobj: VPDO, mode):
-        import FreeCADGui as fcgui
-        from .task_panel_link import TaskPanelLink
-        task_panel = TaskPanelLink(self.link)
-        fcgui.Control.showDialog(task_panel)
+        #import FreeCADGui as fcgui
+        #from .task_panel_link import TaskPanelLink
+        #task_panel = TaskPanelLink(self.link)
+        #fcgui.Control.showDialog(task_panel)
         return True
 
     def unsetEdit(self, vobj: VPDO, mode):

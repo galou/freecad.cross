@@ -386,10 +386,10 @@ class _ViewProviderRobot:
         return True
 
     def setEdit(self, vobj: VPDO, mode):
-        import FreeCADGui as fcgui
-        from .task_panel_robot import TaskPanelRobot
-        task_panel = TaskPanelRobot(self.robot)
-        fcgui.Control.showDialog(task_panel)
+        #import FreeCADGui as fcgui
+        #from .task_panel_robot import TaskPanelRobot
+        #task_panel = TaskPanelRobot(self.robot)
+        #fcgui.Control.showDialog(task_panel)
         return True
 
     def unsetEdit(self, vobj: VPDO, mode):

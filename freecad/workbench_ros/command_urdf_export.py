@@ -117,7 +117,7 @@ class _UrdfExportCommand:
             if xml:
                 txt += f'  <!-- {obj.Label} -->\n'
                 txt += et.tostring(xml).decode('utf-8')
-        if txt:
+        if txt and show_xml:
             if 'dummy>' in txt:
                 fc.Console.PrintError('Object labels cannot contain '
                                       '"<dummy>" or "</dummy>"')
@@ -137,14 +137,13 @@ class _UrdfExportCommand:
                 package_name_lineedit = QtGui.QLineEdit('$package_name$')
                 package_name_lineedit.editingFinished.connect(lambda: set_package_name())
                 layout.addWidget(package_name_lineedit)
-            if show_xml:
-                txt_view = QtGui.QPlainTextEdit(txt)
-                txt_view.setReadOnly(True)
-                txt_view.setMinimumWidth(main_win.width() // 2)
-                txt_view.setMinimumHeight(main_win.height() // 2)
-                txt_view.setLineWrapMode(QtGui.QPlainTextEdit.NoWrap)
-                layout.addWidget(txt_view)
-                dialog.exec_()
+            txt_view = QtGui.QPlainTextEdit(txt)
+            txt_view.setReadOnly(True)
+            txt_view.setMinimumWidth(main_win.width() // 2)
+            txt_view.setMinimumHeight(main_win.height() // 2)
+            txt_view.setLineWrapMode(QtGui.QPlainTextEdit.NoWrap)
+            layout.addWidget(txt_view)
+            dialog.exec_()
 
     def IsActive(self):
         return _supported_object_selected()

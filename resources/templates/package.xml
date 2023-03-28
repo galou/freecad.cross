@@ -1,10 +1,10 @@
 <?xml version="1.0"?>
 <?xml-model href="http://download.ros.org/schema/package_format3.xsd" schematypens="http://www.w3.org/2001/XMLSchema"?>
 <package format="3">
-  <name>ros_space</name>
+  <name>{package_name}</name>
   <version>0.0.0</version>
   <description>TODO: Package description</description>
-  <maintainer email="enzo.le_merrer@sigma-clermont.fr">vmenzo</maintainer>
+  <maintainer email="TODO@todo.com">vmenzo</maintainer>
   <license>TODO: License declaration</license>
 
   <buildtool_depend>ament_cmake</buildtool_depend>

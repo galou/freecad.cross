@@ -14,6 +14,7 @@ from .freecad_utils import get_valid_property_name
 from .freecad_utils import label_or
 from .freecad_utils import warn
 from .utils import ICON_PATH
+from .utils import RESOURCES_PATH
 from .utils import get_chains
 from .utils import get_joints
 from .utils import get_links
@@ -132,6 +133,19 @@ def _add_joint_variable(
             # Avoid recursive recompute.
             joint.Position = value
     return used_var_name
+
+
+def _export_templates(package_parent: [Path | str], package_name: str) -> None:
+    """Export generated files."""
+    files = ['package.xml', 'CMakeLists.txt']
+    package_parent = Path(package_parent)
+    package_parent.mkdir(parents=True, exist_ok=True)
+    for f in files:
+        template_file_path = RESOURCES_PATH / 'templates' / f
+        template = template_file_path.read_text()
+        txt = template.format(package_name=package_name)
+        output_path = package_parent / package_name / f
+        output_path.write_text(txt)
 
 
 class Robot:
@@ -336,8 +350,8 @@ class Robot:
         file_base = get_valid_filename(f'{self.robot.Label}')
         urdf_path = output_path / f'urdf/{file_base}.urdf'
         save_xml(xml, urdf_path)
+        _export_templates(package_parent, package_name)
         return xml
-
 
 class _ViewProviderRobot:
     """A view provider for the Robot container object """

@@ -433,7 +433,7 @@ class _ViewProviderRobot:
         return True
 
     def setEdit(self, vobj: VPDO, mode):
-        return True
+        return False
 
     def unsetEdit(self, vobj: VPDO, mode):
         import FreeCADGui as fcgui

@@ -307,11 +307,7 @@ class _ViewProviderJoint:
         return True
 
     def setEdit(self, vobj, mode):
-        # import FreeCADGui as fcgui
-        # from .task_panel_joint import TaskPanelJoint
-        # task_panel = TaskPanelJoint(self.joint)
-        # fcgui.Control.showDialog(task_panel)
-        return True
+        return False
 
     def unsetEdit(self, vobj, mode):
         import FreeCADGui as fcgui

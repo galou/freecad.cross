@@ -134,15 +134,36 @@ def _add_joint_variable(
     return used_var_name
 
 
-def _export_templates(package_parent: [Path | str], package_name: str) -> None:
-    """Export generated files."""
-    files = ['package.xml', 'CMakeLists.txt']
+def _export_templates(
+        package_parent: [Path | str],
+        package_name: str,
+        robot_name,
+        ) -> None:
+    """Export generated files.
+
+    Parameters
+    ----------
+
+    - package_name: the directory containing the directory called
+                    `package_name`, usually "$ROS_WORKSPACE/src".
+    - package_name: name of the ROS package and its containing directory.
+    - robot_name: file base for the URDF file, for example "my_robot" for a
+                  robot described in "my_robot.urdf". Note that the robot name
+                  defined in the URDF file may differ.
+    """
+    files = [
+            'package.xml',
+            'CMakeLists.txt',
+            'launch/display.launch.py',
+            'rviz/robot_description.rviz',
+            ]
     package_parent = Path(package_parent)
-    package_parent.mkdir(parents=True, exist_ok=True)
     for f in files:
         template_file_path = RESOURCES_PATH / 'templates' / f
+        template_file_path.parent.mkdir(parents=True, exist_ok=True)
         template = template_file_path.read_text()
-        txt = template.format(package_name=package_name)
+        txt = template.format(package_name=package_name,
+                              robot_name=robot_name)
         output_path = package_parent / package_name / f
         output_path.write_text(txt)
 
@@ -349,7 +370,7 @@ class Robot:
         file_base = get_valid_filename(f'{self.robot.Label}')
         urdf_path = output_path / f'urdf/{file_base}.urdf'
         save_xml(xml, urdf_path)
-        _export_templates(package_parent, package_name)
+        _export_templates(package_parent, package_name, file_base)
         return xml
 
 

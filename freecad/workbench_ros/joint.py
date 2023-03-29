@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from math import degrees
+from math import degrees, radians
 from typing import Iterable, Optional
 import xml.etree.ElementTree as et
 
@@ -8,6 +8,7 @@ import FreeCAD as fc
 
 from .freecad_utils import add_property
 from .freecad_utils import error
+from .freecad_utils import label_or
 from .freecad_utils import warn
 from .urdf_utils import urdf_origin_from_placement
 from .utils import get_joints
@@ -22,6 +23,7 @@ DO = fc.DocumentObject
 DOList = Iterable[DO]
 VPDO = 'FreeCADGui.ViewProviderDocumentObject'
 RosJoint = DO  # A Ros::Joint, i.e. a DocumentObject with Proxy "Joint".
+RosRobot = DO  # A Ros::Robot, i.e. a DocumentObject with Proxy "Robot".
 
 
 class Joint:
@@ -68,6 +70,18 @@ class Joint:
                      'Joint position (m or rad)')
         obj.setEditorMode('Position', ['ReadOnly'])
 
+        # Mimic joint.
+        add_property(obj, 'App::PropertyBool', 'Mimic', 'Mimic',
+                     'Whether this joint mimics another one')
+        add_property(obj, 'App::PropertyLink', 'MimickedJoint', 'Mimic',
+                     'Joint to mimic')
+        add_property(obj, 'App::PropertyFloat', 'Multiplier', 'Mimic',
+                     'value = Multiplier * other_joint_value + Offset')
+        self.Multiplier = 1.0
+        add_property(obj, 'App::PropertyFloat', 'Offset', 'Mimic',
+                     'value = Multiplier * other_joint_value + Offset, in mm or deg')
+        self._toggle_editor_mode()
+
         add_property(obj, 'App::PropertyPlacement', 'Placement', 'Internal',
                      'Placement of the joint in the robot frame')
         obj.setEditorMode('Placement', ['ReadOnly'])
@@ -75,6 +89,16 @@ class Joint:
     def onChanged(self, obj: RosJoint, prop: str) -> None:
         if prop in ['Child', 'Parent']:
             self.cleanup_children()
+        if prop == 'Mimic':
+            self._toggle_editor_mode()
+        if prop == 'MimickedJoint':
+            if obj.MimickedJoint is not None:
+                if obj.Type != obj.MimickedJoint.Type:
+                    warn('Mimicked joint must have the same type'
+                         f' but "{obj.Label}"\'s type is {obj.Type} and'
+                         f' "{obj.MimickedJoint}"\'s is {obj.MimickedJoint.Type}',
+                         True)
+                    obj.MimickedJoint = None
 
     def cleanup_children(self) -> DOList:
         """Remove and return all objects not supported by ROS::Joint."""
@@ -188,7 +212,27 @@ class Joint:
         limit_xml.attrib['effort'] = str(joint.Effort)
         limit_xml.attrib['velocity'] = str(joint.Velocity)
         joint_xml.append(limit_xml)
+        if joint.Mimic:
+            mimic_xml = et.fromstring('<mimic/>')
+            mimic_joint = label_or(joint.MimickedJoint, 'no_joint_defined')
+            mimic_xml.attrib['joint'] = get_valid_urdf_name(mimic_joint)
+            mimic_xml.attrib['multiplier'] = str(joint.Multiplier)
+            mimic_xml.attrib['offset'] = str(joint.Offset)
+            joint_xml.append(mimic_xml)
         return joint_xml
+
+    def _toggle_editor_mode(self):
+        joint = self.joint
+        if joint.Mimic:
+            editor_mode = []
+        else:
+            editor_mode = ['Hidden', 'ReadOnly']
+        if hasattr(joint, 'MimickedJoint'):
+            joint.setEditorMode('MimickedJoint', editor_mode)
+        if hasattr(joint, 'Multiplier'):
+            joint.setEditorMode('Multiplier', editor_mode)
+        if hasattr(joint, 'Offset'):
+            joint.setEditorMode('Offset', editor_mode)
 
 
 class _ViewProviderJoint:

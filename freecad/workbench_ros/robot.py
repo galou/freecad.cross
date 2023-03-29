@@ -127,10 +127,11 @@ def _add_joint_variable(
         value = robot.getPropertyByName(var_name) * 0.001
     elif joint.Type == 'revolute':
         value = radians(robot.getPropertyByName(var_name))
-    if value is not None:
-        if joint.Position != value:
-            # Avoid recursive recompute.
-            joint.Position = value
+    if ((value is not None)
+            and (joint.Position != value)
+            and (not joint.Mimic)):
+        # Avoid recursive recompute.
+        joint.Position = value
     return used_var_name
 
 

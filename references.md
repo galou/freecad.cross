@@ -30,3 +30,9 @@
 
 - `ros2 launch urdf_tutorial display.launch.py`
 - [Jupyterlab-urdf](https://jupyterlab-urdf.readthedocs.io/en/latest/)
+
+# Python programming in FreeCAD
+
+- `Origin Group Extension<https://github.com/gbroques/freecad-origin-group-extension-python-example>`_
+- `Part Attachment Extension<https://github.com/gbroques/freecad-part-attachment-python-example>`_
+- `Dynamic Linked Object<https://github.com/gbroques/freecad-dynamic-linked-object>`_

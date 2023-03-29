@@ -111,21 +111,45 @@ class Joint:
             self.Type, = state
 
     def get_actuation_placement(self, joint_value=None) -> fc.Placement:
-        """Return the transform due to actuation."""
+        """Return the transform due to actuation.
+
+        Parameters
+        ----------
+
+        - joint_value: joint value in mm or deg.
+
+        """
         # Only actuation around/about z supported.
+        if self.joint.Mimic and self.joint.MimickedJoint:
+            mult = self.joint.Multiplier
+            if self.joint.Type == 'prismatic':
+                # User value in mm.
+                off = self.joint.Offset / 1000.0
+            elif self.joint.Type == 'revolute':
+                # User value in deg.
+                off = radians(self.joint.Offset)
+            else:
+                warn('Mimicking joint must be prismatic or revolute', True)
+                mult = 0.0
+                off = 0.0
+            p = self.joint.MimickedJoint.Position
+            pos = mult * p + off
+            if self.joint.Position != pos:
+                # Implementation note: avoid recursion.
+                self.joint.Position = pos
         if self.joint.Type == 'prismatic':
             if joint_value is None:
                 joint_value = self.joint.Position * 1000.0
             return fc.Placement(fc.Vector(0.0, 0.0, joint_value), fc.Rotation())
-        if self.joint.Type == 'revolute':
+        if self.joint.Type in ['revolute', 'continuous']:
             if joint_value is None:
-                joint_value = self.joint.Position
+                joint_value = degrees(self.joint.Position)
             return fc.Placement(fc.Vector(),
                                 fc.Rotation(fc.Vector(0.0, 0.0, 1.0),
-                                            degrees(joint_value)))
+                                            joint_value))
         return fc.Placement()
 
-    def get_robot(self) -> DO:
+    def get_robot(self) -> Optional[RosRobot]:
         """Return the Ros::Robot this joint belongs to."""
         if not hasattr(self, 'joint'):
             return
@@ -133,7 +157,7 @@ class Joint:
             if is_robot(o):
                 return o
 
-    def get_predecessor(self) -> DO:
+    def get_predecessor(self) -> Optional[RosJoint]:
         """Return the predecessing joint."""
         robot = self.get_robot()
         if robot is None:

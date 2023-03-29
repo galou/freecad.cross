@@ -2,6 +2,7 @@
 - Add property length for arrows in joint's view object
 - Add the possiblity to place a robot.
 - Workcell builder (xacro export without touching the original URDF/xacro files)
+- Respect joint limits.
 - Avoid duplicating mesh objects when importing
 - URDF editor integrated in Robot
 - Import xacro that only defines macros by asking for the macro to use and values for its parameters

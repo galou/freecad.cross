@@ -152,20 +152,33 @@ def _export_templates(
                   defined in the URDF file may differ.
     """
     files = [
-            'package.xml',
-            'CMakeLists.txt',
-            'launch/display.launch.py',
-            'rviz/robot_description.rviz',
-            ]
+        'package.xml',
+        'CMakeLists.txt',
+        'launch/display.launch.py',
+        'rviz/robot_description.rviz',
+        ]
     package_parent = Path(package_parent)
+    meshes_dir = ('meshes '
+                  if _has_meshes_directory(package_parent, package_name)
+                  else '')
     for f in files:
         template_file_path = RESOURCES_PATH / 'templates' / f
-        template_file_path.parent.mkdir(parents=True, exist_ok=True)
         template = template_file_path.read_text()
         txt = template.format(package_name=package_name,
-                              robot_name=robot_name)
+                              robot_name=robot_name,
+                              meshes_dir=meshes_dir)
         output_path = package_parent / package_name / f
+        output_path.parent.mkdir(parents=True, exist_ok=True)
         output_path.write_text(txt)
+
+
+def _has_meshes_directory(
+        package_parent: [Path | str],
+        package_name: str,
+        ) -> bool:
+    """Return True if the directory "meshes" exists in the package."""
+    meshes_directory = Path(package_parent) / package_name / 'meshes'
+    return meshes_directory.exists()
 
 
 class Robot:

@@ -12,7 +12,7 @@ try:
     from ..urdf_loader import UrdfLoader
 except ModuleNotFoundError as e:
     # TODO: Warn the user more nicely.
-    warn(e, gui=False)
+    warn(str(e), gui=False)
     pass
 
 

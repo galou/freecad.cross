@@ -217,7 +217,14 @@ class Joint:
             mimic_joint = label_or(joint.MimickedJoint, 'no_joint_defined')
             mimic_xml.attrib['joint'] = get_valid_urdf_name(mimic_joint)
             mimic_xml.attrib['multiplier'] = str(joint.Multiplier)
-            mimic_xml.attrib['offset'] = str(joint.Offset)
+            if joint.Type == 'prismatic':
+                # Millimeters (FreeCAD) to meters (URDF).
+                urdf_offset = joint.Offset / 1000.0
+            else:
+                # Should be only 'revolute' or 'continuous'.
+                # Degrees (FreeCAD) to meters (URDF).
+                urdf_offset = radians(joint.Offset)
+            mimic_xml.attrib['offset'] = str(urdf_offset)
             joint_xml.append(mimic_xml)
         return joint_xml
 

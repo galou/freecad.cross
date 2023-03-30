@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from math import degrees
 from typing import Any, Iterable, Tuple
 
 import FreeCAD as fc
@@ -26,6 +27,7 @@ except ModuleNotFoundError:
 
 from .freecad_utils import add_object
 from .freecad_utils import make_group
+from .freecad_utils import warn
 from .joint import make_joint
 from .link import make_link
 from .robot import make_robot
@@ -67,6 +69,9 @@ def robot_from_urdf(
     for urdf_joint in urdf_robot.joints:
         ros_joint = _add_ros_joint(urdf_joint, robot, link_map)
         joint_map[urdf_joint.name] = ros_joint
+    # Mimic joints must be handled after creating all joints because the
+    # mimicking joint can be defined before the mimicked joint in URDF.
+    _define_mimic_joints(urdf_robot, joint_map)
     _compensate_joint_placement(robot, urdf_robot, joint_map)
 
 
@@ -161,11 +166,46 @@ def _add_ros_joint(
     return ros_joint
 
 
+def _define_mimic_joints(
+        urdf_robot: UrdfRobot,
+        joint_map: dict[str, RosJoint],
+        ) -> None:
+    """Add the correct properties for mimic joints."""
+    for name, ros_joint in joint_map.items():
+        urdf_joint = urdf_robot.joint_map[name]
+        if urdf_joint.mimic is None:
+            continue
+        if urdf_joint.type not in ['prismatic', 'revolute', 'continuous']:
+            warn(f'Mimicking joint "{urdf_joint.name}" has type '
+                 f'{urdf_joint.type} but only prismatic, revolute,'
+                 ' and continuous types are supported, ignoring "mimic"', True)
+            continue
+        ros_joint.Mimic = True
+        mimicked_urdf_joint = urdf_robot.joint_map.get(urdf_joint.mimic.joint)
+        if not mimicked_urdf_joint:
+            warn(f'Joint "{urdf_joint.name}" mimicks the unknown'
+                 f' joint "{mimicked_urdf_joint}", ignoring', True)
+            continue
+        mimicked_ros_joint = joint_map.get(mimicked_urdf_joint.name)
+        # `mimicked_ros_joint` should not be None.
+        ros_joint.MimickedJoint = mimicked_ros_joint
+        ros_joint.Multiplier = urdf_joint.mimic.multiplier
+        if urdf_joint.type == 'prismatic':
+            # Meters (URDF) to millimeters (FreeCAD).
+            offset = urdf_joint.mimic.offset * 1000.0
+        else:
+            # urdf_joint.type in ['revolute', 'continuous']
+            # Radians (URDF) to degrees (FreeCAD).
+            offset = degrees(urdf_joint.mimic.offset)
+        ros_joint.Offset = offset
+
+
 def _compensate_joint_placement(
         robot: RosRobot,
         urdf_robot: UrdfRobot,
         joint_map: dict[str, RosJoint],
         ) -> None:
+    """Make all joints about/around the z axis."""
     chains = robot.Proxy.get_chains()
     already_compensated_joints: set[RosJoint] = set()
     for chain in chains:
@@ -233,7 +273,8 @@ def _add_collision(
 
     """
     name_linked_geom = f'{urdf_link.name}_collision'
-    return _add_geometries(parts_group, ros_link, collision_part, urdf_link.collisions, name_linked_geom)
+    return _add_geometries(parts_group, ros_link,
+                           collision_part, urdf_link.collisions, name_linked_geom)
 
 
 def _add_geometries(

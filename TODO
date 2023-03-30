@@ -1,4 +1,3 @@
-- Support mimic joint import
 - Add method to define link.MountedPlacement
 - Add property length for arrows in joint's view object
 - Add the possiblity to place a robot.

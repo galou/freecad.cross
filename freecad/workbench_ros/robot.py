@@ -102,11 +102,20 @@ def _add_joint_variable(
         joint: RosJoint,
         category: str,
         ) -> str:
-    """Add a property to `robot` and return its name."""
+    """Add a property for the actuator value to `robot` and return its name.
+
+    Add a property starting with "joint.Label" to represent the actuation
+    value of a joint. Supported types are 'prismatic', 'revolute', and
+    'continuous'. There is no actuation value for mimicking joints.
+
+    """
     if not is_joint(joint):
         warn(f'Wrong object type. {joint.Name} ({joint.Label})'
              ' is not a ROS::Joint')
         return
+    if joint.Mimic:
+        # No acuator for mimic joints.
+        return ''
     if joint.Type == 'prismatic':
         unit = 'mm'
     elif joint.Type in ['revolute', 'continuous']:

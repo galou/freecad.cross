@@ -192,7 +192,7 @@ def _has_meshes_directory(
 
 
 class Robot:
-    """The Robot group."""
+    """The Robot proxy."""
 
     # The member is often used in workbenches, particularly in the Draft
     # workbench, to identify the object type.
@@ -202,14 +202,13 @@ class Robot:
     # properties of `self.robot`.
     _category_of_joint_values = 'JointValues'
 
-    def __init__(self, obj):
+    def __init__(self, obj: RosRobot):
         obj.Proxy = self
         self.robot = obj
-        self.Type = 'Ros::Robot'
 
         self.init_properties(obj)
 
-    def init_properties(self, obj):
+    def init_properties(self, obj: RosRobot):
         add_property(obj, 'App::PropertyString', '_Type', 'Internal',
                      'The type')
         obj.setPropertyStatus('_Type', ['Hidden', 'ReadOnly'])
@@ -228,10 +227,6 @@ class Robot:
         self.reset_group()
 
     def onChanged(self, obj: RosRobot, prop: str) -> None:
-        if not hasattr(self, 'robot'):
-            # Implementation note: happens because __init__ is not called on
-            # restore.
-            return
         if prop in ['Group']:
             self.execute(obj)
 

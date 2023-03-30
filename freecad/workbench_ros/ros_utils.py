@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 from pathlib import Path
 import sys
@@ -48,3 +50,20 @@ def add_ros_python_library() -> bool:
         if path.exists() and (str(path) not in sys.path):
             sys.path.append(str(path))
     return True
+
+
+def get_package_and_file(file_path: [Path | str]) -> tuple[str, str]:
+    """Return the package name and relative file path."""
+    file_path = Path(file_path).expanduser()
+    relative_file_path = ''
+    while True:
+        candidate_package_xml = file_path / 'package.xml'
+        if candidate_package_xml.exists() and candidate_package_xml.is_file():
+            # TODO: the package name is actually given in 'package.xml'
+            # and may differ from the directory name containing this file.
+            return file_path.name, relative_file_path
+        relative_file_path = (f'{file_path.name}/{relative_file_path}'
+                              if relative_file_path else file_path.name)
+        file_path = file_path.parent
+        if file_path == file_path.root:
+            return '', relative_file_path

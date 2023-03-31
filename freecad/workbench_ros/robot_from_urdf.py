@@ -313,6 +313,9 @@ def _add_geometries(
             geom_obj, _ = obj_from_geometry(geometry.geometry, parts_group)
         except NotImplementedError:
             continue
+        if not geom_obj:
+            warn(f'Error when importing geometry for {ros_link}')
+            continue
         geom_obj.Visibility = False
         geom_objs.append(geom_obj)
         if hasattr(geometry, 'origin'):

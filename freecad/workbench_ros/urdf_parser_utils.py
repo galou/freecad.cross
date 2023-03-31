@@ -35,7 +35,7 @@ Shape = [Box, Cylinder, Mesh, Sphere]
 def obj_from_geometry(
         geometry: Shape,
         doc_or_group: [Doc | DO],
-        ) -> tuple[DO, Optional[Path]]:
+        ) -> tuple[Optional[DO], Optional[Path]]:
     """Return a FreeCAD object for the URDF shape with the path for meshes."""
     if isinstance(geometry, Box):
         return obj_from_box(geometry, doc_or_group)
@@ -130,7 +130,7 @@ def placement_along_z_from_joint(
 def obj_from_box(
         geometry: Box,
         doc_or_group: [Doc | DO],
-        ) -> tuple[DO, None]:
+        ) -> tuple[Optional[DO], None]:
     obj = add_object(doc_or_group, 'Part::Box', 'box')
     obj.Length = geometry.size[0] * 1000.0  # m to mm.
     obj.Width = geometry.size[1] * 1000.0
@@ -142,7 +142,7 @@ def obj_from_box(
 def obj_from_cylinder(
         geometry: Cylinder,
         doc_or_group: [Doc | DO],
-        ) -> tuple[DO, None]:
+        ) -> tuple[Optional[DO], None]:
     obj = add_object(doc_or_group, 'Part::Cylinder', 'cylinder')
     obj.Radius = geometry.radius * 1000.0  # m to mm.
     obj.Height = geometry.length * 1000.0  # m to mm.
@@ -153,7 +153,7 @@ def obj_from_cylinder(
 def obj_from_mesh(
         geometry: Mesh,
         doc_or_group: [Doc | DO],
-        ) -> tuple[DO, Path]:
+        ) -> tuple[Optional[DO], Optional[Path]]:
     mesh_path = mesh_path_from_urdf(geometry.filename)
     if not mesh_path:
         return None, None
@@ -185,7 +185,7 @@ def obj_from_mesh(
 def obj_from_sphere(
         geometry: Sphere,
         doc_or_group: [Doc | DO],
-        ) -> tuple[DO, None]:
+        ) -> tuple[Optional[DO], None]:
     obj = add_object(doc_or_group, 'Part::Sphere', 'sphere')
     obj.Radius = geometry.radius * 1000.0  # m to mm.
     return obj, None

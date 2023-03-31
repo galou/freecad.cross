@@ -10,10 +10,9 @@ from ..robot_from_urdf import robot_from_urdf
 from ..ros_utils import is_ros_found
 try:
     from ..urdf_loader import UrdfLoader
-except ModuleNotFoundError as e:
+except ImportError as e:
     # TODO: Warn the user more nicely.
     warn(str(e), gui=False)
-    pass
 
 
 class _UrdfImportCommand:

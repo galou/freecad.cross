@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """Generate a URDF robot from different sources."""
 
 from __future__ import annotations

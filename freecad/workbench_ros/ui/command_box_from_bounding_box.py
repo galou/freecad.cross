@@ -1,6 +1,7 @@
 import FreeCAD as fc
 import FreeCADGui as fcgui
 
+from ..freecad_utils import label_or
 from ..utils import error
 from ..gui_utils import tr
 
@@ -29,8 +30,8 @@ class BoxFromBoundingBoxCommand:
             if not has_bbox:
                 continue
             is_one_object_compatible = True
-            box_name = f'Bbox_{obj.Name}' if hasattr(obj, 'Name') else ''
-            box = obj.Document.addObject('Part::Box', box_name)
+            box_name = label_or(obj, 'urdf') + '_bbox'
+            box = fc.activeDocument().addObject('Part::Box', box_name)
             box.Length = bbox.XMax - bbox.XMin
             box.Width = bbox.YMax - bbox.YMin
             box.Height = bbox.ZMax - bbox.ZMin
@@ -41,7 +42,7 @@ class BoxFromBoundingBoxCommand:
             error(tr('No compatible object selected'), gui=True)
 
     def IsActive(self):
-        return (fc.activeDocument() is not None)
+        return bool(fcgui.Selection.getSelection())
 
 
 fcgui.addCommand('BoxFromBoundingBox', BoxFromBoundingBoxCommand())

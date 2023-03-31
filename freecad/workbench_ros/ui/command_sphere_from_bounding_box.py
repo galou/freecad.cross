@@ -1,6 +1,7 @@
 import FreeCAD as fc
 import FreeCADGui as fcgui
 
+from ..freecad_utils import label_or
 from ..utils import error
 from ..gui_utils import tr
 
@@ -28,15 +29,15 @@ class SphereFromBoundingBoxCommand:
             if not has_bbox:
                 continue
             is_one_object_compatible = True
-            sphere_name = f'Bbox_{obj.Name}' if hasattr(obj, 'Name') else ''
-            sphere = obj.Document.addObject('Part::Sphere', sphere_name)
+            sphere_name = label_or(obj, 'urdf') + '_bbox'
+            sphere = fc.activeDocument().addObject('Part::Sphere', sphere_name)
             sphere.Radius = bbox.DiagonalLength / 2
             sphere.Placement.Base = bbox.Center
         if not is_one_object_compatible:
-            error('No compatible object selected', gui=True)
+            error(tr('No compatible object selected'), gui=True)
 
     def IsActive(self):
-        return (fc.activeDocument() is not None)
+        return bool(fcgui.Selection.getSelection())
 
 
 fcgui.addCommand('SphereFromBoundingBox', SphereFromBoundingBoxCommand())

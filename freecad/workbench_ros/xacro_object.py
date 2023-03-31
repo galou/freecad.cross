@@ -10,24 +10,24 @@ from .freecad_utils import warn
 # Typing hints.
 DO = fc.DocumentObject
 VPDO = 'FreeCADGui.ViewProviderDocumentObject'
-RosXacro = DO  # A Ros::Xacro, i.e. a DocumentObject with Proxy "Xacro".
+RosXacroObject = DO  # A Ros::XacroObject, i.e. a DocumentObject with Proxy "Xacro".
 
 
-class Xacro:
-    """The Xacro proxy."""
+class XacroObject:
+    """The XacroObject proxy."""
 
     # The member is often used in workbenches, particularly in the Draft
     # workbench, to identify the object type.
-    Type = 'Ros::Xacro'
+    Type = 'Ros::XacroObject'
 
-    def __init__(self, obj: RosXacro):
+    def __init__(self, obj: RosXacroObject):
         obj.Proxy = self
         self.xacro = obj
 
         self.init_properties(obj)
         self.init_extensions(obj)
 
-    def init_properties(self, obj: RosXacro):
+    def init_properties(self, obj: RosXacroObject):
         add_property(obj, 'App::PropertyString', '_Type', 'Internal',
                      'The type')
         obj.setPropertyStatus('_Type', ['Hidden', 'ReadOnly'])
@@ -41,18 +41,18 @@ class Xacro:
         add_property(obj, 'App::PropertyFile', 'Input', 'MainMacro',
                      'The macro to use')
 
-    def init_extensions(self, obj: RosXacro):
+    def init_extensions(self, obj: RosXacroObject):
         # Needed to make this object able to attach parameterically to other objects.
         obj.addExtension('Part::AttachExtensionPython', obj)
         # Need a group to put the generated robot in.
         obj.addExtension('Part::AttachExtensionPython', obj)
 
-    def execute(self, obj: RosXacro) -> None:
+    def execute(self, obj: RosXacroObject) -> None:
         obj.positionBySupport()
         self.reset_group()
         pass
 
-    def onChanged(self, obj: RosXacro, prop: str) -> None:
+    def onChanged(self, obj: RosXacroObject, prop: str) -> None:
         if prop in ['InputFile']:
             self.execute(obj)
 
@@ -72,7 +72,7 @@ class Xacro:
             return
 
 
-class _ViewProviderXacro:
+class _ViewProviderXacroObject:
     """A view provider for the Xacro container object """
 
     def __init__(self, vobj: VPDO):
@@ -84,7 +84,7 @@ class _ViewProviderXacro:
     def attach(self, vobj: VPDO):
         self.ViewObject = vobj
 
-    def updateData(self, obj: RosXacro, prop: str):
+    def updateData(self, obj: RosXacroObject, prop: str):
         return
 
     def onChanged(self, vobj: VPDO, prop: str):
@@ -106,7 +106,7 @@ class _ViewProviderXacro:
         return None
 
 
-def make_xacro(name, doc: Optional[fc.Document] = None) -> RosXacro:
+def make_xacro(name, doc: Optional[fc.Document] = None) -> RosXacroObject:
     """Add a Ros::Robot to the current document."""
     if doc is None:
         doc = fc.activeDocument()
@@ -114,10 +114,10 @@ def make_xacro(name, doc: Optional[fc.Document] = None) -> RosXacro:
         warn('No active document, doing nothing', False)
         return
     obj = doc.addObject('App::FeaturePython', name)
-    Xacro(obj)
+    XacroObject(obj)
 
     if hasattr(fc, 'GuiUp') and fc.GuiUp:
-        _ViewProviderXacro(obj.ViewObject)
+        _ViewProviderXacroObject(obj.ViewObject)
 
     doc.recompute()
     return obj

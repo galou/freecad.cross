@@ -20,12 +20,14 @@ class SphereFromBoundingBoxCommand:
             has_bbox = False
             try:
                 bbox = obj.Shape.BoundBox
-            except AttributeError:
                 has_bbox = True
+            except AttributeError:
+                pass
             try:
                 bbox = obj.Mesh.BoundBox
-            except AttributeError:
                 has_bbox = True
+            except AttributeError:
+                pass
             if not has_bbox:
                 continue
             is_one_object_compatible = True

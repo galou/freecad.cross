@@ -7,6 +7,7 @@ from .ui import command_new_joint
 from .ui import command_new_link
 from .ui import command_new_robot
 from .ui import command_robot_from_urdf
+from .ui import command_set_link_mounted_placement
 from .ui import command_sphere_from_bounding_box
 from .ui import command_urdf_export
 from .utils import ICON_PATH
@@ -30,20 +31,21 @@ class RosWorkbench(fcgui.Workbench):
         """
         # The order here defines the order of the icons in the GUI.
         commands = [
-            'NewRobot',  # Defined in ./command_new_robot.py
-            'NewLink',  # Defined in ./command_new_link.py
-            'NewJoint',  # Defined in ./command_new_joint.py
-            'BoxFromBoundingBox',  # Defined in ./box_from_bounding_box.py.
-            'SphereFromBoundingBox',  # Defined in ./sphere_from_bounding_box.py.
-            'UrdfImport',  # Defined in ./command_robot_from_urdf.py.
-            'AssemblyFromUrdf',  # Defined in ./command_assembly_from_urdf.py.
-            'UrdfExport',  # Defined in ./command_urdf_export.py.
+            'NewRobot',  # Defined in ./ui/command_new_robot.py
+            'NewLink',  # Defined in ./ui/command_new_link.py
+            'NewJoint',  # Defined in ./ui/command_new_joint.py
+            'BoxFromBoundingBox',  # Defined in ./ui/command_box_from_bounding_box.py.
+            'SphereFromBoundingBox',  # Defined in ./ui/command_sphere_from_bounding_box.py.
+            'UrdfImport',  # Defined in ./ui/command_robot_from_urdf.py.
+            'AssemblyFromUrdf',  # Defined in ./ui/command_assembly_from_urdf.py.
+            'UrdfExport',  # Defined in ./ui/command_urdf_export.py.
+            'SetLinkMountedPlacement',  # Defined in ./ui/command_set_link_mounted_placement.py
             ]
         self.appendToolbar('ROS', commands)
         self.appendMenu('ROS', commands)
 
         fcgui.addIconPath(str(ICON_PATH))
-        # fcgui.addLanguagePath(joinDir("Resources/translations"))
+        # fcgui.addLanguagePath(joinDir('Resources/translations'))
 
     def Activated(self):
         """Code run when a user switches to this workbench."""

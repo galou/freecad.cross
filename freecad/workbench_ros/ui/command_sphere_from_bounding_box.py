@@ -30,9 +30,12 @@ class SphereFromBoundingBoxCommand:
                 continue
             is_one_object_compatible = True
             sphere_name = label_or(obj, 'urdf') + '_bbox'
-            sphere = fc.activeDocument().addObject('Part::Sphere', sphere_name)
+            doc = fc.activeDocument()
+            sphere = doc.addObject('Part::Sphere', sphere_name)
             sphere.Radius = bbox.DiagonalLength / 2
             sphere.Placement.Base = bbox.Center
+            doc.commitTransaction()
+            doc.recompute()
         if not is_one_object_compatible:
             error(tr('No compatible object selected'), gui=True)
 

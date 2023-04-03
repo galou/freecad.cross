@@ -31,13 +31,17 @@ class BoxFromBoundingBoxCommand:
                 continue
             is_one_object_compatible = True
             box_name = label_or(obj, 'urdf') + '_bbox'
-            box = fc.activeDocument().addObject('Part::Box', box_name)
+            doc = fc.activeDocument()
+            doc.openTransaction(tr('Box from bounding box'))
+            box = doc.addObject('Part::Box', box_name)
             box.Length = bbox.XMax - bbox.XMin
             box.Width = bbox.YMax - bbox.YMin
             box.Height = bbox.ZMax - bbox.ZMin
             box.Placement.Base.x = bbox.XMin
             box.Placement.Base.y = bbox.YMin
             box.Placement.Base.z = bbox.ZMin
+            doc.commitTransaction()
+            doc.recompute()
         if not is_one_object_compatible:
             error(tr('No compatible object selected'), gui=True)
 

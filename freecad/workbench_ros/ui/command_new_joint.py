@@ -18,11 +18,14 @@ class _NewJointCommand:
         return is_robot_selected()
 
     def Activated(self):
-        fc.activeDocument().openTransaction('Create Joint')
+        doc = fc.activeDocument()
+        doc.openTransaction('Create Joint')
         fcgui.doCommand('')
         fcgui.addModule('freecad.workbench_ros.joint')
         fcgui.doCommand("_joint = freecad.workbench_ros.joint.make_joint('Joint')")
         fcgui.doCommand('FreeCADGui.ActiveDocument.setEdit(_joint.Name)')
+        doc.commitTransaction()
+        doc.recompute()
 
 
 fcgui.addCommand('NewJoint', _NewJointCommand())

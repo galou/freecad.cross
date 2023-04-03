@@ -19,11 +19,14 @@ class _NewLinkCommand:
         return is_robot_selected()
 
     def Activated(self):
-        fc.activeDocument().openTransaction('Create Link')
+        doc = fc.activeDocument()
+        doc.openTransaction(tr('Create Link'))
         fcgui.doCommand('')
         fcgui.addModule('freecad.workbench_ros.link')
         fcgui.doCommand("_link = freecad.workbench_ros.link.make_link('Link')")
         fcgui.doCommand('FreeCADGui.ActiveDocument.setEdit(_link.Name)')
+        doc.commitTransaction()
+        doc.recompute()
 
 
 fcgui.addCommand('NewLink', _NewLinkCommand())

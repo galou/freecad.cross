@@ -18,11 +18,14 @@ class _NewRobotCommand:
         return (fc.activeDocument() is not None)
 
     def Activated(self):
-        fc.activeDocument().openTransaction('Create Robot')
+        doc = fc.activeDocument()
+        doc.openTransaction(tr('Create Robot'))
         fcgui.doCommand('')
         fcgui.addModule('freecad.workbench_ros.robot')
         fcgui.doCommand("_robot = freecad.workbench_ros.robot.make_robot('Robot')")
         fcgui.doCommand('FreeCADGui.ActiveDocument.setEdit(_robot.Name)')
+        doc.commitTransaction()
+        doc.recompute()
 
 
 fcgui.addCommand('NewRobot', _NewRobotCommand())

@@ -11,12 +11,11 @@ import FreeCADGui as fcgui
 from PySide import QtGui  # FreeCAD's PySide!
 from PySide import QtCore  # FreeCAD's PySide!
 
-from ..freecad_utils import get_subobjects_by_full_name
 from ..freecad_utils import is_box
 from ..freecad_utils import is_cylinder
 from ..freecad_utils import is_sphere
+from ..freecadgui_utils import get_subobjects_and_placements
 from ..gui_utils import tr
-from ..placement_utils import get_global_placement
 from ..urdf_utils import urdf_collision_from_box
 from ..urdf_utils import urdf_collision_from_cylinder
 from ..urdf_utils import urdf_collision_from_object
@@ -26,7 +25,7 @@ from ..utils import is_robot
 
 # Typing hints.
 DO = fc.DocumentObject
-SO = 'Gui.SelectionObject'  # Could not get the class from Python.
+SO = 'FreeCADGui.SelectionObject'  # Could not get the class from Python.
 
 
 def _supported_object_selected():
@@ -36,28 +35,6 @@ def _supported_object_selected():
         if is_robot(obj):
             return True
     return False
-
-
-def _get_subobjects_and_placements(
-        selection: list[SO],
-        ) -> list[tuple[DO, fc.Placement]]:
-    outlist: list[tuple[DO, fc.Placement]] = []
-    for selection_object in selection:
-        root_obj = selection_object.Object
-        sub_fullpaths = selection_object.SubElementNames
-        if not sub_fullpaths:
-            # An object is selected, not a face, edge, vertex.
-            sub_fullpaths = ('',)
-        for sub_fullpath in sub_fullpaths:
-            subobjects = get_subobjects_by_full_name(root_obj, sub_fullpath)
-            if subobjects:
-                obj = subobjects[-1]
-            else:
-                obj = root_obj
-            # One or more subelements are selected.
-            placement = get_global_placement(root_obj, sub_fullpath)
-            outlist.append((obj, placement))
-    return outlist
 
 
 class _UrdfExportCommand:
@@ -84,7 +61,7 @@ class _UrdfExportCommand:
         has_mesh = False
         show_xml = True
         exported_objects: list[fc.DocumentObject] = []
-        for obj, placement in _get_subobjects_and_placements(selection):
+        for obj, placement in get_subobjects_and_placements(selection):
             if not hasattr(obj, 'TypeId'):
                 # For now, only objects with 'TypeId' are supported.
                 continue

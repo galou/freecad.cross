@@ -34,7 +34,9 @@ class _AssemblyFromUrdfCommand:
                 doc = fc.newDocument()
             filename = str(dialog.selectedFiles()[0])
             urdf_robot = UrdfLoader.load_from_file(filename)
+            doc.openTransaction(tr('Assembly from URDF'))
             assembly_from_urdf(doc, urdf_robot)
+            doc.commitTransaction()
             doc.recompute()
             fcgui.SendMsgToActiveView('ViewFit')
 

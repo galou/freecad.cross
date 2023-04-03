@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from copy import copy
 import string
-from typing import Iterable
+from typing import Iterable, Optional
 
 import FreeCAD as fc
 
@@ -50,6 +51,16 @@ def label_or(
     if not hasattr(obj, 'Label'):
         return 'not_a_FreeCAD_object'
     return obj.Label if hasattr(obj, 'Label') else alternative
+
+
+def message(text: str, gui: bool = False) -> None:
+    """Inform the user."""
+    fc.Console.PrintMessage(text + '\n')
+    if gui and fc.GuiUp:
+        diag = QtGui.QMessageBox(QtGui.QMessageBox.Information,
+                                 'ROS Workbench', text)
+        diag.setWindowModality(QtCore.Qt.ApplicationModal)
+        diag.exec_()
 
 
 def warn(text: str, gui: bool = False) -> None:
@@ -191,6 +202,19 @@ def is_derived_from(obj: DO, typeid: str) -> bool:
     return hasattr(obj, 'isDerivedFrom') and obj.isDerivedFrom(typeid)
 
 
+def has_type(obj: DO, typeid: str) -> bool:
+    """Return True if the object has the given type, evaluating also its Proxy.
+
+    Return True if the object is derived from the given type or obj.Proxy.Type
+    is the given type.
+
+    """
+    return (is_derived_from(obj, typeid)
+            or (hasattr(obj, 'Proxy')
+                and hasattr(obj.Proxy, 'Type')
+                and obj.Proxy.Type == typeid))
+
+
 def is_body(obj: DO) -> bool:
     """Return True if the object is a 'Part::Box'."""
     return is_derived_from(obj, 'PartDesign::Body')
@@ -323,3 +347,47 @@ def get_leafs_and_subnames(obj: DO) -> list[tuple[DO, str]]:
         return outlist
 
     return get_subobjects_recursive(obj, '')
+
+
+def validate_types(objects: DOList, types: list[str]) -> DOList:
+    """Sort objects by required types.
+
+    Raises a RuntimeError if a listed type has no appropriate object in the input
+    list.
+
+    """
+    if len(objects) < len(types):
+        raise RuntimeError('Less types required that the number of objects')
+
+    copy_of_objects = copy(objects)
+    copy_of_types = copy(types)
+    objects_of_precise_type: DOList = []
+    indexes_of_any: list[int] = []
+    for i, type_ in enumerate(types):
+        object_found = False
+        for o in copy_of_objects:
+            if object_found:
+                # Indirectly, next `type_`.
+                continue
+            if type_ in [None, 'any', 'Any']:
+                indexes_of_any.append(i)
+                copy_of_types.pop(0)
+                object_found = True
+                # Indirectly, next `type_`.
+                continue
+            if has_type(o, type_):
+                objects_of_precise_type.append(o)
+                copy_of_objects.remove(o)
+                copy_of_types.pop(0)
+                object_found = True
+                # Indirectly, next `type_`.
+                continue
+        if not object_found:
+            raise RuntimeError(f'No object of type "{type_}"')
+    outlist: DOList = []
+    for i in range(len(types)):
+        if i in indexes_of_any:
+            outlist.append(copy_of_objects.pop(0))
+        else:
+            outlist.append(objects_of_precise_type.pop(0))
+    return outlist

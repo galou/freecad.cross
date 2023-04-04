@@ -6,6 +6,7 @@ from .ui import command_box_from_bounding_box
 from .ui import command_new_joint
 from .ui import command_new_link
 from .ui import command_new_robot
+from .ui import command_new_xacro_object
 from .ui import command_robot_from_urdf
 from .ui import command_set_link_mounted_placement
 from .ui import command_sphere_from_bounding_box
@@ -34,6 +35,7 @@ class RosWorkbench(fcgui.Workbench):
             'NewRobot',  # Defined in ./ui/command_new_robot.py
             'NewLink',  # Defined in ./ui/command_new_link.py
             'NewJoint',  # Defined in ./ui/command_new_joint.py
+            'NewXacroObject',  # Defined in ./ui/command_new_xacro_object.py
             'BoxFromBoundingBox',  # Defined in ./ui/command_box_from_bounding_box.py.
             'SphereFromBoundingBox',  # Defined in ./ui/command_sphere_from_bounding_box.py.
             'UrdfImport',  # Defined in ./ui/command_robot_from_urdf.py.

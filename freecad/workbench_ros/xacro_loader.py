@@ -36,13 +36,13 @@ class Xacro:
         eval_all(tmp_output_xml_doc.documentElement, self.macros, self.symbols)
 
     def get_macro_names(self):
-        return self.macros.keys()
+        return list(self.macros.keys())
 
     def get_parameters(self, macro: str):
         if macro not in self.macros:
             raise RuntimeError(f'Macro "{macro}" not'
                                ' defined in the xacro file')
-        return self.macros[macro]
+        return self.macros[macro].params
 
     def to_xml(self,
                robot_name: str,
@@ -92,6 +92,7 @@ class XacroLoader:
     def load_from_file(cls, filename: [str | Path]) -> Xacro:
         """Load from a xacro file."""
         filename = str(Path(filename).expanduser())
+        print(f'{filename}') # DEBUG
         return Xacro(parse(filename), filename)
 
     @classmethod

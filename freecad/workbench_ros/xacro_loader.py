@@ -50,6 +50,7 @@ class Xacro:
                parameters: Optional[dict[str, Any]] = None) -> Document:
         if not macro:
             # Full-feature xacro or URDF.
+            # TODO: replace the robot name.
             return copy(self.input_xml_doc)
         if macro not in self.macros:
             raise RuntimeError(f'Macro "{macro}" not'
@@ -60,11 +61,11 @@ class Xacro:
         robot.setAttribute('name', robot_name)
         robot.setAttribute('xmlns:xacro', 'http://ros.org/wiki/xacro')
         include = robot.appendChild(out_xml.createElement('xacro:include'))
-        pkg, xacro = get_package_and_file(self.input_xacro_file)
-        include.setAttribute('filename', f'$(find {pkg})/{xacro}')
+        pkg, xacro_file = get_package_and_file(self.input_xacro_file)
+        include.setAttribute('filename', f'$(find {pkg})/{xacro_file}')
         use = robot.appendChild(out_xml.createElement(f'xacro:{macro}'))
         for k, v in parameters.items():
-            use.attributes[k] = v
+            use.attributes[k] = str(v)
         return out_xml
 
     def to_string(self,

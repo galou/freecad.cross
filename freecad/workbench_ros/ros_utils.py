@@ -53,8 +53,14 @@ def add_ros_python_library() -> bool:
 
 
 def get_package_and_file(file_path: [Path | str]) -> tuple[str, str]:
-    """Return the package name and relative file path."""
+    """Return the package name and relative file path.
+
+    If the file path is relative, return an empty package and `file_path`.
+
+    """
     file_path = Path(file_path).expanduser()
+    if not file_path.is_absolute():
+        return '', str(file_path)
     relative_file_path = ''
     while True:
         candidate_package_xml = file_path / 'package.xml'
@@ -66,4 +72,5 @@ def get_package_and_file(file_path: [Path | str]) -> tuple[str, str]:
                               if relative_file_path else file_path.name)
         file_path = file_path.parent
         if file_path == file_path.root:
+            # We are at the root.
             return '', relative_file_path

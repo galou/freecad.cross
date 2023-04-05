@@ -19,6 +19,7 @@ class BoxFromBoundingBoxCommand:
         for obj in fcgui.Selection.getSelection():
             # Cf. https://github.com/pboechat/pyobb for oriented bounding-box.
             has_bbox = False
+            # TODO: simplify with obj.getPropertyOfGeometry()?
             try:
                 bbox = obj.Shape.BoundBox
             except AttributeError:

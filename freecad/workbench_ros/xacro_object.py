@@ -100,9 +100,20 @@ class XacroObject:
         if (not hasallattr(obj, ['InputFile', 'MainMacro'])):
             return
         if self.xacro:
-            for name in self.xacro.get_parameters(obj.MainMacro):
+            macro = self.xacro.macros[obj.MainMacro]
+            for name in macro.params:
                 add_property(obj, 'App::PropertyString', name, 'Input',
-                             f'Macro parameter {name}')
+                             f'Macro parameter "{name}"')
+                if name in macro.defaultmap:
+                    # Implementation note: cannot set the property value
+                    # knowing the property name, __setattr__ doesn't work.
+                    value = (macro.defaultmap[name][1]
+                             .replace('{', '')
+                             .replace('}', ''))
+                    obj.setExpression(name, f'<<{value}>>')
+                    # It looks that it's better to keep the expression rather
+                    # than clearing it may be interpreted as float.
+                    # obj.clearExpression(name)
 
     def reset_group(self):
         if not hasattr(self, 'xacro'):

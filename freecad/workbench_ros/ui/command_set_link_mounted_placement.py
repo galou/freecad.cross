@@ -12,10 +12,10 @@ class _SetLinkMountedPlacementCommand:
     """Command to set the mounted placement of a Link."""
 
     def GetResources(self):
-        return {'Pixmap': 'set_link_origin.svg',
-                'MenuText': tr('New Link'),
+        return {'Pixmap': 'set_link_mounted_placement.svg',
+                'MenuText': tr('Set the mounted placement of a link'),
                 'Accel': 'N, L',
-                'ToolTip': tr('Create a Link container.')}
+                'ToolTip': tr('Set the mounted placement of a link.')}
 
     def IsActive(self):
         return True

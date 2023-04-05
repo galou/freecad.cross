@@ -50,7 +50,7 @@ CollisionList = Iterable[UrdfCollision]
 def robot_from_urdf(
         doc: fc.Document,
         urdf_robot: UrdfRobot,
-        ) -> DO:
+        ) -> RosRobot:
     """Creates a ROS::Robot from URDF."""
 
     robot, parts_group = _make_robot(doc, urdf_robot.name)
@@ -73,12 +73,13 @@ def robot_from_urdf(
     # mimicking joint can be defined before the mimicked joint in URDF.
     _define_mimic_joints(urdf_robot, joint_map)
     _compensate_joint_placement(robot, urdf_robot, joint_map)
+    return robot
 
 
 def _make_robot(
         doc: fc.Document,
         name: str = 'robot',
-        ) -> tuple[DO, DO]:
+        ) -> tuple[RosRobot, DOG]:
     """Create a ROS::Robot
 
     Return (robot object, parts group).
@@ -102,7 +103,7 @@ def _add_ros_link(
         urdf_link: UrdfLink,
         robot: RosRobot,
         parts_group: DOG,
-        ) -> Tuple[DO, DO, DO]:
+        ) -> Tuple[RosLink, AppPart, AppPart]:
     """Add two App::Part to the group and links to them to the robot.
 
     - Add an "App::Part" for the visual of each link.
@@ -239,8 +240,11 @@ def _add_visual(
         parts_group: DOG,
         ros_link: RosLink,
         visual_part: AppPart,
-        ) -> None:
+        ) -> tuple[DOList, DOList]:
     """Add the visual geometries to an assembly.
+
+    Return the list of objects representing the geometries and the list of
+    FreeCAD links.
 
     Parameters
     ==========
@@ -262,8 +266,11 @@ def _add_collision(
         parts_group: DOG,
         ros_link: RosLink,
         collision_part: AppPart,
-        ) -> None:
+        ) -> tuple[DOList, DOList]:
     """Add the visual geometries to an assembly.
+
+    Return the list of objects representing the geometries and the list of
+    FreeCAD links.
 
     Parameters
     ==========
@@ -283,14 +290,14 @@ def _add_geometries(
         part: AppPart,
         geometries: [VisualList | CollisionList],
         name_linked_geom: str,
-        ) -> tuple[list[DO], list[DO]]:
+        ) -> tuple[DOList, DOList]:
     """Add the geometries from URDF into `group` and an App::Link to it into `link`.
 
     `geometries` is either `visuals` or `collisions` and the geometry itself is
     `geometries[?].geometry`.
     If `name_linked_geom` is empty, not FC link is created in `link`.
 
-    Return the list of objects reprensenting the geometries and the list of
+    Return the list of objects representing the geometries and the list of
     FreeCAD links.
 
     Parameters
@@ -307,6 +314,7 @@ def _add_geometries(
 
     """
     geom_objs: DOList = []
+    links: DOList = []
     for geometry in geometries:
         # Make the FC object in the group.
         try:
@@ -326,4 +334,5 @@ def _add_geometries(
         link_to_geom = add_object(part, 'App::Link', name_linked_geom)
         link_to_geom.setLink(geom_obj)
         link_to_geom.Placement = geom_obj.Placement
-    return geom_objs
+        links.append(link_to_geom)
+    return geom_objs, links

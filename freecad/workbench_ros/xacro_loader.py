@@ -19,6 +19,7 @@ from urdf_parser_py.urdf import Robot
 
 from xacro import Table
 from xacro import eval_all
+from xacro import process_doc
 
 from .ros_utils import get_package_and_file
 
@@ -48,10 +49,13 @@ class Xacro:
                robot_name: str,
                macro: str = '',
                parameters: Optional[dict[str, Any]] = None) -> Document:
+        """Return the minidom Document of the xacro."""
         if not macro:
-            # Full-feature xacro or URDF.
-            # TODO: replace the robot name.
-            return copy(self.input_xml_doc)
+            # As-is xacro or URDF, except the robot name.
+            out_xml = copy(self.input_xml_doc)
+            # Replace the robot name.
+            out_xml.firstChild.setAttribute('name', robot_name)
+            return out_xml
         if macro not in self.macros:
             raise RuntimeError(f'Macro "{macro}" not'
                                ' defined in the xacro file')
@@ -69,17 +73,49 @@ class Xacro:
         return out_xml
 
     def to_string(self,
+                  robot_name: str,
                   macro: str = '',
-                  parameters: Optional[dict[str, Any]] = None) -> Document:
-        doc = self.to_xml(macro, parameters)
+                  parameters: Optional[dict[str, Any]] = None) -> str:
+        """Return the string of the xacro."""
+        doc = self.to_xml(robot_name, macro, parameters)
         return doc.toxml()
 
     def to_pretty_xml(self,
+                      robot_name: str,
                       macro: str = '',
                       parameters: Optional[dict[str, Any]] = None,
                       indent='\t',
-                      newl='\n') -> Document:
-        doc = self.to_xml(macro, parameters)
+                      newl='\n') -> str:
+        """Return the string of the xacro for pretty-printing."""
+        doc = self.to_xml(robot_name, macro, parameters)
+        return doc.toprettyxml(indent, newl)
+
+    def to_urdf_xml(self,
+                    robot_name: str,
+                    macro: str = '',
+                    parameters: Optional[dict[str, Any]] = None) -> Document:
+        """Return the minidom Document of the generated URDF."""
+        # Now a xacro, later a URDF.
+        out_xml = self.to_xml(robot_name, macro, parameters)
+        process_doc(out_xml)
+        return out_xml
+
+    def to_urdf_string(self,
+                       robot_name: str,
+                       macro: str = '',
+                       parameters: Optional[dict[str, Any]] = None) -> str:
+        """Return the string of the generated URDF."""
+        doc = self.to_urdf_xml(robot_name, macro, parameters)
+        return doc.toxml()
+
+    def to_urdf_pretty_xml(self,
+                           robot_name: str,
+                           macro: str = '',
+                           parameters: Optional[dict[str, Any]] = None,
+                           indent='\t',
+                           newl='\n') -> str:
+        """Return the string of the xacro for pretty-printing."""
+        doc = self.to_urdf_xml(robot_name, macro, parameters)
         return doc.toprettyxml(indent, newl)
 
 
@@ -93,7 +129,6 @@ class XacroLoader:
     def load_from_file(cls, filename: [str | Path]) -> Xacro:
         """Load from a xacro file."""
         filename = str(Path(filename).expanduser())
-        print(f'{filename}') # DEBUG
         return Xacro(parse(filename), filename)
 
     @classmethod

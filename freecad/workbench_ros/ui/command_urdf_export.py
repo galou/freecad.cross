@@ -21,11 +21,15 @@ from ..urdf_utils import urdf_collision_from_cylinder
 from ..urdf_utils import urdf_collision_from_object
 from ..urdf_utils import urdf_collision_from_sphere
 from ..utils import is_robot
+from ..utils import is_xacro_object
 
 
 # Typing hints.
 DO = fc.DocumentObject
 SO = 'FreeCADGui.SelectionObject'  # Could not get the class from Python.
+
+# Otherwise et.tostring uses xlmns:ns0 as xacro namespace.
+et.register_namespace('xacro', 'http://ros.org/wiki/xacro')
 
 
 def _supported_object_selected():
@@ -33,6 +37,8 @@ def _supported_object_selected():
         if hasattr(obj, 'Placement'):
             return True
         if is_robot(obj):
+            return True
+        if is_xacro_object(obj):
             return True
     return False
 
@@ -62,6 +68,7 @@ class _UrdfExportCommand:
         show_xml = True
         exported_objects: list[fc.DocumentObject] = []
         for obj, placement in get_subobjects_and_placements(selection):
+            print(f'{is_xacro_object(obj)=}') # DEBUG
             if not hasattr(obj, 'TypeId'):
                 # For now, only objects with 'TypeId' are supported.
                 continue
@@ -80,6 +87,10 @@ class _UrdfExportCommand:
                 xml = urdf_collision_from_cylinder(
                     obj, placement, ignore_obj_placement=True)
             elif is_robot(obj):
+                if hasattr(obj, 'Proxy'):
+                    xml = obj.Proxy.export_urdf()
+                    show_xml = False
+            elif is_xacro_object(obj):
                 if hasattr(obj, 'Proxy'):
                     xml = obj.Proxy.export_urdf()
                     show_xml = False

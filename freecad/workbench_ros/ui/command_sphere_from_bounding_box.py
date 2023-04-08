@@ -1,8 +1,8 @@
 import FreeCAD as fc
 import FreeCADGui as fcgui
 
+from ..freecad_utils import error
 from ..freecad_utils import label_or
-from ..utils import error
 from ..gui_utils import tr
 
 

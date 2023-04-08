@@ -1,9 +1,10 @@
-- Add method to define link.MountedPlacement
 - Add property length for arrows in joint's view object
 - Add the possiblity to place a robot.
 - Workcell builder (xacro export without touching the original URDF/xacro files)
 - Respect joint limits.
 - Avoid duplicating mesh objects when importing
+- Add a class WorkbenchObject that knows all properties and defines a function self.is_execute_ready that
+  returns True only when all properties are defined.
 - URDF editor integrated in Robot
 - Import xacro that only defines macros by asking for the macro to use and values for its parameters
 - Fix Attachment for the root link in `assembly_from_urdf`

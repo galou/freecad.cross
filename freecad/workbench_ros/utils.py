@@ -96,9 +96,9 @@ def is_joint(obj: DO) -> bool:
     return _has_ros_type(obj, 'Ros::Joint')
 
 
-def is_xacro(obj: DO) -> bool:
+def is_xacro_object(obj: DO) -> bool:
     """Return True if the object is a Ros::Xacro."""
-    return _has_ros_type(obj, 'Ros::Xacro')
+    return _has_ros_type(obj, 'Ros::XacroObject')
 
 
 def is_simple_joint(obj: DO) -> bool:

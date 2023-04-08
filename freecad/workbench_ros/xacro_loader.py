@@ -69,7 +69,7 @@ class Xacro:
         include.setAttribute('filename', f'$(find {pkg})/{xacro_file}')
         use = robot.appendChild(out_xml.createElement(f'xacro:{macro}'))
         for k, v in parameters.items():
-            use.attributes[k] = str(v)
+            use.setAttribute(k, str(v))
         return out_xml
 
     def to_string(self,

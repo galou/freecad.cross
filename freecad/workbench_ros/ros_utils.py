@@ -74,3 +74,14 @@ def get_package_and_file(file_path: [Path | str]) -> tuple[str, str]:
         if file_path == file_path.root:
             # We are at the root.
             return '', relative_file_path
+
+
+def split_package_path(package_path: [Path | str]) -> tuple[Path, Path]:
+    """Return the package parent and the package name."""
+    package_path = Path(package_path)
+    if not package_path.is_dir():
+        warn('"package_path" must be a directory', True)
+    path = package_path.resolve()
+    parent = path.parent
+    package_name = path.stem
+    return parent, package_name

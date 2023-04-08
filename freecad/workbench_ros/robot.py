@@ -13,7 +13,7 @@ from .freecad_utils import get_properties_of_category
 from .freecad_utils import get_valid_property_name
 from .freecad_utils import label_or
 from .freecad_utils import warn
-from .utils import RESOURCES_PATH
+from .ros_utils import split_package_path
 from .utils import get_chains
 from .utils import get_joints
 from .utils import get_links
@@ -24,8 +24,8 @@ from .utils import is_joint
 from .utils import is_link
 from .utils import is_robot
 from .utils import save_xml
-from .utils import split_package_path
 from .utils import warn_unsupported
+from .wb_utils import export_templates
 
 # Typing hints.
 DO = fc.DocumentObject
@@ -142,53 +142,6 @@ def _add_joint_variable(
         # Avoid recursive recompute.
         joint.Position = value
     return used_var_name
-
-
-def _export_templates(
-        package_parent: [Path | str],
-        package_name: str,
-        robot_name,
-        ) -> None:
-    """Export generated files.
-
-    Parameters
-    ----------
-
-    - package_name: the directory containing the directory called
-                    `package_name`, usually "$ROS_WORKSPACE/src".
-    - package_name: name of the ROS package and its containing directory.
-    - robot_name: file base for the URDF file, for example "my_robot" for a
-                  robot described in "my_robot.urdf". Note that the robot name
-                  defined in the URDF file may differ.
-    """
-    files = [
-        'package.xml',
-        'CMakeLists.txt',
-        'launch/display.launch.py',
-        'rviz/robot_description.rviz',
-        ]
-    package_parent = Path(package_parent)
-    meshes_dir = ('meshes '
-                  if _has_meshes_directory(package_parent, package_name)
-                  else '')
-    for f in files:
-        template_file_path = RESOURCES_PATH / 'templates' / f
-        template = template_file_path.read_text()
-        txt = template.format(package_name=package_name,
-                              robot_name=robot_name,
-                              meshes_dir=meshes_dir)
-        output_path = package_parent / package_name / f
-        output_path.parent.mkdir(parents=True, exist_ok=True)
-        output_path.write_text(txt)
-
-
-def _has_meshes_directory(
-        package_parent: [Path | str],
-        package_name: str,
-        ) -> bool:
-    """Return True if the directory "meshes" exists in the package."""
-    meshes_directory = Path(package_parent) / package_name / 'meshes'
-    return meshes_directory.exists()
 
 
 class Robot:
@@ -351,15 +304,15 @@ class Robot:
         return variables
 
     def export_urdf(self) -> Optional[et.Element]:
+        """Export the robot as URDF, writing files."""
         if ((not hasattr(self, 'robot'))
                 or (not hasattr(self.robot, 'OutputPath'))):
             return
-        output_path = Path(self.robot.OutputPath)
-        if str(output_path) == '.':
+        if not self.robot.OutputPath:
             warn('Property `OutputPath` cannot be empty', True)
             return
+        output_path = Path(self.robot.OutputPath).expanduser()
         package_parent, package_name = split_package_path(output_path)
-        output_path.mkdir(parents=True, exist_ok=True)
         # TODO: warn if package name doesn't end with `_description`.
         xml = et.fromstring('<robot/>')
         xml.attrib['name'] = get_valid_urdf_name(self.robot.Label)
@@ -385,10 +338,21 @@ class Robot:
                 error(f"Internal error with joint '{joint.Label}'"
                       ", has no 'Proxy' attribute", True)
         # Save the xml into a file.
-        file_base = get_valid_filename(f'{self.robot.Label}')
-        urdf_path = output_path / f'urdf/{file_base}.urdf'
+        output_path.mkdir(parents=True, exist_ok=True)
+        file_base = get_valid_filename(self.robot.Label)
+        urdf_file = f'{file_base}.urdf'
+        urdf_path = output_path / f'urdf/{urdf_file}'
         save_xml(xml, urdf_path)
-        _export_templates(package_parent, package_name, file_base)
+        template_files = [
+            'package.xml',
+            'CMakeLists.txt',
+            'launch/display.launch.py',
+            'rviz/robot_description.rviz',
+            ]
+        export_templates(template_files,
+                         package_parent,
+                         package_name=package_name,
+                         urdf_file=urdf_file)
         return xml
 
 
@@ -443,12 +407,6 @@ class _ViewProviderRobot:
         import FreeCADGui as fcgui
         fcgui.Control.closeDialog()
         return
-
-    def __getstate__(self):
-        return None
-
-    def __setstate__(self, state):
-        return None
 
 
 def make_robot(name, doc: Optional[fc.Document] = None) -> RosRobot:

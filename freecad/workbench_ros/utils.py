@@ -14,7 +14,6 @@ from xml.dom import minidom
 
 import FreeCAD as fc
 
-from .freecad_utils import error
 from .freecad_utils import is_box
 from .freecad_utils import is_cylinder
 from .freecad_utils import is_sphere
@@ -32,6 +31,9 @@ MOD_PATH = Path(fc.getUserAppDataDir()) / 'Mod/freecad.workbench_ros'
 RESOURCES_PATH = MOD_PATH / 'resources'
 UI_PATH = RESOURCES_PATH / 'ui'
 ICON_PATH = RESOURCES_PATH / 'icons'
+
+# Otherwise et.tostring uses xlmns:ns0 as xacro namespace.
+et.register_namespace('xacro', 'http://ros.org/wiki/xacro')
 
 
 def get_valid_filename(text: str) -> str:
@@ -197,17 +199,6 @@ def hasallattr(obj: Any, attrs: list[str]):
         if not hasattr(obj, attr):
             return False
     return True
-
-
-def split_package_path(package_path: [Path | str]) -> tuple[Path, Path]:
-    """Return the package parent and the package name."""
-    package_path = Path(package_path)
-    if not package_path.is_dir():
-        error('"OutputPath" must be a directory', True)
-    path = package_path.resolve()
-    parent = path.parent
-    package_name = path.stem
-    return parent, package_name
 
 
 def save_xml(

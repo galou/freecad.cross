@@ -9,7 +9,7 @@ import launch_ros
 
 def generate_launch_description():
     pkg_share = Path(launch_ros.substitutions.FindPackageShare(package='{package_name}').find('{package_name}'))
-    default_model_path = pkg_share / 'urdf/{robot_name}.urdf'
+    default_model_path = pkg_share / 'urdf/{urdf_file}'
     default_rviz_config_path = pkg_share / 'rviz/robot_description.rviz'
 
     robot_state_publisher_node = launch_ros.actions.Node(

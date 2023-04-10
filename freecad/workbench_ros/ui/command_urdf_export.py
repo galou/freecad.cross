@@ -68,7 +68,6 @@ class _UrdfExportCommand:
         show_xml = True
         exported_objects: list[fc.DocumentObject] = []
         for obj, placement in get_subobjects_and_placements(selection):
-            print(f'{is_xacro_object(obj)=}') # DEBUG
             if not hasattr(obj, 'TypeId'):
                 # For now, only objects with 'TypeId' are supported.
                 continue

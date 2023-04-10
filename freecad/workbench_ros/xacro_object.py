@@ -104,7 +104,7 @@ class XacroObject:
         add_property(obj, 'App::PropertyPlacement', 'Placement',
                      'Base', 'Placement')
 
-        self._manage_visibility(obj)
+        self._toggle_editor_mode(obj)
 
     def init_extensions(self, obj: RosXacroObject):
         # Needed to make this object able to attach parameterically to other objects.
@@ -131,7 +131,7 @@ class XacroObject:
         macro_names = self.xacro.get_macro_names()
         if obj.getEnumerationsOfProperty('MainMacro') != macro_names:
             obj.MainMacro = macro_names
-        self._manage_visibility(obj)
+        self._toggle_editor_mode(obj)
         self.set_param_properties(obj)
         self.reset_group(obj)
 
@@ -251,7 +251,7 @@ class XacroObject:
 
         return xacro_et
 
-    def _manage_visibility(self, obj: RosXacroObject) -> None:
+    def _toggle_editor_mode(self, obj: RosXacroObject) -> None:
         """Show/hide properties."""
         # Hide until an input file is given and macros are defined.
         if (hasattr(obj, 'InputFile')

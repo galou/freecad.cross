@@ -11,12 +11,9 @@ from .freecad_utils import error
 from .freecad_utils import label_or
 from .freecad_utils import warn
 from .urdf_utils import urdf_origin_from_placement
-from .utils import get_joints
 from .utils import get_valid_urdf_name
-from .utils import is_joint
-from .utils import is_link
 from .utils import is_robot
-from .utils import warn_unsupported
+from .wb_utils import ros_name
 
 # Typing hints.
 DO = fc.DocumentObject
@@ -52,9 +49,9 @@ class Joint:
         add_property(obj, 'App::PropertyEnumeration', 'Type', 'Elements',
                      'The kinematical type of the joint')
         obj.Type = Joint.type_enum
-        add_property(obj, 'App::PropertyLink', 'Parent', 'Elements',
+        add_property(obj, 'App::PropertyEnumeration', 'Parent', 'Elements',
                      'Parent link (from the ROS Workbench)')
-        add_property(obj, 'App::PropertyLink', 'Child', 'Elements',
+        add_property(obj, 'App::PropertyEnumeration', 'Child', 'Elements',
                      'Child link (from the ROS Workbench)')
         add_property(obj, 'App::PropertyPlacement', 'Origin', 'Elements',
                      'Joint origin relative to the parent link')
@@ -99,28 +96,6 @@ class Joint:
                          f' "{obj.MimickedJoint}"\'s is {obj.MimickedJoint.Type}',
                          True)
                     obj.MimickedJoint = None
-
-    def cleanup_children(self) -> DOList:
-        """Remove and return all objects not supported by ROS::Joint."""
-        if ((not hasattr(self, 'joint'))
-                or not is_joint(self.joint)):
-            return
-
-        try:
-            if self.joint.Child and (not is_link(self.joint.Child)):
-                warn_unsupported(self.joint.Child, by='ROS::Joint', gui=True)
-                # Reject the current child.
-                self.joint.Child = None
-        except AttributeError:
-            pass
-
-        try:
-            if self.joint.Parent and (not is_link(self.joint.Parent)):
-                warn_unsupported(self.joint.Parent, by='ROS::Joint', gui=True)
-                # Reject the current parent.
-                self.joint.Parent = None
-        except AttributeError:
-            pass
 
     def onDocumentRestored(self, obj: RosJoint):
         obj.Proxy = self
@@ -186,22 +161,23 @@ class Joint:
         robot = self.get_robot()
         if robot is None:
             return
-        for candidate_joint in get_joints(robot.Group):
-            if ((candidate_joint.Child is not None)
-               and (candidate_joint.Child is self.joint.Parent)):
+        for candidate_joint in robot.Proxy.get_joints():
+            child_of_candidate = robot.Proxy.get_link(candidate_joint.Child)
+            parent_of_self = robot.Proxy.get_link(self.joint.Parent)
+            if child_of_candidate is parent_of_self:
                 return candidate_joint
 
     def export_urdf(self) -> et.ElementTree:
         joint = self.joint
         joint_xml = et.fromstring('<joint/>')
-        joint_xml.attrib['name'] = get_valid_urdf_name(joint.Label)
+        joint_xml.attrib['name'] = get_valid_urdf_name(ros_name(joint))
         joint_xml.attrib['type'] = joint.Type
         if joint.Parent:
-            joint_xml.append(et.fromstring(f'<parent link="{get_valid_urdf_name(joint.Parent.Label)}"/>'))
+            joint_xml.append(et.fromstring(f'<parent link="{get_valid_urdf_name(joint.Parent)}"/>'))
         else:
             joint_xml.append(et.fromstring('<parent link="NO_PARENT_DEFINED"/>'))
         if joint.Child:
-            joint_xml.append(et.fromstring(f'<child link="{get_valid_urdf_name(joint.Child.Label)}"/>'))
+            joint_xml.append(et.fromstring(f'<child link="{get_valid_urdf_name(joint.Child)}"/>'))
         else:
             joint_xml.append(et.fromstring('<child link="NO_CHILD_DEFINED"/>'))
         joint_xml.append(urdf_origin_from_placement(joint.Origin))
@@ -335,7 +311,7 @@ def make_joint(name, doc: Optional[fc.Document] = None) -> DO:
     if doc is None:
         warn('No active document, doing nothing', False)
         return
-    obj = doc.addObject('Part::FeaturePython', name)
+    obj = doc.addObject('App::FeaturePython', name)
     Joint(obj)
     # Default to type "fixed".
     obj.Type = 'fixed'

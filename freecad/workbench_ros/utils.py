@@ -49,8 +49,9 @@ def xml_comment(comment: str) -> str:
 
 def get_valid_urdf_name(name: str) -> str:
     if not name:
-        return 'no_label'
-    return name.replace(' ', '_')
+        return 'no_name'
+    # TODO: special XML characters must be escaped.
+    return name.replace('"', '&quot;')
 
 
 def warn_unsupported(objects: [DO, DOList],

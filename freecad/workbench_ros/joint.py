@@ -84,8 +84,6 @@ class Joint:
         obj.setEditorMode('Placement', ['ReadOnly'])
 
     def onChanged(self, obj: RosJoint, prop: str) -> None:
-        if prop in ['Child', 'Parent']:
-            self.cleanup_children()
         if prop == 'Mimic':
             self._toggle_editor_mode()
         if prop == 'MimickedJoint':
@@ -96,6 +94,10 @@ class Joint:
                          f' "{obj.MimickedJoint}"\'s is {obj.MimickedJoint.Type}',
                          True)
                     obj.MimickedJoint = None
+        if prop in ('Label', 'Label2'):
+            robot = self.get_robot()
+            if robot and hasattr(robot, 'Proxy'):
+                robot.Proxy.add_joint_variables()
 
     def onDocumentRestored(self, obj: RosJoint):
         obj.Proxy = self
@@ -227,9 +229,14 @@ class _ViewProviderJoint:
 
     def set_properties(self, vobj: VPDO):
         """Set properties of the view provider."""
-        add_property(vobj, 'App::PropertyBool', 'ShowJointAxis',
-                     'Display Options',
-                     "Toggle the display of the joint's Z-axis")
+        add_property(vobj, 'App::PropertyBool', 'ShowAxis',
+                     'ROS Display Options',
+                     "Toggle the display of the joint's Z-axis",
+                     True)
+        add_property(vobj, 'App::PropertyLength', 'AxisLength',
+                     'ROS Display Options',
+                     "Length of the arrow for the joint's axis",
+                     500.0)
 
     def getIcon(self):
         return 'joint.svg'
@@ -241,22 +248,20 @@ class _ViewProviderJoint:
     def updateData(self,
                    obj: RosJoint,
                    prop: str):
-
         vobj = obj.ViewObject
         if not hasattr(vobj, 'Visibility'):
             return
-        if not vobj.Visibility or not hasattr(vobj, 'ShowJointAxis'):
+        if not vobj.Visibility or not hasattr(vobj, 'ShowAxis'):
             # root_node.removeAllChildren() # This segfaults when loading the document.
             return
         if prop in ['Placement']:
-            self.draw_arrow(vobj, vobj.Visibility and vobj.ShowJointAxis)
+            self.draw_arrow(vobj, vobj.Visibility and vobj.ShowAxis)
         # Implementation note: no need to react on prop == 'Origin' because
         # this triggers a change in 'Placement'.
 
     def onChanged(self, vobj: VPDO, prop: str):
-        if prop == 'ShowJointAxis':
-            self.draw_arrow(vobj, vobj.ShowJointAxis)
-        return
+        if prop in ('ShowAxis', 'AxisLength'):
+            self.draw_arrow(vobj, vobj.ShowAxis)
 
     def draw_arrow(self, vobj: VPDO, visible: bool):
         from .coin_utils import arrow_group
@@ -276,8 +281,12 @@ class _ViewProviderJoint:
             color = (0.0, 0.0, 0.7)
         else:
             color = (0.0, 0.0, 1.0)
+        if hasattr(vobj, 'AxisLength'):
+            length = vobj.AxisLength.Value
+        else:
+            length = 1000.0
         p0 = placement.Base
-        p1 = placement * fc.Vector(0.0, 0.0, 1000.0)
+        p1 = placement * fc.Vector(0.0, 0.0, length)
         arrow = arrow_group([p0, p1], scale=0.2, color=color)
         root_node.addChild(arrow)
 
@@ -295,13 +304,12 @@ class _ViewProviderJoint:
     def unsetEdit(self, vobj, mode):
         import FreeCADGui as fcgui
         fcgui.Control.closeDialog()
-        return
 
     def __getstate__(self):
-        return None
+        return
 
     def __setstate__(self, state):
-        return None
+        return
 
 
 def make_joint(name, doc: Optional[fc.Document] = None) -> DO:

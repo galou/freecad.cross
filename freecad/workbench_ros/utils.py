@@ -174,7 +174,8 @@ def get_chain(link: RosLink) -> DOList:
         warn(f'{label_or(ref_joint)} has no parent', True)
         # Return only ref_joint to indicate an error.
         return [ref_joint]
-    subchain = get_chain(ref_joint.Parent)
+    robot = ref_joint.Proxy.get_robot()
+    subchain = get_chain(robot.Proxy.get_link(ref_joint.Parent))
     if subchain and is_joint(subchain[0]):
         # Propagate the error of missing joint.Parent.
         return subchain

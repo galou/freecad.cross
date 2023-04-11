@@ -54,20 +54,18 @@ def robot_from_urdf(
     """Creates a ROS::Robot from URDF."""
 
     robot, parts_group = _make_robot(doc, urdf_robot.name)
-    link_map: dict[str, RosLink] = {}
     # visual_map: dict[str, AppPart] = {}
     # collision_map: dict[str, AppPart] = {}
     for urdf_link in urdf_robot.links:
         ros_link, visual_part, collision_part = _add_ros_link(
             urdf_link, robot, parts_group)
-        link_map[urdf_link.name] = ros_link
         # visual_map[urdf_link.name] = visual_part
         # collision_map[urdf_link.name] = collision_part
         _add_visual(urdf_link, parts_group, ros_link, visual_part)
         _add_collision(urdf_link, parts_group, ros_link, collision_part)
     joint_map: dict[str, RosJoint] = {}
     for urdf_joint in urdf_robot.joints:
-        ros_joint = _add_ros_joint(urdf_joint, robot, link_map)
+        ros_joint = _add_ros_joint(urdf_joint, robot)
         joint_map[urdf_joint.name] = ros_joint
     # Mimic joints must be handled after creating all joints because the
     # mimicking joint can be defined before the mimicked joint in URDF.
@@ -130,20 +128,14 @@ def _add_ros_link(
     robot.addObject(ros_link)
     # Implementation note: ros_link.Visual.append() doesn't work because ros_link.Visual
     # is a new object on each evoking.
-    # Should be `parts_group` but because of bug
-    # 'Object can only be in a single Group' must be added to `doc`.
-    # doc.recompute() doesn't help.
-    # Interstingly, in the GUI, you can add to `parts_group` then reference
-    # in `ros_link.Visual` but not in the opposite order.
-    container = doc
-    link_to_visual_part = add_object(container, 'App::Link',
+    link_to_visual_part = add_object(parts_group, 'App::Link',
                                      f'visual_{name}')
     # TODO: make a function utils.make_link.
     link_to_visual_part.setLink(visual_part)
     link_to_visual_part.Visibility = False
     ros_link.Visual = [link_to_visual_part]
 
-    link_to_collision_part = add_object(container, 'App::Link',
+    link_to_collision_part = add_object(parts_group, 'App::Link',
                                         f'collision_{name}')
     link_to_collision_part.setLink(collision_part)
     link_to_collision_part.Visibility = False
@@ -154,14 +146,13 @@ def _add_ros_link(
 def _add_ros_joint(
         urdf_joint: UrdfJoint,
         robot: RosRobot,
-        link_map: dict[str, RosLink],
         ) -> RosJoint:
     doc = robot.Document
     ros_joint = make_joint(urdf_joint.name, doc)
     ros_joint.adjustRelativeLinks(robot)
     robot.addObject(ros_joint)
-    ros_joint.Parent = link_map[urdf_joint.parent]
-    ros_joint.Child = link_map[urdf_joint.child]
+    ros_joint.Parent = urdf_joint.parent
+    ros_joint.Child = urdf_joint.child
     ros_joint.Type = urdf_joint.type
     ros_joint.Origin = placement_along_z_from_joint(urdf_joint)
     return ros_joint
@@ -220,19 +211,22 @@ def _compensate_joint_placement(
                 previous_rotation_to_z = rotation_to_z
                 continue
             already_compensated_joints.add(ros_joint)
-            _set_child_placement(urdf_joint, ros_joint)
+            _set_child_placement(robot, urdf_joint, ros_joint)
             ros_joint.Origin = previous_rotation_to_z.inverted() * ros_joint.Origin
             previous_rotation_to_z = rotation_to_z
 
 
 def _set_child_placement(
+        robot: RosRobot,
         urdf_joint: UrdfJoint,
         ros_joint: RosJoint,
         ) -> None:
     """Set Child.MountedPlacement to compensate for joints not along z."""
     if not ros_joint.Child:
         return
-    ros_joint.Child.MountedPlacement.Rotation = axis_to_z(urdf_joint).inverted()
+    link = robot.Proxy.get_link(ros_joint.Child)
+    if link:
+        link.MountedPlacement.Rotation = axis_to_z(urdf_joint).inverted()
 
 
 def _add_visual(
@@ -250,7 +244,6 @@ def _add_visual(
     ==========
 
     - robot: an UrdfRobot.
-    - link_map: a dict[urdf_link_name: "Ros::Link"].
 
     """
     name_linked_geom = f'{urdf_link.name}_visual'
@@ -276,7 +269,6 @@ def _add_collision(
     ==========
 
     - robot: an UrdfRobot.
-    - link_map: a dict[urdf_link_name: "Ros::Link"].
 
     """
     name_linked_geom = f'{urdf_link.name}_collision'

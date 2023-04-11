@@ -124,11 +124,14 @@ def _add_joint_variable(
     else:
         # Non-simple joints not supported yet.
         return ''
+    rname = ros_name(joint)
     # e.g. name_candidate = "q0_deg" or "q0".
-    name_candidate = f'{joint.Label}{f"_{unit}" if unit else ""}'
+    name_candidate = f'{rname}{f"_{unit}" if unit else ""}'
     var_name = get_valid_property_name(name_candidate)
     # e.g. help_txt = "q0 in deg" or "q0".
-    help_txt = f'{joint.Label}{f" in {unit}" if unit else ""}'
+    label = joint.Label
+    id_ = rname if rname == label else f'{rname} ({label})'
+    help_txt = f'{id_}{f" in {unit}" if unit else ""}'
     _, used_var_name = add_property(robot,
                                     'App::PropertyFloat', var_name,
                                     category, help_txt)
@@ -176,10 +179,11 @@ class Robot:
 
     def execute(self, obj: RosRobot) -> None:
         self.cleanup_group()
-        self._set_joint_enum()
+        self.set_joint_enum()
         self.add_joint_variables()
         self.compute_poses()
         self.reset_group()
+        self._fix_lost_fc_links()
 
     def onChanged(self, obj: RosRobot, prop: str) -> None:
         if prop in ['Group']:
@@ -313,7 +317,7 @@ class Robot:
             warn_unsupported(o, by='ROS::Robot', gui=True)
             return self.robot.removeObject(o)
 
-    def _set_joint_enum(self) -> None:
+    def set_joint_enum(self) -> None:
         """Set the enum for Child and Parent of all joints."""
         # We add the empty string to show that the child or parent
         # was not set yet.
@@ -323,25 +327,31 @@ class Robot:
         for joint in self.get_joints():
             # Implementation note: setting to a list sets the enumeration.
             if joint.getEnumerationsOfProperty('Child') != links:
+                # Avoid recursive recompute.
+                # Doesn't change the value if in the new enum.
                 joint.Child = links
             if joint.getEnumerationsOfProperty('Parent') != links:
+                # Avoid recursive recompute.
+                # Doesn't change the value if in the new enum.
                 joint.Parent = links
 
     def add_joint_variables(self) -> list[str]:
         """Add a property for each actuated joint."""
         variables: list[str] = []
         try:
-            # Remove all old variables.
-            for p in get_properties_of_category(
-                    self.robot,
-                    self._category_of_joint_values):
-                self.robot.removeProperty(p)
+            # Get all old variables.
+            old_vars: set[str] = set(get_properties_of_category(
+                self.robot,
+                self._category_of_joint_values))
             # Add a variable for each actuated (supported) joint.
             for joint in self.get_joints():
                 var = _add_joint_variable(self.robot, joint,
                                           self._category_of_joint_values)
                 if var:
                     variables.append(var)
+            # Remove obsoleted variables.
+            for p in old_vars - set(variables):
+                self.robot.removeProperty(p)
         except AttributeError:
             pass
         return variables
@@ -398,6 +408,27 @@ class Robot:
                          urdf_file=urdf_file)
         return xml
 
+    def _fix_lost_fc_links(self) -> None:
+        """Fix linked objects in ROS links lost on restore.
+
+        Probably because these elements are restored before the ROS links.
+
+        """
+        if not hasattr(self, 'robot'):
+            return
+        links = self.get_links()
+        for obj in self.robot.Document.Objects:
+            if (not hasattr(obj, 'InList')) or (len(obj.InList) != 1):
+                continue
+            link = obj.InList[0]
+            if ((link not in links)
+                    or (obj in link.Group)
+                    or (obj in link.Real)
+                    or (obj in link.Visual)
+                    or (obj in link.Collision)):
+                continue
+            link.addObject(obj)
+
 
 class _ViewProviderRobot:
     """A view provider for the Robot container object """
@@ -411,16 +442,24 @@ class _ViewProviderRobot:
     def attach(self, vobj: VPDO):
         self.ViewObject = vobj
         self.robot = vobj.Object
-        add_property(vobj, 'App::PropertyBool', 'ShowJointAxes',
-                     'Display Options',
-                     'Toggle the display of the Z-axis for all child joints')
 
-        add_property(vobj, 'App::PropertyBool', 'ShowReal', 'Display Options',
+        # Level of detail.
+        add_property(vobj, 'App::PropertyBool', 'ShowReal', 'ROS Display Options',
                      'Whether to show the real parts')
-        add_property(vobj, 'App::PropertyBool', 'ShowVisual', 'Display Options',
+        add_property(vobj, 'App::PropertyBool', 'ShowVisual', 'ROS Display Options',
                      'Whether to show the parts for URDF visual')
-        add_property(vobj, 'App::PropertyBool', 'ShowCollision', 'Display Options',
+        add_property(vobj, 'App::PropertyBool', 'ShowCollision', 'ROS Display Options',
                      'Whether to show the parts for URDF collision')
+
+        # Joint display options.
+        add_property(vobj, 'App::PropertyBool', 'ShowJointAxes',
+                     'ROS Display Options',
+                     'Toggle the display of the Z-axis for all child joints',
+                     True)
+        add_property(vobj, 'App::PropertyLength', 'JointAxisLength',
+                     'ROS Display Options',
+                     "Length of the arrow for the joints axes",
+                     500.0)
 
     def updateData(self, obj: RosRobot, prop: str):
         return
@@ -429,8 +468,13 @@ class _ViewProviderRobot:
         if prop == 'ShowJointAxes':
             if is_robot(vobj.Object):
                 for j in get_joints(vobj.Object.Group):
-                    if hasattr(j.ViewObject, 'ShowJointAxis'):
-                        j.ViewObject.ShowJointAxis = vobj.ShowJointAxes
+                    if hasattr(j.ViewObject, 'ShowAxis'):
+                        j.ViewObject.ShowAxis = vobj.ShowJointAxes
+        if prop == 'JointAxisLength':
+            if is_robot(vobj.Object):
+                for j in get_joints(vobj.Object.Group):
+                    if hasattr(j.ViewObject, 'AxisLength'):
+                        j.ViewObject.AxisLength = vobj.JointAxisLength
         if prop in ['ShowReal', 'ShowVisual', 'ShowCollision']:
             robot: RosRobot = vobj.Object
             robot.Proxy.execute(robot)
@@ -449,6 +493,11 @@ class _ViewProviderRobot:
     def unsetEdit(self, vobj: VPDO, mode):
         import FreeCADGui as fcgui
         fcgui.Control.closeDialog()
+
+    def __getstate__(self):
+        return
+
+    def __setstate__(self, state):
         return
 
 

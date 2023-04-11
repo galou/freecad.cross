@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from copy import copy
 import string
-from typing import Iterable, Optional
+from typing import Any, Iterable, Optional
 
 import FreeCAD as fc
 
@@ -165,6 +165,7 @@ def add_property(
         name: str,
         category: str,
         help_: str,
+        default: Any = None,
         ) -> tuple[DO, str]:
     """Add a dynamic property to the object.
 
@@ -175,7 +176,9 @@ def add_property(
     name = get_valid_property_name(name)
 
     if name not in obj.PropertiesList:
-        return obj.addProperty(type_, name, category, tr(help_)), name
+        obj.addProperty(type_, name, category, tr(help_))
+        if default is not None:
+            setattr(obj, name, default)
 
     return obj, name
 
@@ -187,7 +190,7 @@ def get_properties_of_category(
     """Return the list of properties belonging to the category."""
     properties: list[str] = []
     try:
-        for p in obj.PropertyList:
+        for p in obj.PropertiesList:
             if obj.getGroupOfProperty(p) == category:
                 properties.append(p)
     except AttributeError:

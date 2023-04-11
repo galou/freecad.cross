@@ -21,6 +21,7 @@ from .utils import is_link
 from .utils import is_primitive
 from .utils import is_robot
 from .utils import warn_unsupported
+from .wb_utils import ros_name
 
 # Typing hints.
 DO = fc.DocumentObject
@@ -85,6 +86,7 @@ class Link:
         obj.Proxy = self
         self.link = obj
         self.init_properties(obj)
+        self.init_extensions(obj)
 
     def init_properties(self, obj: RosLink):
         add_property(obj, 'App::PropertyString', '_Type', 'Internal',
@@ -113,15 +115,24 @@ class Link:
         add_property(obj, 'App::PropertyPlacement', 'MountedPlacement',
                      'Internal', 'Placement when building')
 
+    def init_extensions(self, obj: RosLink):
+        # Need a group to put the generated FreeCAD links in.
+        obj.addExtension('App::GroupExtensionPython')
+
     def execute(self, obj: RosLink):
         pass
 
     def onBeforeChange(self, obj: RosLink, prop: str) -> None:
+        # TODO: save the old ros_name and update all joints that used it.
         pass
 
     def onChanged(self, obj: RosLink, prop: str) -> None:
         if prop in ['Group', 'Real', 'Visual', 'Collision']:
             self.cleanup_children()
+        if prop in ['Label', 'Label2']:
+            robot = self.get_robot()
+            if robot and hasattr(robot, 'Proxy'):
+                robot.Proxy.set_joint_enum()
 
     def onDocumentRestored(self, obj: RosLink):
         self.__init__(obj)
@@ -192,7 +203,7 @@ class Link:
             return
         joints = get_joints(robot.Group)
         for joint in joints:
-            if joint.Child is self.link:
+            if joint.Child == ros_name(self.link):
                 # Parallel mechanisms are not supported, there should be only
                 # one joint that has `link` as child.
                 return joint
@@ -205,10 +216,11 @@ class Link:
         """Return True if the link is parent of no joint."""
         robot = self.get_robot()
         if robot is None:
+            # Not attached to any robot.
             return True
         joints = get_joints(robot.Group)
         for joint in joints:
-            if joint.Parent is self.link:
+            if joint.Parent == ros_name(self.link):
                 return False
         return True
 
@@ -258,7 +270,7 @@ class _ViewProviderLink:
 
     def attach(self, vobj: VPDO):
         self.ViewObject = vobj
-        self.link = vobj.Object
+        vobj.addExtension('Gui::ViewProviderGroupExtensionPython')
 
     def updateData(self, obj: VPDO, prop):
         return
@@ -296,7 +308,7 @@ def make_link(name, doc: Optional[fc.Document] = None) -> DO:
     if doc is None:
         warn('No active document, doing nothing', False)
         return
-    obj = doc.addObject('App::DocumentObjectGroupPython', name)
+    obj = doc.addObject('App::FeaturePython', name)
     Link(obj)
 
     if hasattr(fc, 'GuiUp') and fc.GuiUp:

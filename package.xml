@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no" ?>
+<package format="1" xmlns="https://wiki.freecad.org/Package_Metadata">
+
+  <name>ROS Workbench</name>
+  <description>Create robot description files (URDF and xacro) from FreeCAD.</description>
+  <version>0.1.0</version>
+  <date>2023-12-04</date>
+  <maintainer email="gael.ecorchard@cvut.cz">Gaël Écorchard</maintainer>
+  <license file="LICENSE">LGPL-2.1-or-later</license>
+  <url type="repository" branch="main">https://github.com/galou/freecad.workbench_ros</url>
+  <url type="readme">https://github.com/galou/freecad.workbench_ros/blob/main/README.md</url>
+  <icon>resources/icons/ros_9dotslogo_color.svg</icon>
+
+  <freecadmin>0.20.0</freecadmin>
+
+  <content>
+    <workbench>
+      <classname>RosWorkbench</classname>
+	  <subdirectory>freecad/workbench_ros</subdirectory>
+	  <pythonmin>3.8</pythonmin>
+    </workbench>
+  </content>
+
+</package>

@@ -35,8 +35,6 @@ class _SetLinkMountedPlacementCommand:
         objects, placements = zip(*objects_placements)
         lcs_placement = placements[objects.index(lcs)]
         obj_placement = placements[objects.index(obj)]
-        print(f'{lcs.Label}.Placement: {lcs_placement}') # DEBUG
-        print(f'{obj.Label}.Placement: {obj_placement}') # DEBUG
         doc.openTransaction(tr("Set link's mounted placement"))
         ros_link.MountedPlacement = lcs_placement.inverse() * obj_placement
         doc.commitTransaction()

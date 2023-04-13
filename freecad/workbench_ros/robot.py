@@ -182,8 +182,8 @@ class Robot:
         self.set_joint_enum()
         self.add_joint_variables()
         self.compute_poses()
-        self.reset_group()
         self._fix_lost_fc_links()
+        self.reset_group()
 
     def onChanged(self, obj: RosRobot, prop: str) -> None:
         if prop in ['Group']:
@@ -296,7 +296,6 @@ class Robot:
         # Remove objects that do not belong to `all_linked_objects`.
         objects_to_remove = set(current_linked_objects) - set(all_linked_objects)
         for o in objects_to_remove:
-            # print(f'Removing {o.Name}')
             self.robot.Document.removeObject(o.Name)
         # TODO?: doc.recompute() if objects_to_remove or (set(current_linked_objects) != set(all_linked_objects))
 

@@ -36,3 +36,12 @@
 - `Origin Group Extension<https://github.com/gbroques/freecad-origin-group-extension-python-example>`_
 - `Part Attachment Extension<https://github.com/gbroques/freecad-part-attachment-python-example>`_
 - `Dynamic Linked Object<https://github.com/gbroques/freecad-dynamic-linked-object>`_
+
+# Pivy
+
+- `Examples<https://github.com/coin3d/pivy/tree/master/examples/Mentor>`_
+
+# Mesh simplification
+
+- The `V-HACD library<https://github.com/kmammou/v-hacd/>`_ decomposes a 3D surface into a set of "near" convex parts
+- `Mesh-to-SDF<https://github.com/kmammou/v-hacd/>`_ converter (uses V-HACD).

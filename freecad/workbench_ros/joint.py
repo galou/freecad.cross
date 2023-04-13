@@ -73,8 +73,7 @@ class Joint:
         add_property(obj, 'App::PropertyLink', 'MimickedJoint', 'Mimic',
                      'Joint to mimic')
         add_property(obj, 'App::PropertyFloat', 'Multiplier', 'Mimic',
-                     'value = Multiplier * other_joint_value + Offset')
-        self.Multiplier = 1.0
+                     'value = Multiplier * other_joint_value + Offset', 1.0)
         add_property(obj, 'App::PropertyFloat', 'Offset', 'Mimic',
                      'value = Multiplier * other_joint_value + Offset, in mm or deg')
         self._toggle_editor_mode()

@@ -22,6 +22,7 @@ from urdf_parser_py.urdf import Sphere
 
 from .freecad_utils import add_object
 from .freecad_utils import is_group
+from .freecad_utils import warn
 from .mesh_utils import read_mesh_dae
 from .mesh_utils import scale_mesh_object
 from .urdf_utils import rotation_from_rpy
@@ -48,21 +49,38 @@ def obj_from_geometry(
     raise NotImplementedError('Primitive not implemented')
 
 
+def pkg_and_file_from_urdf_path(
+        path: str,
+        ) -> tuple[Optional[str], Optional[str]]:
+    """Return the tuple (package_name, relative_file_path)."""
+    if not path or not isinstance(path, str):
+        return None, None
+    if not path.startswith('package://'):
+        return None, None
+    try:
+        pkg, _, rel_path = path[len('package://'):].partition('/')
+    except ValueError:
+        return None, None
+    try:
+        get_package_share_directory(pkg)
+    except PackageNotFoundError:
+        return None, None
+    return pkg, rel_path
+
+
 def mesh_path_from_urdf(
         mesh_path: str,
         ) -> Optional[Path]:
+    if not mesh_path:
+        return
     if (not (mesh_path.startswith('package://')
              or mesh_path.startswith('file://'))):
         return
     if mesh_path.startswith('package://'):
-        try:
-            pkg, _, rel_path = mesh_path[len('package://'):].partition('/')
-        except ValueError:
+        pkg, rel_path = pkg_and_file_from_urdf_path(mesh_path)
+        if not pkg:
             return
-        try:
-            pkg_path = get_package_share_directory(pkg)
-        except PackageNotFoundError:
-            return
+        pkg_path = get_package_share_directory(pkg)
         return Path(pkg_path) / rel_path
     elif mesh_path.startswith('file://'):
         return Path(mesh_path[len('file://'):])
@@ -156,6 +174,11 @@ def obj_from_mesh(
         ) -> tuple[Optional[DO], Optional[Path]]:
     mesh_path = mesh_path_from_urdf(geometry.filename)
     if not mesh_path:
+        pkg, rel_path = pkg_and_file_from_urdf_path(mesh_path)
+        if pkg:
+            warn(f'ROS package {pkg} not found, cannot read {geometry.filename}')
+        else:
+            warn(f'Cannot parse mesh path {geometry.filename}')
         return None, None
     if mesh_path.suffix.lower() == '.dae':
         raw_mesh = read_mesh_dae(mesh_path)

@@ -538,8 +538,8 @@ def _urdf_generic_from_object(
     For meshes, the URDF just contains a reference to the object, the mesh is
     not exported here.
 
-    Returns (list of xml elements, list of objects, list of placements,
-             list of mesh file names).
+    Returns the necessary elements for export.
+
     The path is `None` for primitive types (box, sphere, cylinder). The path is
     the filename with extension for meshes, not the full path.
 
@@ -578,13 +578,16 @@ def _urdf_generic_from_object(
             # We ignore the object placement because it's given by linked_matrix.
             xml = _urdf_generic_from_cylinder(linked_object, generic,
                                               this_placement, ignore_obj_placement=True)
+        elif is_lcs(linked_object):
+            # LCS have a shape and would thus be exported.
+            continue
         else:
             # TODO: manage duplicate labels.
-            label = label_or(obj.getLinkedObject(recursive=True), 'mesh')
+            label = label_or(linked_object, 'mesh')
             filename = get_valid_filename(label) + '.dae'
             if not package_name:
                 warn('Internal error, `package_name` empty'
-                     ' but mesh found, using "package"')
+                     ' but mesh found, using "package" as package name')
                 package_name = 'package'
             xml = _urdf_generic_mesh(linked_object, filename, package_name, generic,
                                      this_placement)

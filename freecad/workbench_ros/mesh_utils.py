@@ -29,12 +29,12 @@ def read_mesh_dae(
     tmp_doc = fc.newDocument(hidden=True, temp=True)
     fc.setActiveDocument(tmp_doc.Name)
     read_dae(str(path))
+    tmp_doc.recompute()
     # A `Mesh::MeshObject`.
     merged_raw_mesh = Mesh.Mesh()
     for mesh_obj in tmp_doc.Objects:
         if hasattr(mesh_obj, 'Mesh'):
             merged_raw_mesh.addMesh(mesh_obj.Mesh)
-    tmp_doc.recompute()
     fc.closeDocument(tmp_doc.Name)
     if current_doc:
         fc.setActiveDocument(current_doc.Name)

@@ -284,10 +284,12 @@ def make_group(
         doc = doc_or_group.Document
     else:
         doc = doc_or_group
-    existing_group = doc.getObject(name)
+    candidates = doc.getObjectsByLabel(name)
+    existing_group = candidates[0] if candidates else None
     if existing_group and is_group(existing_group):
         return existing_group
     group = doc.addObject('App::DocumentObjectGroup', name)
+    group.Label = name
     if is_group(doc_or_group):
         doc_or_group.addObject(group)
     if hasattr(group, 'Visibility'):

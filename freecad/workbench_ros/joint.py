@@ -254,15 +254,15 @@ class _ViewProviderJoint:
             # root_node.removeAllChildren() # This segfaults when loading the document.
             return
         if prop in ['Placement']:
-            self.draw_arrow(vobj, vobj.Visibility and vobj.ShowAxis)
+            self.draw(vobj, vobj.Visibility and vobj.ShowAxis)
         # Implementation note: no need to react on prop == 'Origin' because
         # this triggers a change in 'Placement'.
 
     def onChanged(self, vobj: VPDO, prop: str):
         if prop in ('ShowAxis', 'AxisLength'):
-            self.draw_arrow(vobj, vobj.ShowAxis)
+            self.draw(vobj, vobj.ShowAxis)
 
-    def draw_arrow(self, vobj: VPDO, visible: bool):
+    def draw(self, vobj: VPDO, visible: bool):
         from .coin_utils import arrow_group
 
         if not hasattr(vobj, 'RootNode'):
@@ -285,8 +285,14 @@ class _ViewProviderJoint:
         else:
             length = 1000.0
         p0 = placement.Base
-        p1 = placement * fc.Vector(0.0, 0.0, length)
-        arrow = arrow_group([p0, p1], scale=0.2, color=color)
+        pz = placement * fc.Vector(0.0, 0.0, length)
+        arrow = arrow_group([p0, pz], scale=0.2, color=color)
+        root_node.addChild(arrow)
+        px = placement * fc.Vector(length / 2.0, 0.0, 0.0)
+        arrow = arrow_group([p0, px], scale=0.2, color=(1.0, 0.0, 0.0))
+        root_node.addChild(arrow)
+        py = placement * fc.Vector(0.0, length / 2.0, 0.0)
+        arrow = arrow_group([p0, py], scale=0.2, color=(0.0, 1.0, 0.0))
         root_node.addChild(arrow)
 
     def doubleClicked(self, vobj):

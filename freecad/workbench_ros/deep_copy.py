@@ -5,6 +5,7 @@ from typing import Iterable, Optional
 import FreeCAD as fc
 
 from .freecad_utils import get_leafs_and_subnames
+from .freecad_utils import is_body
 from .freecad_utils import is_box
 from .freecad_utils import is_cylinder
 from .freecad_utils import is_link
@@ -45,8 +46,13 @@ def deep_copy_object(obj: DO,
         copy_of_obj = doc.copyObject(obj)
         copy_of_obj.Placement = placement * copy_of_obj.Placement
         return [copy_of_obj]
-    if is_link(obj):
+    elif is_body(obj):
+        return deep_copy_shape(obj, doc, placement)
+    elif is_link(obj):
         return deep_copy_object(obj.LinkedObject, doc, placement * obj.Placement)
+    else:
+        # Let's try if `obj` has `Shape'.
+        return deep_copy_shape(obj, doc, placement)
 
 
 def deep_copy_part(part: AppPart,
@@ -129,9 +135,11 @@ def get_meshes_and_placements(part: AppPart
     return outlist
 
 
-def deep_copy_mesh(mesh: MeshFeature,
-                   doc: Optional[fc.Document] = None,
-                   placement: fc.Placement = fc.Placement()) -> DOList:
+def deep_copy_mesh(
+        mesh: MeshFeature,
+        doc: Optional[fc.Document] = None,
+        placement: fc.Placement = fc.Placement(),
+        ) -> DOList:
     """Copy a "Mesh::Feature" object.
 
     Parameters
@@ -151,3 +159,21 @@ def deep_copy_mesh(mesh: MeshFeature,
     copy_of_mesh.Placement = placement
     copy_of_mesh.Label = mesh.Label + '_copy'
     return [copy_of_mesh]
+
+
+def deep_copy_shape(
+        obj: DO,
+        doc: Optional[fc.Document] = None,
+        placement: fc.Placement = fc.Placement(),
+        ) -> DOList:
+    """Copy `obj.Shape`."""
+    if not hasattr(obj, 'Shape'):
+        return []
+    try:
+        label = obj.Label
+    except AttributeError:
+        label = 'no_label'
+    copy_of_shape = doc.addObject('Part::Feature', f'{label}_shape')
+    copy_of_shape.Shape = obj.Shape
+    copy_of_shape.Placement = placement * copy_of_shape.Placement
+    return [copy_of_shape]

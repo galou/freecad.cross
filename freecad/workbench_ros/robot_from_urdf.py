@@ -124,6 +124,7 @@ def _add_ros_link(
     collision_part = add_object(parts_group, 'App::Part', f'collision_{name}_')
     collision_part.Visibility = False
     ros_link = make_link(name, doc)
+    ros_link.Label2 = name
     ros_link.adjustRelativeLinks(robot)
     robot.addObject(ros_link)
     # Implementation note: ros_link.Visual.append() doesn't work because ros_link.Visual
@@ -149,6 +150,7 @@ def _add_ros_joint(
         ) -> RosJoint:
     doc = robot.Document
     ros_joint = make_joint(urdf_joint.name, doc)
+    ros_joint.Label2 = urdf_joint.name
     ros_joint.adjustRelativeLinks(robot)
     robot.addObject(ros_joint)
     ros_joint.Parent = urdf_joint.parent
@@ -314,7 +316,7 @@ def _add_geometries(
         except NotImplementedError:
             continue
         if not geom_obj:
-            warn(f'Error when importing geometry for {ros_link}')
+            warn(f'Error when importing geometry for {ros_link.Label}')
             continue
         geom_obj.Visibility = False
         geom_objs.append(geom_obj)

@@ -54,25 +54,39 @@ def _skim_links_joints_from(group) -> tuple[DOList, DOList]:
     return kept_objects, removed_objects
 
 
-def _get_xmls_and_export_meshes(obj,
-                                urdf_function,
-                                placement,
-                                package_parent: [Path | str] = Path(),
-                                package_name: str = '',
-                                ) -> list[et.Element]:
+def _get_xmls_and_export_meshes(
+        obj,
+        urdf_function,
+        placement,
+        package_parent: [Path | str] = Path(),
+        package_name: str = '',
+        ) -> list[et.Element]:
+    """
+    Save the meshes as dae files.
+
+    Parameters
+    ----------
+    - obj: object to create the URDF for
+    - urdf_function: {urdf_visual_from_object, urdf_collision_from_object}
+    - placement: placement of the object
+    - package_parent: where to find the ROS package
+    - package_name: name of the ROS package, also name of the directory where
+                    to save the package.
+
+    """
     export_data: XmlForExport = urdf_function(
         obj,
         package_name=str(package_name),
         placement=placement,
         )
-    visual_xmls: list[et.Element] = []
+    xmls: list[et.Element] = []
     for export_datum in export_data:
         if not is_primitive(export_datum.object):
             mesh_path = (package_parent / package_name
                          / 'meshes' / export_datum.mesh_filename)
             save_mesh_dae(export_datum.object, mesh_path)
-        visual_xmls.append(export_datum.xml)
-    return visual_xmls
+        xmls.append(export_datum.xml)
+    return xmls
 
 
 class Link:
@@ -239,7 +253,7 @@ class Link:
         """
 
         link_xml = et.fromstring(
-            f'<link name="{get_valid_urdf_name(self.link.Label)}" />')
+            f'<link name="{get_valid_urdf_name(ros_name(self.link))}" />')
         for obj in self.link.Visual:
             for xml in _get_xmls_and_export_meshes(
                     obj,

@@ -3,8 +3,8 @@
 
   <name>ROS Workbench</name>
   <description>Create robot description files (URDF and xacro) from FreeCAD.</description>
-  <version>0.1.0</version>
-  <date>2023-12-04</date>
+  <version>0.1.1</version>
+  <date>2023-18-04</date>
   <maintainer email="gael.ecorchard@cvut.cz">Gaël Écorchard</maintainer>
   <license file="LICENSE">LGPL-2.1-or-later</license>
   <url type="repository" branch="main">https://github.com/galou/freecad.workbench_ros</url>

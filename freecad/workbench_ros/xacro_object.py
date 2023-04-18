@@ -26,10 +26,10 @@ import FreeCAD as fc
 
 from .freecad_utils import add_property
 from .freecad_utils import warn
-from .utils import get_joints
-from .utils import get_links
 from .utils import hasallattr
-from .utils import is_robot
+from .wb_utils import get_joints
+from .wb_utils import get_links
+from .wb_utils import is_robot
 from .wb_utils import ros_name
 try:
     from .robot_from_urdf import robot_from_urdf

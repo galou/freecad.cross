@@ -11,8 +11,8 @@ from .freecad_utils import error
 from .freecad_utils import label_or
 from .freecad_utils import warn
 from .urdf_utils import urdf_origin_from_placement
-from .utils import get_valid_urdf_name
-from .utils import is_robot
+from .wb_utils import get_valid_urdf_name
+from .wb_utils import is_robot
 from .wb_utils import ros_name
 
 # Typing hints.

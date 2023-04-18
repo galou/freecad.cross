@@ -31,7 +31,7 @@ from .freecad_utils import warn
 from .joint import make_joint
 from .link import make_link
 from .robot import make_robot
-from .utils import get_joints
+from .wb_utils import get_joints
 
 # Typing hints.
 DO = fc.DocumentObject

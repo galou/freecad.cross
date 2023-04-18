@@ -3,7 +3,7 @@ import FreeCAD as fc
 import FreeCADGui as fcgui
 
 from ..gui_utils import tr
-from ..utils import is_robot_selected
+from ..wb_utils import is_robot_selected
 
 
 class _NewJointCommand:

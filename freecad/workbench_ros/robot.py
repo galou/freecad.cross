@@ -14,18 +14,18 @@ from .freecad_utils import get_valid_property_name
 from .freecad_utils import label_or
 from .freecad_utils import warn
 from .ros_utils import split_package_path
-from .utils import get_chains
-from .utils import get_joints
-from .utils import get_links
 from .utils import get_valid_filename
-from .utils import get_valid_urdf_name
 from .utils import grouper
-from .utils import is_joint
-from .utils import is_link
-from .utils import is_robot
 from .utils import save_xml
 from .utils import warn_unsupported
 from .wb_utils import export_templates
+from .wb_utils import get_chains
+from .wb_utils import get_joints
+from .wb_utils import get_links
+from .wb_utils import get_valid_urdf_name
+from .wb_utils import is_joint
+from .wb_utils import is_link
+from .wb_utils import is_robot
 from .wb_utils import ros_name
 
 # Typing hints.

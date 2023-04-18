@@ -11,16 +11,16 @@ from .freecad_utils import error
 from .freecad_utils import is_link as is_freecad_link
 from .freecad_utils import warn
 from .mesh_utils import save_mesh_dae
+from .urdf_utils import XmlForExport
 from .urdf_utils import urdf_collision_from_object
 from .urdf_utils import urdf_visual_from_object
-from .urdf_utils import XmlForExport
-from .utils import get_joints
-from .utils import get_valid_urdf_name
-from .utils import is_joint
-from .utils import is_link
-from .utils import is_primitive
-from .utils import is_robot
 from .utils import warn_unsupported
+from .wb_utils import get_joints
+from .wb_utils import get_valid_urdf_name
+from .wb_utils import is_joint
+from .wb_utils import is_link
+from .wb_utils import is_primitive
+from .wb_utils import is_robot
 from .wb_utils import ros_name
 
 # Typing hints.

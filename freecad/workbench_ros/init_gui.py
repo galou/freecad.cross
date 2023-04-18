@@ -13,7 +13,7 @@ from .ui import command_robot_from_urdf
 from .ui import command_set_link_mounted_placement
 from .ui import command_sphere_from_bounding_box
 from .ui import command_urdf_export
-from .utils import ICON_PATH
+from .wb_utils import ICON_PATH
 
 
 class RosWorkbench(fcgui.Workbench):

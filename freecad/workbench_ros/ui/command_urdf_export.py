@@ -20,9 +20,9 @@ from ..urdf_utils import urdf_collision_from_box
 from ..urdf_utils import urdf_collision_from_cylinder
 from ..urdf_utils import urdf_collision_from_object
 from ..urdf_utils import urdf_collision_from_sphere
-from ..utils import is_robot
-from ..utils import is_workcell
-from ..utils import is_xacro_object
+from ..wb_utils import is_robot
+from ..wb_utils import is_workcell
+from ..wb_utils import is_xacro_object
 
 
 # Typing hints.

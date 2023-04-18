@@ -19,10 +19,10 @@ from .freecad_utils import warn
 from .ros_utils import split_package_path
 from .urdf_utils import urdf_origin_from_placement
 from .utils import get_valid_filename
-from .utils import get_valid_urdf_name
-from .utils import get_xacro_objects
+from .wb_utils import get_valid_urdf_name
 from .utils import save_xml
 from .wb_utils import export_templates
+from .wb_utils import get_xacro_objects
 from .wb_utils import ros_name
 
 # Typing hints.

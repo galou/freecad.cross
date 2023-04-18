@@ -45,6 +45,7 @@ class _ReloadCommand:
         _reload_module('freecad.workbench_ros.utils')
         _reload_module('freecad.workbench_ros.version')
         _reload_module('freecad.workbench_ros.wb_utils')
+        _reload_module('freecad.workbench_ros.workcell')
         _reload_module('freecad.workbench_ros.xacro_loader')
         _reload_module('freecad.workbench_ros.xacro_object')
         # These ones are probably not working (no effect because workbench
@@ -54,6 +55,7 @@ class _ReloadCommand:
         _reload_module('freecad.workbench_ros.ui.command_new_joint')
         _reload_module('freecad.workbench_ros.ui.command_new_link')
         _reload_module('freecad.workbench_ros.ui.command_new_robot')
+        _reload_module('freecad.workbench_ros.ui.command_new_workcell')
         _reload_module('freecad.workbench_ros.ui.command_new_xacro_object')
         _reload_module('freecad.workbench_ros.ui.command_reload')
         _reload_module('freecad.workbench_ros.ui.command_robot_from_urdf')

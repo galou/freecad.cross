@@ -110,6 +110,11 @@ def is_xacro_object(obj: DO) -> bool:
     return _has_ros_type(obj, 'Ros::XacroObject')
 
 
+def is_workcell(obj: DO) -> bool:
+    """Return True if the object is a Ros::Workcell."""
+    return _has_ros_type(obj, 'Ros::Workcell')
+
+
 def is_simple_joint(obj: DO) -> bool:
     """Return True if prismatic, revolute, or continuous."""
     return (is_joint(obj)

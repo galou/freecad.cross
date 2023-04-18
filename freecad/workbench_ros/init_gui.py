@@ -6,6 +6,7 @@ from .ui import command_box_from_bounding_box
 from .ui import command_new_joint
 from .ui import command_new_link
 from .ui import command_new_robot
+from .ui import command_new_workcell
 from .ui import command_new_xacro_object
 from .ui import command_reload # Developer tool.
 from .ui import command_robot_from_urdf
@@ -33,17 +34,18 @@ class RosWorkbench(fcgui.Workbench):
         """
         # The order here defines the order of the icons in the GUI.
         commands = [
-            'NewRobot',  # Defined in ./ui/command_new_robot.py
-            'NewLink',  # Defined in ./ui/command_new_link.py
-            'NewJoint',  # Defined in ./ui/command_new_joint.py
-            'NewXacroObject',  # Defined in ./ui/command_new_xacro_object.py
+            'NewRobot',  # Defined in ./ui/command_new_robot.py.
+            'NewLink',  # Defined in ./ui/command_new_link.py.
+            'NewJoint',  # Defined in ./ui/command_new_joint.py.
+            'NewWorkcell',  # Defined in ./ui/command_new_workcell.py.
+            'NewXacroObject',  # Defined in ./ui/command_new_xacro_object.py.
             'BoxFromBoundingBox',  # Defined in ./ui/command_box_from_bounding_box.py.
             'SphereFromBoundingBox',  # Defined in ./ui/command_sphere_from_bounding_box.py.
             'UrdfImport',  # Defined in ./ui/command_robot_from_urdf.py.
             'AssemblyFromUrdf',  # Defined in ./ui/command_assembly_from_urdf.py.
             'UrdfExport',  # Defined in ./ui/command_urdf_export.py.
-            'SetLinkMountedPlacement',  # Defined in ./ui/command_set_link_mounted_placement.py
-            'Reload',  # Comment out to disable this developer tool
+            'SetLinkMountedPlacement',  # Defined in ./ui/command_set_link_mounted_placement.py.
+            'Reload',  # Comment out to disable this developer tool.
             ]
         self.appendToolbar('ROS', commands)
         self.appendMenu('ROS', commands)

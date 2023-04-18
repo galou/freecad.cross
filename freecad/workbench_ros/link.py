@@ -246,8 +246,9 @@ class Link:
 
         Parameters
         ----------
-        - package_parent: the parent directory of the package.
-        - package_name: the name of the package (also the name of the
+        - package_parent: the parent directory of the package where the URDF
+                          will be saved.
+        - package_name: the name of the exported package (also the name of the
                         directory).
 
         """

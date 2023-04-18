@@ -21,6 +21,7 @@ from ..urdf_utils import urdf_collision_from_cylinder
 from ..urdf_utils import urdf_collision_from_object
 from ..urdf_utils import urdf_collision_from_sphere
 from ..utils import is_robot
+from ..utils import is_workcell
 from ..utils import is_xacro_object
 
 
@@ -39,6 +40,8 @@ def _supported_object_selected():
         if is_robot(obj):
             return True
         if is_xacro_object(obj):
+            return True
+        if is_workcell(obj):
             return True
     return False
 
@@ -89,10 +92,13 @@ class _UrdfExportCommand:
                 if hasattr(obj, 'Proxy'):
                     xml = obj.Proxy.export_urdf()
                     show_xml = False
-            elif is_xacro_object(obj):
+            elif is_workcell(obj):
                 if hasattr(obj, 'Proxy'):
                     xml = obj.Proxy.export_urdf()
                     show_xml = False
+            elif is_xacro_object(obj):
+                if hasattr(obj, 'Proxy'):
+                    xml = obj.Proxy.export_urdf()
             elif hasattr(obj, 'Placement'):
                 has_mesh = True
                 package_name = '$package_name$'  # Will be replaced later by the GUI.

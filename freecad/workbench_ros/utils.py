@@ -26,6 +26,7 @@ DOList = Iterable[DO]
 RosLink = DO  # A Ros::Link, i.e. a DocumentObject with Proxy "Link".
 RosJoint = DO  # A Ros::Joint, i.e. a DocumentObject with Proxy "Joint".
 RosRobot = DO  # A Ros::Robot, i.e. a DocumentObject with Proxy "Robot".
+RosXacroObject = DO  # A Ros::XacroObject, i.e. a DocumentObject with Proxy "XacroObject".
 
 MOD_PATH = Path(fc.getUserAppDataDir()) / 'Mod/freecad.workbench_ros'
 RESOURCES_PATH = MOD_PATH / 'resources'
@@ -147,6 +148,11 @@ def get_links(objs: DOList) -> list[RosLink]:
 def get_joints(objs: DOList) -> list[RosJoint]:
     """Return only the objects that are Ros::Joint instances."""
     return [o for o in objs if is_joint(o)]
+
+
+def get_xacro_objects(objs: DOList) -> list[RosXacroObject]:
+    """Return only the objects that are Ros::XacroObject instances."""
+    return [o for o in objs if is_xacro_object(o)]
 
 
 def get_chains(

@@ -18,7 +18,7 @@ The object type is called XacroObject to avoid confusion with the ROS package xa
 
 from __future__ import annotations
 
-from pathlib import Path
+from copy import copy
 from typing import Any, Optional
 import xml.etree.ElementTree as et
 
@@ -26,15 +26,10 @@ import FreeCAD as fc
 
 from .freecad_utils import add_property
 from .freecad_utils import warn
-from .ros_utils import split_package_path
-from .urdf_utils import urdf_origin_from_placement
 from .utils import get_joints
 from .utils import get_links
-from .utils import get_valid_filename
 from .utils import hasallattr
 from .utils import is_robot
-from .utils import save_xml
-from .wb_utils import export_templates
 from .wb_utils import ros_name
 try:
     from .robot_from_urdf import robot_from_urdf
@@ -50,7 +45,7 @@ except ImportError as e:
 # Typing hints.
 DO = fc.DocumentObject
 VPDO = 'FreeCADGui.ViewProviderDocumentObject'
-RosXacroObject = DO  # A Ros::XacroObject, i.e. a DocumentObject with Proxy "Xacro".
+RosXacroObject = DO  # A Ros::XacroObject, i.e. a DocumentObject with Proxy "XacroObject".
 RosRobot = DO  # A Ros::Robot, i.e. a DocumentObject with Proxy "Robot".
 
 
@@ -84,8 +79,16 @@ class XacroObject:
         if not hasattr(self, '_old_xacro_file_content'):
             self._old_xacro_file_content = ''
 
+        # The root link of the generated URDF.
+        if not hasattr(self, '_root_link'):
+            self._root_link = ''
+
         self.init_properties(obj)
         self.init_extensions(obj)
+
+    @property
+    def root_link(self) -> str:
+        return str(self._root_link)
 
     def init_properties(self, obj: RosXacroObject):
         add_property(obj, 'App::PropertyString', '_Type', 'Internal',
@@ -98,9 +101,8 @@ class XacroObject:
         add_property(obj, 'App::PropertyEnumeration', 'MainMacro', 'Input',
                      'The macro to use')
 
-        add_property(obj, 'App::PropertyPath', 'OutputPath', 'Export',
-                     'The path to the ROS package to export files to')
-
+        # The computed placement (or the placement defined by the user if no
+        # attachment mode is defined).
         add_property(obj, 'App::PropertyPlacement', 'Placement',
                      'Base', 'Placement')
 
@@ -122,9 +124,10 @@ class XacroObject:
 
         """
         obj.positionBySupport()
-        if (not hasallattr(obj, ['InputFile', 'MainMacro'])):
+        if not hasallattr(obj, ['InputFile', 'MainMacro']):
             return
         if not obj.InputFile:
+            self._root_link = ''
             return
         self.xacro = XacroLoader.load_from_file(obj.InputFile)
         macro_names = self.xacro.get_macro_names()
@@ -151,30 +154,35 @@ class XacroObject:
 
     def set_param_properties(self, obj: RosXacroObject) -> None:
         if not hasattr(self, 'xacro_object'):
-            # Implementation note: xacro_object is defined with other required members.
+            # Implementation note: xacro_object is defined with other
+            # required members.
             return
-        # Clear old parameters.
-        for name in self.param_properties:
-            obj.removeProperty(name)
+
+        # Get old parameters to clear old parameters later on.
+        old_param_properties: list[str] = copy(self.param_properties)
+
         self.param_properties.clear()
-        if (not hasallattr(obj, ['InputFile', 'MainMacro'])):
+        if not hasallattr(obj, ['InputFile', 'MainMacro']):
             return
-        if self.xacro:
-            macro = self.xacro.macros[obj.MainMacro]
-            for name in macro.params:
+        if not self.xacro:
+            return
+        macro = self.xacro.macros[obj.MainMacro]
+        for name in macro.params:
+            self.param_properties.append(name)
+            if name in macro.defaultmap:
+                # Default given.
+                add_property(obj, 'App::PropertyString', name, 'Input',
+                             f'Macro parameter "{name}"',
+                             macro.defaultmap[name][1])
+            else:
+                # No default.
                 add_property(obj, 'App::PropertyString', name, 'Input',
                              f'Macro parameter "{name}"')
-                self.param_properties.append(name)
-                if name in macro.defaultmap:
-                    # Implementation note: cannot set the property value
-                    # knowing the property name, __setattr__ doesn't work.
-                    value = (macro.defaultmap[name][1]
-                             .replace('{', '')
-                             .replace('}', ''))
-                    obj.setExpression(name, f'<<{value}>>')
-                    # It looks that it's better to keep the expression rather
-                    # than clearing it may be interpreted as float.
-                    # obj.clearExpression(name)
+
+        # Clear old parameters.
+        for name in old_param_properties:
+            if name not in self.param_properties:
+                obj.removeProperty(name)
 
     def reset_group(self, obj: RosXacroObject):
         if not hasallattr(obj, ['Group', 'InputFile', 'MainMacro']):
@@ -194,61 +202,19 @@ class XacroObject:
 
     def export_urdf(self) -> Optional[et.Element]:
         """Export the xacro object as URDF, writing files."""
-        if ((not hasattr(self, 'xacro'))
-                or (not hasattr(self.xacro_object, 'OutputPath'))):
+        if not hasattr(self, 'xacro_object'):
             return
         obj: RosXacroObject = self.xacro_object
-        if not obj.OutputPath:
-            warn('Property `OutputPath` cannot be empty', True)
-            return
 
         # Generate the URDF to obtain the root link.
         robot_name = ros_name(obj)
         params = {name: obj.getPropertyByName(name) for name in self.param_properties}
         urdf_robot = self._generate_urdf(robot_name, obj.MainMacro, params)
-        root_link = urdf_robot.get_root()
 
         # Generate the xacro xml document.
         xacro_xml = self.xacro.to_xml(robot_name, obj.MainMacro, params)
 
-        # Add the link "world" and a transform from it to the root link.
-        robot = xacro_xml.firstChild
-        world_link = robot.appendChild(xacro_xml.createElement('link'))
-        world_link.setAttribute('name', 'world')
-        joint = robot.appendChild(xacro_xml.createElement('joint'))
-        joint.setAttribute('name', f'world_to_{root_link}')
-        joint.setAttribute('type', 'fixed')
-        child = joint.appendChild(xacro_xml.createElement('child'))
-        child.setAttribute('link', world_link.attributes['name'].value)
-        parent = joint.appendChild(xacro_xml.createElement('parent'))
-        parent.setAttribute('link', root_link)
-        origin = joint.appendChild(xacro_xml.createElement('origin'))
-        # TODO: solve global placement.
-        origin_et = urdf_origin_from_placement(obj.Placement)
-        origin.setAttribute('xyz', origin_et.attrib['xyz'])
-        origin.setAttribute('rpy', origin_et.attrib['rpy'])
-
-        # Write out files.
-        output_path = Path(obj.OutputPath).expanduser()
-        package_parent, package_name = split_package_path(output_path)
-        output_path.mkdir(parents=True, exist_ok=True)
-        file_base = get_valid_filename(robot_name)
-        urdf_file = f'{file_base}.urdf.xacro'
-        urdf_path = output_path / f'urdf/{urdf_file}'
-        xacro_et = et.fromstring(xacro_xml.toxml())
-        save_xml(xacro_et, urdf_path)
-        template_files = [
-            'package.xml',
-            'CMakeLists.txt',
-            'launch/display.launch.py',
-            'rviz/robot_description.rviz',
-            ]
-        export_templates(template_files,
-                         package_parent,
-                         package_name=package_name,
-                         urdf_file=urdf_file)
-
-        return xacro_et
+        return et.fromstring(xacro_xml.toxml())
 
     def _toggle_editor_mode(self, obj: RosXacroObject) -> None:
         """Show/hide properties."""
@@ -273,6 +239,7 @@ class XacroObject:
             return
         self._old_xacro_file_content = xacro_txt
         urdf_robot = self._generate_urdf(ros_name(obj), obj.MainMacro, params)
+        self._root_link = urdf_robot.get_root()
         robot = robot_from_urdf(obj.Document, urdf_robot)
         return robot
 
@@ -288,7 +255,7 @@ class XacroObject:
 
 
 class _ViewProviderXacroObject:
-    """A view provider for the Xacro container object """
+    """A view provider for the ROS XacroObject object."""
 
     def __init__(self, vobj: VPDO):
         vobj.Proxy = self

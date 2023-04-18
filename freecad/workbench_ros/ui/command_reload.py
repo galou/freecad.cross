@@ -39,17 +39,6 @@ class _ReloadCommand:
         _reload_module('freecad.workbench_ros.robot')
         _reload_module('freecad.workbench_ros.robot_from_urdf')
         _reload_module('freecad.workbench_ros.ros_utils')
-        _reload_module('freecad.workbench_ros.urdf_loader')
-        _reload_module('freecad.workbench_ros.urdf_parser_utils')
-        _reload_module('freecad.workbench_ros.urdf_utils')
-        _reload_module('freecad.workbench_ros.utils')
-        _reload_module('freecad.workbench_ros.version')
-        _reload_module('freecad.workbench_ros.wb_utils')
-        _reload_module('freecad.workbench_ros.workcell')
-        _reload_module('freecad.workbench_ros.xacro_loader')
-        _reload_module('freecad.workbench_ros.xacro_object')
-        # These ones are probably not working (no effect because workbench
-        # already created).
         _reload_module('freecad.workbench_ros.ui.command_assembly_from_urdf')
         _reload_module('freecad.workbench_ros.ui.command_box_from_bounding_box')
         _reload_module('freecad.workbench_ros.ui.command_new_joint')
@@ -62,6 +51,15 @@ class _ReloadCommand:
         _reload_module('freecad.workbench_ros.ui.command_set_link_mounted_placement')
         _reload_module('freecad.workbench_ros.ui.command_sphere_from_bounding_box')
         _reload_module('freecad.workbench_ros.ui.command_urdf_export')
+        _reload_module('freecad.workbench_ros.urdf_loader')
+        _reload_module('freecad.workbench_ros.urdf_parser_utils')
+        _reload_module('freecad.workbench_ros.urdf_utils')
+        _reload_module('freecad.workbench_ros.utils')
+        _reload_module('freecad.workbench_ros.version')
+        _reload_module('freecad.workbench_ros.wb_utils')
+        _reload_module('freecad.workbench_ros.workcell')
+        _reload_module('freecad.workbench_ros.xacro_loader')
+        _reload_module('freecad.workbench_ros.xacro_object')
 
 
 fcgui.addCommand('Reload', _ReloadCommand())

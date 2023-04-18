@@ -75,11 +75,19 @@ def warn_unsupported(objects: [DO, DOList],
             warn(f'Object "{label}" not supported{by_txt}\n', gui=gui)
 
 
+def attr_equals(instance: Any, attr: str, value: Any):
+    return hasattr(instance, attr) and getattr(instance, attr) == value
+
+
+def attr_is(instance: Any, attr: str, value: Any):
+    return hasattr(instance, attr) and getattr(instance, attr) is value
+
+
 def _has_ros_type(obj: DO, type_: str) -> bool:
     """Return True if the object is an object from this workbench."""
     if not isinstance(obj, DO):
         return False
-    return hasattr(obj, '_Type') and (obj._Type == type_)
+    return attr_equals(obj, '_Type', type_)
 
 
 def is_robot(obj: DO) -> bool:

@@ -15,7 +15,7 @@ class _NewRobotCommand:
                 'ToolTip': tr('Create a Robot container.')}
 
     def IsActive(self):
-        return (fc.activeDocument() is not None)
+        return fc.activeDocument() is not None
 
     def Activated(self):
         doc = fc.activeDocument()

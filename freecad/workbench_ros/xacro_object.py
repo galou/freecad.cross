@@ -121,7 +121,6 @@ class XacroObject:
         Called on recompute(), this method is mandatory for scripted objects.
 
         """
-        print('execute()') # DEBUG
         obj.positionBySupport()
         if (not hasallattr(obj, ['InputFile', 'MainMacro'])):
             return
@@ -265,7 +264,6 @@ class XacroObject:
             obj.setPropertyStatus('MainMacro', ['Hidden'])
 
     def _generate_robot(self, obj: RosXacroObject) -> Optional[RosRobot]:
-        print('_generate_robot()') # DEBUG
         if not hasattr(self, 'xacro_object'):
             # Implementation note: xacro_object is defined with other required members.
             return
@@ -316,6 +314,12 @@ class _ViewProviderXacroObject:
 
     def unsetEdit(self, vobj: VPDO, mode):
         return
+
+    def __getstate__(self):
+        return None
+
+    def __setstate__(self, state):
+        return None
 
 
 def make_xacro_object(name, doc: Optional[fc.Document] = None) -> RosXacroObject:

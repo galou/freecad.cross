@@ -90,7 +90,7 @@ def _get_xmls_and_export_meshes(
 
 
 class Link:
-    """The Link group."""
+    """Proxy for ROS links."""
 
     # The member is often used in workbenches, particularly in the Draft
     # workbench, to identify the object type.
@@ -129,11 +129,11 @@ class Link:
         add_property(obj, 'App::PropertyPlacement', 'MountedPlacement',
                      'Internal', 'Placement when building')
 
-    def init_extensions(self, obj: RosLink):
+    def init_extensions(self, obj: RosLink) -> None:
         # Need a group to put the generated FreeCAD links in.
         obj.addExtension('App::GroupExtensionPython')
 
-    def execute(self, obj: RosLink):
+    def execute(self, obj: RosLink) -> None:
         pass
 
     def onBeforeChange(self, obj: RosLink, prop: str) -> None:
@@ -148,7 +148,7 @@ class Link:
             if robot and hasattr(robot, 'Proxy'):
                 robot.Proxy.set_joint_enum()
 
-    def onDocumentRestored(self, obj: RosLink):
+    def onDocumentRestored(self, obj: RosLink) -> None:
         self.__init__(obj)
 
     def __getstate__(self):
@@ -274,7 +274,7 @@ class Link:
 
 
 class _ViewProviderLink:
-    """A view provider for the Link container object """
+    """A view provider for the Ros::Link object """
 
     def __init__(self, vobj: VPDO):
         vobj.Proxy = self
@@ -315,7 +315,7 @@ class _ViewProviderLink:
         return None
 
 
-def make_link(name, doc: Optional[fc.Document] = None) -> DO:
+def make_link(name, doc: Optional[fc.Document] = None) -> RosLink:
     """Add a Ros::Link to the current document."""
     if doc is None:
         doc = fc.activeDocument()

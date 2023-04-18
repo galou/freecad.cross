@@ -31,14 +31,14 @@ from .urdf_utils import urdf_origin_from_placement
 from .utils import get_joints
 from .utils import get_links
 from .utils import get_valid_filename
+from .utils import hasallattr
+from .utils import is_robot
 from .utils import save_xml
 from .wb_utils import export_templates
 from .wb_utils import ros_name
 try:
     from .robot_from_urdf import robot_from_urdf
     from .urdf_loader import UrdfLoader
-    from .utils import hasallattr
-    from .utils import is_robot
     from .xacro_loader import XacroLoader
     from urdf_parser_py.urdf import Robot as UrdfRobot
 except ImportError as e:

@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import copy
+from pathlib import Path
+import tempfile
 from typing import Optional
 import xml.etree.ElementTree as et
 from xml.dom import minidom
@@ -20,6 +22,8 @@ from ..urdf_utils import urdf_collision_from_box
 from ..urdf_utils import urdf_collision_from_cylinder
 from ..urdf_utils import urdf_collision_from_object
 from ..urdf_utils import urdf_collision_from_sphere
+from ..wb_utils import is_joint
+from ..wb_utils import is_link
 from ..wb_utils import is_robot
 from ..wb_utils import is_workcell
 from ..wb_utils import is_xacro_object
@@ -31,6 +35,10 @@ SO = 'FreeCADGui.SelectionObject'  # Could not get the class from Python.
 
 # Otherwise et.tostring uses xlmns:ns0 as xacro namespace.
 et.register_namespace('xacro', 'http://ros.org/wiki/xacro')
+
+# Generated temporary directories.
+# Implementation note: will be deleted when closing FreeCAD.
+_temp_dirs: list[tempfile.TemporaryDirectory] = []
 
 
 def _supported_object_selected():
@@ -78,38 +86,49 @@ class _UrdfExportCommand:
                 # Object already exported.
                 continue
             exported_objects.append(obj)
-            xml: Optional[et.ElementTree] = None
+            xmls: list[et.ElementTree] = []
             if is_box(obj):
-                xml = urdf_collision_from_box(obj, placement,
-                                              ignore_obj_placement=True)
+                xmls.append(urdf_collision_from_box(
+                    obj, placement, ignore_obj_placement=True))
             elif is_sphere(obj):
-                xml = urdf_collision_from_sphere(obj, placement,
-                                                 ignore_obj_placement=True)
+                xmls.append(urdf_collision_from_sphere(
+                    obj, placement, ignore_obj_placement=True))
             elif is_cylinder(obj):
-                xml = urdf_collision_from_cylinder(
-                    obj, placement, ignore_obj_placement=True)
-            elif is_robot(obj):
+                xmls.append(urdf_collision_from_cylinder(
+                    obj, placement, ignore_obj_placement=True))
+            elif (is_robot(obj)
+                  or is_workcell(obj)):
                 if hasattr(obj, 'Proxy'):
-                    xml = obj.Proxy.export_urdf()
+                    xmls.append(obj.Proxy.export_urdf())
                     show_xml = False
-            elif is_workcell(obj):
+            elif (is_xacro_object(obj)
+                  or is_joint(obj)):
                 if hasattr(obj, 'Proxy'):
-                    xml = obj.Proxy.export_urdf()
-                    show_xml = False
-            elif is_xacro_object(obj):
+                    xmls.append(obj.Proxy.export_urdf())
+            elif is_link(obj):
                 if hasattr(obj, 'Proxy'):
-                    xml = obj.Proxy.export_urdf()
+                    temp_dir = tempfile.TemporaryDirectory(prefix='workbench_ros-')
+                    package_path = Path(temp_dir.name)
+                    xmls.append(obj.Proxy.export_urdf(package_path, 'package_name'))
+                    if list(package_path.iterdir()):
+                        # Non empty directory.
+                        xmls.append(et.Comment(f'Exported mesh files in "{package_path}"'
+                                               ' will be deleted when'
+                                               ' closing FreeCAD!'))
+                        _temp_dirs.append(temp_dir)
             elif hasattr(obj, 'Placement'):
                 has_mesh = True
                 package_name = '$package_name$'  # Will be replaced later by the GUI.
-                xml = urdf_collision_from_object(
-                    obj,
-                    package_name=package_name,
-                    placement=placement,
-                )
-            if xml:
+                xmls += urdf_collision_from_object(
+                        obj,
+                        package_name=package_name,
+                        placement=placement,
+                        )
+            if xmls:
                 txt += f'  <!-- {obj.Label} -->\n'
-                txt += et.tostring(xml).decode('utf-8')
+                for xml in xmls:
+                    txt += et.tostring(xml).decode('utf-8')
+                    txt += '\n'
         if txt and show_xml:
             if 'dummy>' in txt:
                 fc.Console.PrintError('Object labels cannot contain '

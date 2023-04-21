@@ -30,6 +30,7 @@ from .utils import hasallattr
 from .wb_utils import get_joints
 from .wb_utils import get_links
 from .wb_utils import is_robot
+from .wb_utils import is_workcell
 from .wb_utils import ros_name
 try:
     from .robot_from_urdf import robot_from_urdf
@@ -46,6 +47,7 @@ except ImportError as e:
 DO = fc.DocumentObject
 VPDO = 'FreeCADGui.ViewProviderDocumentObject'
 RosXacroObject = DO  # A Ros::XacroObject, i.e. a DocumentObject with Proxy "XacroObject".
+RosLink = DO  # A Ros::Link, i.e. a DocumentObject with Proxy "Link".
 RosRobot = DO  # A Ros::Robot, i.e. a DocumentObject with Proxy "Robot".
 
 
@@ -78,6 +80,7 @@ class XacroObject:
         # Keep track of the old generated xacro, to avoid rebuilding the robot.
         if not hasattr(self, '_old_xacro_file_content'):
             self._old_xacro_file_content = ''
+            self._urdf_robot: Optional[UrdfRobot] = None
 
         # The root link of the generated URDF.
         if not hasattr(self, '_root_link'):
@@ -89,6 +92,46 @@ class XacroObject:
     @property
     def root_link(self) -> str:
         return str(self._root_link)
+
+    def has_link(self, link_name: str) -> bool:
+        """Return True if the link belongs to the xacro object.
+
+        The link_name is the full name after macro expansion.
+
+        """
+        if not self._urdf_robot:
+            return ''
+        return link_name in self._urdf_robot.link_map
+
+    def get_link(self, link_name: str) -> Optional[RosLink]:
+        """Return True if the link belongs to the xacro object.
+
+        The link_name is the full name after macro expansion.
+
+        """
+        for link in self.get_links():
+            if ros_name(link) == link_name:
+                return link
+
+    def get_links(self) -> list[RosLink]:
+        if ((not hasattr(self, 'xacro_object')
+             or (not hasattr(self.xacro_object, 'Group'))
+             or (not self.xacro_object.Group))):
+            return []
+        robot = self._get_robot()
+        if not robot:
+            return []
+        if not hasattr(robot, 'Proxy'):
+            return []
+        return robot.Proxy.get_links()
+
+    def get_link_placement(self, link_name: str) -> Optional[fc.Placement]:
+        """Return the link placement relative to the URDF root."""
+        if not self.has_link(link_name):
+            return
+        for link in self.get_links():
+            if ros_name(link) == link_name:
+                return link.Placement
 
     def init_properties(self, obj: RosXacroObject):
         add_property(obj, 'App::PropertyString', '_Type', 'Internal',
@@ -190,16 +233,15 @@ class XacroObject:
             return
         new_robot = self._generate_robot(obj)
         if new_robot and obj.Group:
-            old_robot = obj.Group[0]
-            # Empty the group.
-            obj.Group = []
-            if is_robot(old_robot):
+            old_robot = self._get_robot()
+            if old_robot:
                 # Delete the old robot.
                 _clear_robot(old_robot)
                 obj.Document.removeObject(old_robot.Name)
         if new_robot:
             # Add the new robot.
             obj.addObject(new_robot)
+            new_robot.Label = f'Robot_of_{obj.Label}'
 
     def export_urdf(self) -> Optional[et.Element]:
         """Export the xacro object as URDF, writing files."""
@@ -210,12 +252,16 @@ class XacroObject:
         # Generate the URDF to obtain the root link.
         robot_name = ros_name(obj)
         params = {name: obj.getPropertyByName(name) for name in self.param_properties}
-        urdf_robot = self._generate_urdf(robot_name, obj.MainMacro, params)
 
         # Generate the xacro xml document.
         xacro_xml = self.xacro.to_xml(robot_name, obj.MainMacro, params)
 
         return et.fromstring(xacro_xml.toxml())
+
+    def get_link_names(self) -> list[str]:
+        if not self._urdf_robot:
+            return []
+        return [link.name for link in self._urdf_robot.links]
 
     def _toggle_editor_mode(self, obj: RosXacroObject) -> None:
         """Show/hide properties."""
@@ -239,9 +285,9 @@ class XacroObject:
         if xacro_txt == self._old_xacro_file_content:
             return
         self._old_xacro_file_content = xacro_txt
-        urdf_robot = self._generate_urdf(ros_name(obj), obj.MainMacro, params)
-        self._root_link = urdf_robot.get_root()
-        robot = robot_from_urdf(obj.Document, urdf_robot)
+        self._urdf_robot = self._generate_urdf(ros_name(obj), obj.MainMacro, params)
+        self._root_link = self._urdf_robot.get_root()
+        robot = robot_from_urdf(obj.Document, self._urdf_robot)
         return robot
 
     def _generate_urdf(self,
@@ -253,6 +299,14 @@ class XacroObject:
         urdf_txt = self.xacro.to_urdf_string(robot_name, macro, params)
         urdf_robot = UrdfLoader.load_from_string(urdf_txt)
         return urdf_robot
+
+    def _get_robot(self) -> Optional[RosRobot]:
+        if ((not hasattr(self, 'xacro_object'))
+                or (not hasattr(self.xacro_object, 'Group'))):
+            return
+        for obj in self.xacro_object.Group:
+            if is_robot(obj):
+                return obj
 
 
 class _ViewProviderXacroObject:
@@ -303,7 +357,18 @@ def make_xacro_object(name, doc: Optional[fc.Document] = None) -> RosXacroObject
     XacroObject(obj)
 
     if hasattr(fc, 'GuiUp') and fc.GuiUp:
+        import FreeCADGui as fcgui
+
         _ViewProviderXacroObject(obj.ViewObject)
+
+        # Make `obj` part of the selected `Ros::Workcell`.
+        sel = fcgui.Selection.getSelection()
+        if sel:
+            candidate = sel[0]
+            if (is_robot(candidate)
+                    or is_workcell(candidate)):
+                obj.adjustRelativeLinks(candidate)
+                candidate.addObject(obj)
 
     doc.recompute()
     return obj

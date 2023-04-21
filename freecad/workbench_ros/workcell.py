@@ -16,12 +16,15 @@ import FreeCAD as fc
 
 from .freecad_utils import add_property
 from .freecad_utils import warn
+from .freecad_utils import is_same_placement
 from .ros_utils import split_package_path
 from .urdf_utils import urdf_origin_from_placement
 from .utils import get_valid_filename
-from .wb_utils import get_valid_urdf_name
 from .utils import save_xml
 from .wb_utils import export_templates
+from .wb_utils import get_joints
+from .wb_utils import get_valid_urdf_name
+from .wb_utils import get_xacro_chains
 from .wb_utils import get_xacro_objects
 from .wb_utils import ros_name
 
@@ -55,8 +58,12 @@ class Workcell:
         add_property(obj, 'App::PropertyPath', 'OutputPath', 'Export',
                      'The path to the ROS package to export files to')
 
+        add_property(obj, 'App::PropertyString', 'RootLink', 'Elements',
+                     'The root link of the workcell', 'world')
+
     def execute(self, obj: RosWorkcell) -> None:
-        pass
+        self.set_joint_enum()
+        self.place_xacro_objects()
 
     def onBeforeChange(self, obj: RosWorkcell, prop: str) -> None:
         # TODO: save the old ros_name and update all joints that used it.
@@ -80,6 +87,55 @@ class Workcell:
                 or (not hasattr(self.workcell, 'Group'))):
             return []
         return get_xacro_objects(self.workcell.Group)
+
+    def get_joints(self) -> list[RosJoint]:
+        if ((not hasattr(self, 'workcell')) or (not hasattr(self.workcell, 'Group'))):
+            return []
+        return get_joints(self.workcell.Group)
+
+    def set_joint_enum(self) -> None:
+        """Set the enum for Child and Parent of all joints."""
+        if ((not hasattr(self, 'workcell'))
+                or (not hasattr(self.workcell, 'RootLink'))):
+            return
+        # We add the empty string to show that the child or parent
+        # was not set yet.
+        child_links: list[str] = ['']
+        parent_links: list[str] = ['', self.workcell.RootLink]
+        for xacro_object in self.get_xacro_objects():
+            child_links.append(xacro_object.Proxy.root_link)
+            parent_links += xacro_object.Proxy.get_link_names()
+        for joint in self.get_joints():
+            # Implementation note: setting to a list sets the enumeration.
+            if joint.getEnumerationsOfProperty('Child') != child_links:
+                # Avoid recursive recompute.
+                # Doesn't change the value if old value in the new enum.
+                joint.Child = child_links
+            if joint.getEnumerationsOfProperty('Parent') != parent_links:
+                # Avoid recursive recompute.
+                # Doesn't change the value if old value in the new enum.
+                joint.Parent = parent_links
+
+    def get_xacro_object_with_link(self, link_name: str) -> Optional[RosXacroObject]:
+        """Return the xacro object containing a given link."""
+        for xacro_object in self.get_xacro_objects():
+            if xacro_object.has_link(link_name):
+                return xacro_object
+
+    def place_xacro_objects(self) -> None:
+        """Set the `Placement` of all xacro objects."""
+        for chain in get_xacro_chains(self.get_xacro_objects(), self.get_joints()):
+            placement = fc.Placement()
+            for attachment in chain:
+                xo = attachment.xacro_object
+                joint = attachment.attached_by
+                link = attachment.attached_to
+                if joint:
+                    placement = joint.Origin * placement
+                if link:
+                    placement = link.Placement * placement
+                if not is_same_placement(xo.Placement, placement):
+                    xo.Placement = placement
 
     def export_urdf(self) -> Optional[et.Element]:
         if ((not hasattr(self, 'workcell'))

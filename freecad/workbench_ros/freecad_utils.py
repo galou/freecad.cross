@@ -274,6 +274,16 @@ def has_placement(obj: DO) -> bool:
             and isinstance(obj.Placement, fc.Placement))
 
 
+def is_same_placement(
+        p1: fc.Placement,
+        p2: fc.Placement,
+        trans_tol: float = 1e-6,
+        rot_tol: float = 1e-7) -> bool:
+    """Return True if both placements represent the same transform."""
+    return (((p2.Base - p1.Base).Length < trans_tol)
+            and p2.Rotation.isSame(p1.Rotation, rot_tol))
+
+
 def make_group(
         doc_or_group: [fc.Document | DO],
         name: str,

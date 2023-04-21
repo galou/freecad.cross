@@ -29,6 +29,15 @@ UI_PATH = RESOURCES_PATH / 'ui'
 ICON_PATH = RESOURCES_PATH / 'icons'
 
 
+@dataclass
+class XacroObjectAttachment:
+    xacro_object: RosXacroObject
+    attached_to: Optional[RosLink] = None
+    attached_by: Optional[RosJoint] = None
+    # ROS object `attached_to` belongs to.
+    attachement_ros_object: Optional[RosXacroObject | RosRobot] = None
+
+
 def is_robot(obj: DO) -> bool:
     """Return True if the object is a Ros::Robot."""
     return _has_ros_type(obj, 'Ros::Robot')
@@ -94,6 +103,12 @@ def get_chains(
         links: list[RosLink],
         joints: list[RosJoint],
         ) -> list[DOList]:
+    """Return the list of chains.
+
+    A chain starts at the root link, alternates links and joints, and ends
+    at the last joint of the chain.
+
+    """
     base_links: list[RosLink] = []
     tip_links: list[RosLink] = []
     for link in links:
@@ -113,7 +128,7 @@ def get_chains(
 
 
 def get_chain(link: RosLink) -> DOList:
-    """Return the chain from base_link to link, excluded.
+    """Return the chain from base link to link, excluded.
 
     The chain start with the base link, then alternates a joint and a link. The
     last item is the joint that has `link` as child.
@@ -143,6 +158,73 @@ def is_subchain(subchain: DOList, chain: DOList) -> bool:
         if link_or_joint not in chain:
             return False
     return True
+
+
+def get_xacro_object_attachments(
+        xacro_objects: list[RosXacroObject],
+        joints: list[RosJoint],
+        ) -> list[XacroObjectAttachment]:
+    """Return attachment details of xacro objects."""
+    attachments: list[XacroObjectAttachment] = []
+    for xacro_object in xacro_objects:
+        attachment = XacroObjectAttachment(xacro_object)
+        attachments.append(attachment)
+        if not hasattr(xacro_object, 'Proxy'):
+            continue
+        root_link = xacro_object.Proxy.root_link
+        for joint in joints:
+            if joint.Child == root_link:
+                attachment.attached_by = joint
+        if not attachment.attached_by:
+            continue
+        for xo in [x for x in xacro_objects if x is not xacro_object]:
+            parent: str = attachment.attached_by.Parent
+            if xo.Proxy.has_link(parent):
+                attachment.attached_to = xo.Proxy.get_link(parent)
+                attachment.attachement_ros_object = xo
+    return attachments
+
+
+def get_xacro_chains(
+        xacro_objects: list[RosXacroObject],
+        joints: list[RosJoint],
+        ) -> list[list[XacroObjectAttachment]]:
+    """Return the list of chains.
+
+    A chain starts at a xacro object that is not attached to any other xacro
+    object and contains all xacro objects that form an attachment chain, up to
+    the xacro object to which no other xacro object is attached.
+
+    """
+    def is_parent(xacro_object: RosXacroObject,
+                  attachments: list[XacroObjectAttachment],
+                  ) -> bool:
+        for attachment in attachments:
+            if attachment.attachement_ros_object is xacro_object:
+                return True
+        return False
+
+    def get_chain(xacro_object: RosXacroObject,
+                  attachments: list[XacroObjectAttachment],
+                  ) -> list[XacroObjectAttachment]:
+        for attachment in attachments:
+            if attachment.xacro_object is xacro_object:
+                break
+        if attachment.attachement_ros_object:
+            return (get_chain(attachment.attachement_ros_object, attachments)
+                    + [attachment])
+        else:
+            return [attachment]
+
+    attachments = get_xacro_object_attachments(xacro_objects, joints)
+    tip_xacros: list[RosXacroObject] = []
+    for attachment in attachments:
+        if not is_parent(attachment.xacro_object, attachments):
+            tip_xacros.append(attachment.xacro_object)
+    chains: list[list[XacroObjectAttachment]] = []
+    for xacro_object in tip_xacros:
+        chains.append(get_chain(xacro_object, attachments))
+    return chains
 
 
 def ros_name(obj: DO):

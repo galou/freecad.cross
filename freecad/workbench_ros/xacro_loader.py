@@ -17,6 +17,7 @@ from xml.dom.minidom import parseString
 
 from urdf_parser_py.urdf import Robot
 
+import xacro
 from xacro import Table
 from xacro import eval_all
 from xacro import process_doc
@@ -34,6 +35,10 @@ class Xacro:
 
         tmp_output_xml_doc = copy(self.input_xml_doc)
 
+        # Initialize xacro, required when using `eval_all()` directly (as
+        # opposed to through calling `process_doc()`).
+        if not xacro.filestack:
+            xacro.init_stacks(None)
         eval_all(tmp_output_xml_doc.documentElement, self.macros, self.symbols)
 
     def get_macro_names(self):

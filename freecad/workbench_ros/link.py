@@ -202,7 +202,7 @@ class Link:
             pass
         return list(removed_objects)
 
-    def get_robot(self) -> Optional[DO]:
+    def get_robot(self) -> Optional[RosRobot]:
         """Return the Ros::Robot this link belongs to."""
         if not hasattr(self, 'link'):
             return
@@ -210,7 +210,7 @@ class Link:
             if is_robot(o):
                 return o
 
-    def get_ref_joint(self) -> Optional[DO]:
+    def get_ref_joint(self) -> Optional[RosJoint]:
         """Return the joint this link is the child of."""
         robot = self.get_robot()
         if robot is None:
@@ -338,5 +338,10 @@ def make_link(name, doc: Optional[fc.Document] = None) -> RosLink:
             if is_robot(candidate):
                 obj.adjustRelativeLinks(candidate)
                 candidate.addObject(obj)
-
+            elif is_joint(candidate):
+                robot = candidate.Proxy.get_robot()
+                if robot:
+                    obj.adjustRelativeLinks(robot)
+                    robot.addObject(obj)
+                    candidate.Child = ros_name(obj)
     return obj

@@ -79,6 +79,16 @@ def is_robot_selected() -> bool:
     return is_selected_from_lambda(is_robot)
 
 
+def is_joint_selected() -> bool:
+    """Return True if the first selected object is a Ros::Object."""
+    return is_selected_from_lambda(is_joint)
+
+
+def is_link_selected() -> bool:
+    """Return True if the first selected object is a Ros::Link."""
+    return is_selected_from_lambda(is_link)
+
+
 def is_workcell_selected() -> bool:
     """Return True if the first selected object is a Ros::Workcell."""
     return is_selected_from_lambda(is_workcell)

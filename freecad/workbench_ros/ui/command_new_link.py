@@ -4,7 +4,7 @@ import FreeCADGui as fcgui
 
 from ..gui_utils import tr
 from ..wb_utils import is_robot_selected
-
+from ..wb_utils import is_joint_selected
 
 class _NewLinkCommand:
     """The command definition to create a new Link object."""
@@ -16,7 +16,7 @@ class _NewLinkCommand:
                 'ToolTip': tr('Create a Link container.')}
 
     def IsActive(self):
-        return is_robot_selected()
+        return is_robot_selected() or is_joint_selected()
 
     def Activated(self):
         doc = fc.activeDocument()

@@ -12,6 +12,7 @@ from .freecad_utils import label_or
 from .freecad_utils import warn
 from .urdf_utils import urdf_origin_from_placement
 from .wb_utils import get_valid_urdf_name
+from .wb_utils import is_link
 from .wb_utils import is_robot
 from .wb_utils import is_workcell
 from .wb_utils import ros_name
@@ -318,7 +319,7 @@ class _ViewProviderJoint:
         return
 
 
-def make_joint(name, doc: Optional[fc.Document] = None) -> DO:
+def make_joint(name, doc: Optional[fc.Document] = None) -> RosJoint:
     """Add a Ros::Joint to the current document."""
     if doc is None:
         doc = fc.activeDocument()
@@ -343,5 +344,10 @@ def make_joint(name, doc: Optional[fc.Document] = None) -> DO:
                     or is_workcell(candidate)):
                 obj.adjustRelativeLinks(candidate)
                 candidate.addObject(obj)
-
+            elif is_link(candidate):
+                robot = candidate.Proxy.get_robot()
+                if robot:
+                    obj.adjustRelativeLinks(robot)
+                    robot.addObject(obj)
+                    obj.Parent = ros_name(candidate)
     return obj

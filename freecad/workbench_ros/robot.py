@@ -214,7 +214,11 @@ class Robot:
             placement = fc.Placement()
             for link, joint in grouper(chain, 2):
                 # TODO: some links and joints are already placed, re-use.
-                new_link_placement = placement * link.MountedPlacement
+                if hasattr(link, 'MountedPlacement'):
+                    new_link_placement = placement * link.MountedPlacement
+                else:
+                    # TODO: find out why `MountedPlacement` is not set.
+                    new_link_placement = link.placement
                 if link.Placement != new_link_placement:
                     # Avoid recursive recompute.
                     link.Placement = new_link_placement

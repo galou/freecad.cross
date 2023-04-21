@@ -4,6 +4,7 @@ import FreeCADGui as fcgui
 
 from ..gui_utils import tr
 from ..wb_utils import is_robot_selected
+from ..wb_utils import is_workcell_selected
 
 
 class _NewJointCommand:
@@ -15,7 +16,7 @@ class _NewJointCommand:
                 'ToolTip': tr('Create a Joint.')}
 
     def IsActive(self):
-        return is_robot_selected()
+        return is_robot_selected() or is_workcell_selected()
 
     def Activated(self):
         doc = fc.activeDocument()

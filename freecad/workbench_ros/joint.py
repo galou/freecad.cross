@@ -13,6 +13,7 @@ from .freecad_utils import warn
 from .urdf_utils import urdf_origin_from_placement
 from .wb_utils import get_valid_urdf_name
 from .wb_utils import is_robot
+from .wb_utils import is_workcell
 from .wb_utils import ros_name
 
 # Typing hints.
@@ -338,7 +339,8 @@ def make_joint(name, doc: Optional[fc.Document] = None) -> DO:
         sel = fcgui.Selection.getSelection()
         if sel:
             candidate = sel[0]
-            if is_robot(candidate):
+            if (is_robot(candidate)
+                    or is_workcell(candidate)):
                 obj.adjustRelativeLinks(candidate)
                 candidate.addObject(obj)
 

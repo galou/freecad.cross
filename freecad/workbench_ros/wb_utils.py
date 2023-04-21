@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
+from typing import Callable, Iterable, Optional
 
 import FreeCAD as fc
 
@@ -16,8 +17,9 @@ from .utils import attr_equals
 
 # Typing hints.
 DO = fc.DocumentObject
-RosLink = DO  # A Ros::Link, i.e. a DocumentObject with Proxy "Link".
 RosJoint = DO  # A Ros::Joint, i.e. a DocumentObject with Proxy "Joint".
+RosLink = DO  # A Ros::Link, i.e. a DocumentObject with Proxy "Link".
+RosRobot = DO  # A Ros::Robot, i.e. a DocumentObject with Proxy "Robot".
 RosXacroObject = DO  # Ros::XacroObject, i.e. DocumentObject with Proxy "XacroObject".
 DOList = Iterable[DO]
 
@@ -65,15 +67,12 @@ def is_primitive(obj: DO) -> bool:
 
 def is_robot_selected() -> bool:
     """Return True if the first selected object is a Ros::Object."""
-    if not fc.GuiUp:
-        return False
-    if fc.activeDocument() is None:
-        return False
-    import FreeCADGui as fcgui
-    sel = fcgui.Selection.getSelection()
-    if not sel:
-        return False
-    return is_robot(sel[0])
+    return is_selected_from_lambda(is_robot)
+
+
+def is_workcell_selected() -> bool:
+    """Return True if the first selected object is a Ros::Workcell."""
+    return is_selected_from_lambda(is_workcell)
 
 
 def get_links(objs: DOList) -> list[RosLink]:
@@ -219,3 +218,17 @@ def _has_meshes_directory(
     """Return True if the directory "meshes" exists in the package."""
     meshes_directory = Path(package_parent) / package_name / 'meshes'
     return meshes_directory.exists()
+
+
+def is_selected_from_lambda(
+        is_type_fun: Callable[[DO], bool],
+        ) -> bool:
+    if not fc.GuiUp:
+        return False
+    if fc.activeDocument() is None:
+        return False
+    import FreeCADGui as fcgui
+    sel = fcgui.Selection.getSelection()
+    if not sel:
+        return False
+    return is_type_fun(sel[0])

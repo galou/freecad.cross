@@ -1,0 +1,32 @@
+import sys
+sys.path.append('/usr/lib/freecad-daily-python3/lib')
+sys.path.append('/usr/share/freecad-daily/Ext')
+sys.path.append('/usr/lib/python3/dist-packages')
+sys.path.append('$HOME/.local/share/FreeCAD/Mod/freecad.workbench_ros')
+sys.path.append('/usr/lib/freecad-daily/Mod/Arch')
+sys.path.append('/usr/lib/freecad-daily/Mod/Draft')
+
+from freecad.workbench_ros.assembly4_utils import *
+from freecad.workbench_ros.assembly_from_urdf import *
+from freecad.workbench_ros.coin_utils import *
+from freecad.workbench_ros.deep_copy import *
+from freecad.workbench_ros.freecad_utils import *
+from freecad.workbench_ros.freecadgui_utils import *
+from freecad.workbench_ros.gui_utils import *
+from freecad.workbench_ros.import_dae import *
+from freecad.workbench_ros.joint import *
+from freecad.workbench_ros.link import *
+from freecad.workbench_ros.mesh_utils import *
+from freecad.workbench_ros.placement_utils import *
+from freecad.workbench_ros.robot import *
+from freecad.workbench_ros.robot_from_urdf import *
+from freecad.workbench_ros.ros_utils import *
+from freecad.workbench_ros.urdf_loader import *
+from freecad.workbench_ros.urdf_parser_utils import *
+from freecad.workbench_ros.urdf_utils import *
+from freecad.workbench_ros.utils import *
+from freecad.workbench_ros.version import *
+from freecad.workbench_ros.wb_utils import *
+from freecad.workbench_ros.xacro_loader import *
+from freecad.workbench_ros.xacro_object import *
+

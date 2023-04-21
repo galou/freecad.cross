@@ -36,6 +36,7 @@
 - `Origin Group Extension<https://github.com/gbroques/freecad-origin-group-extension-python-example>`_
 - `Part Attachment Extension<https://github.com/gbroques/freecad-part-attachment-python-example>`_
 - `Dynamic Linked Object<https://github.com/gbroques/freecad-dynamic-linked-object>`_
+- `shape-group.py <https://gist.github.com/realthunder/40cd71a3085be666c3e2d718171de133>`_
 
 # Pivy
 

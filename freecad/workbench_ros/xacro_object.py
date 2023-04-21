@@ -110,9 +110,10 @@ class XacroObject:
 
     def init_extensions(self, obj: RosXacroObject):
         # Needed to make this object able to attach parameterically to other objects.
-        obj.addExtension('Part::AttachExtensionPython')
+        # obj.addExtension('Part::AttachExtensionPython')
         # Need a group to put the generated robot in.
-        obj.addExtension('App::GroupExtensionPython')
+        # obj.addExtension('App::GroupExtensionPython')
+        obj.addExtension('App::GeoFeatureGroupExtensionPython')
 
         # Managed in self.reset_group().
         obj.setPropertyStatus('Group', ['ReadOnly', 'Hidden'])
@@ -123,7 +124,7 @@ class XacroObject:
         Called on recompute(), this method is mandatory for scripted objects.
 
         """
-        obj.positionBySupport()
+        # obj.positionBySupport()
         if not hasallattr(obj, ['InputFile', 'MainMacro']):
             return
         if not obj.InputFile:
@@ -265,7 +266,8 @@ class _ViewProviderXacroObject:
 
     def attach(self, vobj: VPDO):
         self.ViewObject = vobj
-        vobj.addExtension('Gui::ViewProviderGroupExtensionPython')
+        # vobj.addExtension('Gui::ViewProviderGroupExtensionPython')
+        vobj.addExtension('Gui::ViewProviderGeoFeatureGroupExtensionPython')
 
     def updateData(self, obj: RosXacroObject, prop: str):
         return
@@ -296,7 +298,8 @@ def make_xacro_object(name, doc: Optional[fc.Document] = None) -> RosXacroObject
     if doc is None:
         warn('No active document, doing nothing', False)
         return
-    obj = doc.addObject('App::FeaturePython', name)
+    # obj = doc.addObject('App::FeaturePython', name)
+    obj = doc.addObject('Part::FeaturePython', name)
     XacroObject(obj)
 
     if hasattr(fc, 'GuiUp') and fc.GuiUp:

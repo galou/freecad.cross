@@ -3,8 +3,19 @@ sys.path.append('/usr/lib/freecad-daily-python3/lib')
 sys.path.append('/usr/share/freecad-daily/Ext')
 sys.path.append('/usr/lib/python3/dist-packages')
 sys.path.append('$HOME/.local/share/FreeCAD/Mod/freecad.workbench_ros')
+sys.path.append('/home/gael/.local/share/FreeCAD/Mod/MeshRemodel')
+sys.path.append('/home/gael/.local/share/FreeCAD/Mod/Assembly4')
+sys.path.append('/usr/share/freecad-daily/Mod/PartDesign')
+sys.path.append('/usr/share/freecad-daily/Mod/MeshPart')
+sys.path.append('/usr/share/freecad-daily/Mod/Material')
+sys.path.append('/usr/share/freecad-daily/Mod/Draft')
+sys.path.append('/usr/share/freecad-daily/Mod/Mesh')
+sys.path.append('/usr/share/freecad-daily/Mod/Part')
+sys.path.append('/usr/share/freecad-daily/Mod/Arch')
 sys.path.append('/usr/lib/freecad-daily/Mod/Arch')
 sys.path.append('/usr/lib/freecad-daily/Mod/Draft')
+sys.path.append('$HOME/.local/share/FreeCAD/Macro/')
+sys.path.append('/usr/lib/freecad-daily/Macro')
 
 from freecad.workbench_ros.assembly4_utils import *
 from freecad.workbench_ros.assembly_from_urdf import *
@@ -27,6 +38,7 @@ from freecad.workbench_ros.urdf_utils import *
 from freecad.workbench_ros.utils import *
 from freecad.workbench_ros.version import *
 from freecad.workbench_ros.wb_utils import *
+from freecad.workbench_ros.workcell import *
 from freecad.workbench_ros.xacro_loader import *
 from freecad.workbench_ros.xacro_object import *
 

@@ -395,7 +395,7 @@ class Robot:
                       ", has no 'Proxy' attribute", True)
         # Save the xml into a file.
         output_path.mkdir(parents=True, exist_ok=True)
-        file_base = get_valid_filename(self.robot.Label)
+        file_base = get_valid_filename(ros_name(self.robot))
         urdf_file = f'{file_base}.urdf'
         urdf_path = output_path / f'urdf/{urdf_file}'
         save_xml(xml, urdf_path)

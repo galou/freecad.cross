@@ -33,16 +33,16 @@
 
 # Python programming in FreeCAD
 
-- `Origin Group Extension<https://github.com/gbroques/freecad-origin-group-extension-python-example>`_
-- `Part Attachment Extension<https://github.com/gbroques/freecad-part-attachment-python-example>`_
-- `Dynamic Linked Object<https://github.com/gbroques/freecad-dynamic-linked-object>`_
-- `shape-group.py <https://gist.github.com/realthunder/40cd71a3085be666c3e2d718171de133>`_
+- [Origin Group Extension](https://github.com/gbroques/freecad-origin-group-extension-python-example)
+- [Part Attachment Extension](https://github.com/gbroques/freecad-part-attachment-python-example)
+- [Dynamic Linked Object](https://github.com/gbroques/freecad-dynamic-linked-object)
+- [shape-group.py](https://gist.github.com/realthunder/40cd71a3085be666c3e2d718171de133)
 
 # Pivy
 
-- `Examples<https://github.com/coin3d/pivy/tree/master/examples/Mentor>`_
+- [Examples](https://github.com/coin3d/pivy/tree/master/examples/Mentor)
 
 # Mesh simplification
 
-- The `V-HACD library<https://github.com/kmammou/v-hacd/>`_ decomposes a 3D surface into a set of "near" convex parts
-- `Mesh-to-SDF<https://github.com/kmammou/v-hacd/>`_ converter (uses V-HACD).
+- [The V-HACD library](https://github.com/kmammou/v-hacd/) decomposes a 3D surface into a set of "near" convex parts
+- [Mesh-to-SDF](https://github.com/kmammou/v-hacd/) converter (uses V-HACD).

@@ -255,7 +255,7 @@ class _ViewProviderJoint:
         if not vobj.Visibility or not hasattr(vobj, 'ShowAxis'):
             # root_node.removeAllChildren() # This segfaults when loading the document.
             return
-        if prop in ['Placement']:
+        if prop in ['Placement', 'Type', 'Position']:
             self.draw(vobj, vobj.Visibility and vobj.ShowAxis)
         # Implementation note: no need to react on prop == 'Origin' because
         # this triggers a change in 'Placement'.
@@ -266,6 +266,7 @@ class _ViewProviderJoint:
 
     def draw(self, vobj: VPDO, visible: bool):
         from .coin_utils import arrow_group
+        from .coin_utils import face_group
 
         if not hasattr(vobj, 'RootNode'):
             return
@@ -275,10 +276,11 @@ class _ViewProviderJoint:
             return
         if not hasattr(vobj.Object, 'Placement'):
             return
-        placement = vobj.Object.Placement
+        obj = vobj.Object
+        placement = obj.Placement
         if placement is None:
             return
-        if vobj.Object.Type == 'fixed':
+        if obj.Type == 'fixed':
             color = (0.0, 0.0, 0.7)
         else:
             color = (0.0, 0.0, 1.0)
@@ -296,6 +298,23 @@ class _ViewProviderJoint:
         py = placement * fc.Vector(0.0, length / 2.0, 0.0)
         arrow = arrow_group([p0, py], scale=0.2, color=(0.0, 1.0, 0.0))
         root_node.addChild(arrow)
+        if obj.Type == 'prismatic':
+            placement = obj.Proxy.get_actuation_placement() * placement
+            scale = length * 0.05
+            ps0 = placement * fc.Vector(+scale / 2.0, +scale / 2.0, 0.0)
+            ps1 = placement * fc.Vector(-scale / 2.0, +scale / 2.0, 0.0)
+            ps2 = placement * fc.Vector(-scale / 2.0, -scale / 2.0, 0.0)
+            ps3 = placement * fc.Vector(+scale / 2.0, -scale / 2.0, 0.0)
+            square = face_group([ps0, ps1, ps2, ps3], color=color)
+            root_node.addChild(square)
+        if obj.Type in ['revolute', 'continuous']:
+            placement = obj.Proxy.get_actuation_placement() * placement
+            scale = length * 0.2
+            pt0 = placement * fc.Vector(0.0, 0.0, 0.0)
+            pt1 = placement * fc.Vector(scale, 0.0, 0.0)
+            pt2 = placement * fc.Vector(0.0, 0.0, scale / 2.0)
+            triangle = face_group([pt0, pt1, pt2], color=color)
+            root_node.addChild(triangle)
 
     def doubleClicked(self, vobj):
         gui_doc = vobj.Document

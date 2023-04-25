@@ -5,8 +5,9 @@ import FreeCAD as fc
 from pivy import coin
 
 
-def transform_from_placement(placement: [fc.Placement | fc.Vector | fc.Rotation],
-                             ) -> coin.SoTransform:
+def transform_from_placement(
+        placement: [fc.Placement | fc.Vector | fc.Rotation],
+        ) -> coin.SoTransform:
     """Return the SoTransform equivalent to the placement.
 
     # Should show a cone entering a cylinder.
@@ -39,14 +40,15 @@ def transform_from_placement(placement: [fc.Placement | fc.Vector | fc.Rotation]
 def arrow_group(
         points: list[fc.Vector],
         color: tuple[float] = (0.0, 0.0, 1.0),
-        scale: float = 1.0):
+        scale: float = 1.0,
+        ) -> coin.SoSeparator:
     """Return the SoSeparator of an arrow between two points.
 
     """
     if len(points) < 2:
-        raise RuntimeError('Not enough points')
+        raise RuntimeError('At least 2 points expected')
     if len(color) != 3:
-        raise RuntimeError('color must have three values')
+        raise RuntimeError('color must have 3 values')
 
     # Ratio cone_height / length_between_points.
     head_height_ratio = 0.3
@@ -106,4 +108,37 @@ def arrow_group(
     group.addChild(coin_color)
     group.addChild(cylinder_sep)
     group.addChild(cone_sep)
+    return group
+
+
+def face_group(
+        points: list[fc.Vector],
+        color: tuple[float] = (0.0, 0.0, 1.0),
+        ) -> coin.SoSeparator:
+    if len(points) < 3:
+        raise RuntimeError('At least 3 points expected')
+    if len(color) != 3:
+        raise RuntimeError('color must have 3 values')
+
+    # Create a material to fill the square.
+    material = coin.SoMaterial()
+    material.diffuseColor = color
+
+    # Create the vertices of the face.
+    vertices = coin.SoVertexProperty()
+    n = len(points)
+    vertices.vertex.setValues(0, n, points)
+
+    # Create the face.
+    indices = coin.SoIndexedFaceSet()
+    indices.coordIndex.setValues(0, n + 1, list(range(n)) + [-1])
+
+    # Set the material for the face.
+    # indices.addChild(material)
+
+    # Create a group and add the vertices and indices.
+    group = coin.SoSeparator()
+    group.addChild(material)
+    group.addChild(vertices)
+    group.addChild(indices)
     return group

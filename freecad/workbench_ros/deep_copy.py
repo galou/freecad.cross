@@ -21,9 +21,11 @@ MeshFeature = DO  # TypeId == 'Mesh::Feature'.
 DOList = Iterable[DO]
 
 
-def deep_copy_object(obj: DO,
-                     doc: Optional[fc.Document] = None,
-                     placement: fc.Placement = fc.Placement()) -> DOList:
+def deep_copy_object(
+        obj: DO,
+        doc: Optional[fc.Document] = None,
+        placement: fc.Placement = fc.Placement(),
+        ) -> DOList:
     """Copy the shapes and meshes of a FreeCAD object.
 
     Parameters
@@ -39,7 +41,6 @@ def deep_copy_object(obj: DO,
     elif is_mesh(obj):
         return deep_copy_mesh(obj, doc, placement)
     elif (is_box(obj)
-          or is_box(obj)
           or is_cylinder(obj)
           or is_sphere(obj)):
         doc = obj.Document if doc is None else doc
@@ -55,9 +56,11 @@ def deep_copy_object(obj: DO,
         return deep_copy_shape(obj, doc, placement)
 
 
-def deep_copy_part(part: AppPart,
-                   doc: Optional[fc.Document] = None,
-                   placement: fc.Placement = fc.Placement()) -> DOList:
+def deep_copy_part(
+        part: AppPart,
+        doc: Optional[fc.Document] = None,
+        placement: fc.Placement = fc.Placement(),
+        ) -> DOList:
     """Copy the shape of a "App::Part" object.
 
     Parameters
@@ -98,9 +101,10 @@ def deep_copy_part(part: AppPart,
     return objects
 
 
-def get_placed_mesh_copies(part: AppPart,
-                           doc: Optional[fc.Document] = None,
-                           ) -> list[MeshFeature]:
+def get_placed_mesh_copies(
+        part: AppPart,
+        doc: Optional[fc.Document] = None,
+        ) -> list[MeshFeature]:
     mesh_copies: list[MeshFeature] = []
     doc = doc if doc else part.Document
     for mesh, placement in get_meshes_and_placements(part):
@@ -108,8 +112,9 @@ def get_placed_mesh_copies(part: AppPart,
     return mesh_copies
 
 
-def get_meshes_and_placements(part: AppPart
-                              ) -> list[tuple[MeshFeature, fc.Placement]]:
+def get_meshes_and_placements(
+        part: AppPart
+        ) -> list[tuple[MeshFeature, fc.Placement]]:
     """Return all meshes in a part and their path.
 
     Return a list of (mesh_object, path), where path (also called subname) can be

@@ -38,7 +38,11 @@ class Xacro:
         # Initialize xacro, required when using `eval_all()` directly (as
         # opposed to through calling `process_doc()`).
         if not xacro.filestack:
-            xacro.init_stacks(None)
+            if hasattr(xacro, 'init_stacks'):
+                # Humble and newer.
+                xacro.init_stacks(None)
+            else:
+                xacro.restore_filestack([None])
         eval_all(tmp_output_xml_doc.documentElement, self.macros, self.symbols)
 
     def get_macro_names(self):

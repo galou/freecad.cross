@@ -218,7 +218,7 @@ class Robot:
                     new_link_placement = placement * link.MountedPlacement
                 else:
                     # TODO: find out why `MountedPlacement` is not set.
-                    new_link_placement = link.placement
+                    new_link_placement = link.Placement
                 if link.Placement != new_link_placement:
                     # Avoid recursive recompute.
                     link.Placement = new_link_placement

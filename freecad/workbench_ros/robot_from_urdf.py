@@ -183,14 +183,18 @@ def _define_mimic_joints(
         mimicked_ros_joint = joint_map.get(mimicked_urdf_joint.name)
         # `mimicked_ros_joint` should not be None.
         ros_joint.MimickedJoint = mimicked_ros_joint
-        ros_joint.Multiplier = urdf_joint.mimic.multiplier
-        if urdf_joint.type == 'prismatic':
-            # Meters (URDF) to millimeters (FreeCAD).
-            offset = urdf_joint.mimic.offset * 1000.0
+        if urdf_joint.mimic.multiplier is not None:
+            ros_joint.Multiplier = urdf_joint.mimic.multiplier
+        if urdf_joint.mimic.offset is None:
+            offset = 0.0
         else:
-            # urdf_joint.type in ['revolute', 'continuous']
-            # Radians (URDF) to degrees (FreeCAD).
-            offset = degrees(urdf_joint.mimic.offset)
+            if urdf_joint.type == 'prismatic':
+                # Meters (URDF) to millimeters (FreeCAD).
+                offset = urdf_joint.mimic.offset * 1000.0
+            else:
+                # urdf_joint.type in ['revolute', 'continuous']
+                # Radians (URDF) to degrees (FreeCAD).
+                offset = degrees(urdf_joint.mimic.offset)
         ros_joint.Offset = offset
 
 

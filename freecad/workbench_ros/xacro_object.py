@@ -27,8 +27,6 @@ import FreeCAD as fc
 from .freecad_utils import add_property
 from .freecad_utils import warn
 from .utils import hasallattr
-from .wb_utils import get_joints
-from .wb_utils import get_links
 from .wb_utils import is_robot
 from .wb_utils import is_workcell
 from .wb_utils import ros_name
@@ -54,10 +52,16 @@ RosRobot = DO  # A Ros::Robot, i.e. a DocumentObject with Proxy "Robot".
 def _clear_robot(obj: RosRobot) -> None:
     """Delete all joints and links from a robot."""
     doc = obj.Document
+    # Let robot clean its generated objects.
+    if obj.ViewObject:
+        obj.ViewObject.ShowReal = False
+        obj.ViewObject.ShowVisual = False
+        obj.ViewObject.ShowCollision = False
     # Joints first.
-    for joint in get_joints(obj.Group):
+    for joint in obj.Proxy.get_joints():
         doc.removeObject(joint.Name)
-    for link in get_links(obj.Group):
+    for link in obj.Proxy.get_links():
+        # If without GUI. Group should be empty with GUI.
         for fc_link in link.Group:
             doc.removeObject(fc_link.Name)
         doc.removeObject(link.Name)
@@ -237,11 +241,21 @@ class XacroObject:
             if old_robot:
                 # Delete the old robot.
                 _clear_robot(old_robot)
+                # Necessary to free the label for the new object object because
+                # the object is removed later.
+                old_robot.Label = 'will_be_removed'
                 obj.Document.removeObject(old_robot.Name)
         if new_robot:
-            # Add the new robot.
-            obj.addObject(new_robot)
             new_robot.Label = f'Robot_of_{obj.Label}'
+            # Add the new robot.
+            # We add the robot by setting `Group` because of the bug described
+            # below. When solved, use next line instead.
+            # obj.addObject(new_robot)
+            # Clean-up other objects.
+            # The xacro objects contains other objects for some reason, remove
+            # them from the group.
+            # TODO: not nice, try to solve out why this is necessary.
+            obj.Group = [new_robot]
 
     def export_urdf(self) -> Optional[et.Element]:
         """Export the xacro object as URDF, writing files."""

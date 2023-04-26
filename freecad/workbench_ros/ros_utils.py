@@ -22,34 +22,91 @@ def warn(text: str, gui: bool = False) -> None:
         diag.exec_()
 
 
-def is_ros_found() -> bool:
+def has_ros_distro() -> bool:
+    """Return True if environment variable ROS_DISTRO is set."""
     return (('ROS_DISTRO' in os.environ)
             and (Path(f'/opt/ros/{os.environ["ROS_DISTRO"]}').exists()))
 
 
-def add_ros_python_library() -> bool:
+def is_ros_found() -> bool:
+    return get_ros_distro_from_env() != ''
+
+
+def add_ros_python_library(ros_distro: str = '') -> bool:
     """Add /opt/ros/$ROS_DISTRO/lib/python?.?/site-packages to sys.path."""
-    if not is_ros_found():
-        warn('The environment variable `ROS_DISTRO`'
-             ' is not set, some functionalities will be missing')
+    if not ros_distro:
+        ros_distro = get_ros_distro_from_env()
+    if not ros_distro:
+        warn('The environment variable `ROS_DISTRO` is not set and no ROS'
+             ' installation was found in /opt/ros'
+             ', some functionalities will be missing')
         return False
+    else:
+        if not has_ros_distro():
+            warn('The environment variable `ROS_DISTRO` is not set but a ROS'
+                 f' installation was found in /opt/ros/{ros_distro}'
+                 ', using it')
+
+    # Add the paths in PYTHONPATH to sys.path.
+    # Unfortunately, on some systems and with some versions of FreeCAD, the
+    # environment variable PYTHONPATH is not taken into account and is reset.
     if 'PYTHONPATH' in os.environ:
         for path in os.environ['PYTHONPATH'].split(':'):
             if path not in sys.path:
                 sys.path.append(path)
-    # On some systems (e.g. FreeCAD 0.21 on Ubuntu 20), $PYTHONPATH is not
-    # taken into account in FreeCAD.
+    # Python version.
     major = sys.version_info.major
     minor = sys.version_info.minor
-    base = f'/opt/ros/{os.environ["ROS_DISTRO"]}'
+    python_ver = f'python{major}.{minor}'
+    # Add directories from ROS_WORKSPACE before system ones.
+    ros_workspace = get_ros_workspace_from_env()
+    # Works only for workspace with colcon's merge install strategy.
+    _add_python_path(f'{ros_workspace}/install/lib/{python_ver}/site-packages')
+    # On some systems (e.g. FreeCAD 0.21 on Ubuntu 20), $PYTHONPATH is not
+    # taken into account in FreeCAD, add them manually.
+    base = f'/opt/ros/{ros_distro}'
     for path in [
-        Path(f'{base}/lib/python{major}.{minor}/site-packages'),
+        Path(f'{base}/lib/{python_ver}/site-packages'),
         # Humble and later.
-        Path(f'{base}/local/lib/python{major}.{minor}/dist-packages'),
+        Path(f'{base}/local/lib/{python_ver}/dist-packages'),
         ]:
-        if path.exists() and (str(path) not in sys.path):
-            sys.path.append(str(path))
+        _add_python_path(path)
     return True
+
+
+def get_ros_distro_from_env() -> str:
+    """Return or guess the ROS distribution.
+
+    Return the environment variable `ROS_DISTRO` if defined or guess from
+    /opt/ros.
+
+    When guessing, the most recent (and known) distro is returned, "rolling"
+    having a higher priority.
+
+    """
+    if os.environ.get('ROS_DISTRO'):
+        return os.environ.get('ROS_DISTRO')
+    candidates = ['rolling', 'humble', 'galactic', 'foxy']
+    for c in candidates:
+        if Path(f'/opt/ros/{c}').exists():
+            return c
+
+
+def get_ros_workspace_from_env() -> str:
+    """Return the content of environment variable ROS_WORKSPACE.
+
+    If not defined, try to guess from environment variable COLCON_PREFIX_PATH.
+
+    """
+    ws = os.environ.get('ROS_WORKSPACE', '')
+    if ws:
+        return ws
+
+    # Guess from COLCON_PREFIX_PATH that looks like /home/user/ros_ws/install.
+    colcon_prefix_path = os.environ.get('COLCON_PREFIX_PATH', '')
+    if not colcon_prefix_path.endswith('/install'):
+        return ''
+    return colcon_prefix_path[:-len('/install')]
 
 
 def get_package_and_file(file_path: [Path | str]) -> tuple[str, str]:
@@ -77,7 +134,13 @@ def get_package_and_file(file_path: [Path | str]) -> tuple[str, str]:
 
 
 def split_package_path(package_path: [Path | str]) -> tuple[Path, Path]:
-    """Return the package parent and the package name."""
+    """Return the package parent and the package name.
+
+    Parameters
+    ----------
+    - package_path: path to the directory containing `package.xml`.
+
+    """
     package_path = Path(package_path)
     if not package_path.is_dir():
         warn('"package_path" must be a directory', True)
@@ -85,3 +148,10 @@ def split_package_path(package_path: [Path | str]) -> tuple[Path, Path]:
     parent = path.parent
     package_name = path.stem
     return parent, package_name
+
+
+def _add_python_path(path: [Path | str]) -> None:
+    """Add the path to sys.path if existing."""
+    path = Path(path)
+    if path.exists() and (str(path) not in sys.path):
+        sys.path.append(str(path))

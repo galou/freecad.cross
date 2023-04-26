@@ -51,6 +51,7 @@ class _ReloadCommand:
         _reload_module('freecad.workbench_ros.ui.command_set_link_mounted_placement')
         _reload_module('freecad.workbench_ros.ui.command_sphere_from_bounding_box')
         _reload_module('freecad.workbench_ros.ui.command_urdf_export')
+        _reload_module('freecad.workbench_ros.ui.command_wb_settings')
         _reload_module('freecad.workbench_ros.urdf_loader')
         _reload_module('freecad.workbench_ros.urdf_parser_utils')
         _reload_module('freecad.workbench_ros.urdf_utils')

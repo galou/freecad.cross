@@ -13,6 +13,7 @@ from .ui import command_robot_from_urdf
 from .ui import command_set_link_mounted_placement
 from .ui import command_sphere_from_bounding_box
 from .ui import command_urdf_export
+from .ui import command_wb_settings
 from .wb_utils import ICON_PATH
 
 
@@ -45,6 +46,7 @@ class RosWorkbench(fcgui.Workbench):
             'AssemblyFromUrdf',  # Defined in ./ui/command_assembly_from_urdf.py.
             'UrdfExport',  # Defined in ./ui/command_urdf_export.py.
             'SetLinkMountedPlacement',  # Defined in ./ui/command_set_link_mounted_placement.py.
+            'WbSettings',  # Defined in ./ui/command_wb_settings.py.
             'Reload',  # Comment out to disable this developer tool.
             ]
         self.appendToolbar('ROS', commands)

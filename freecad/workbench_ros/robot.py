@@ -3,10 +3,12 @@ from __future__ import annotations
 from math import radians
 from pathlib import Path
 from typing import Iterable, Optional
+import os
 import xml.etree.ElementTree as et
 
 import FreeCAD as fc
 
+import freecad.workbench_ros
 from .freecad_utils import add_property
 from .freecad_utils import error
 from .freecad_utils import get_properties_of_category
@@ -18,6 +20,7 @@ from .utils import get_valid_filename
 from .utils import grouper
 from .utils import save_xml
 from .utils import warn_unsupported
+from .wb_gui_utils import get_ros_workspace
 from .wb_utils import export_templates
 from .wb_utils import get_chains
 from .wb_utils import get_joints
@@ -148,6 +151,19 @@ def _add_joint_variable(
     return used_var_name
 
 
+def _without_ros_workspace(path: str) -> str:
+    """Return the path relative to $ROS_WORKSPACE/src.
+
+    Return the path as-is if it doesn't start with $ROS_WORKSPACE/src.
+
+    """
+    src = str(freecad.workbench_ros.g_ros_workspace / 'src')
+    if path.startswith(src):
+        len_src_with_sep = len(src) + len(os.path.sep)
+        return path[len_src_with_sep:]
+    return path
+
+
 class Robot:
     """The Robot proxy."""
 
@@ -175,7 +191,8 @@ class Robot:
         obj.setPropertyStatus('Group', 'ReadOnly')
 
         add_property(obj, 'App::PropertyPath', 'OutputPath', 'Export',
-                     'The path to the ROS package to export files to')
+                     'The path to the ROS package to export files to,'
+                     ' relative to $ROS_WORKSPACE/src')
 
     def execute(self, obj: RosRobot) -> None:
         self.cleanup_group()
@@ -188,6 +205,10 @@ class Robot:
     def onChanged(self, obj: RosRobot, prop: str) -> None:
         if prop in ['Group']:
             self.execute(obj)
+        if prop == 'OutputPath':
+            rel_path = _without_ros_workspace(obj.OutputPath)
+            if rel_path != obj.OutputPath:
+                obj.OutputPath = rel_path
 
     def onDocumentRestored(self, obj):
         """Restore attributes because __init__ is not called on restore."""
@@ -367,7 +388,16 @@ class Robot:
         if not self.robot.OutputPath:
             warn('Property `OutputPath` cannot be empty', True)
             return
-        output_path = Path(self.robot.OutputPath).expanduser()
+        if not freecad.workbench_ros.g_ros_workspace.name:
+            # TODO: guess the workspace from OutputPath
+            # (implement ros_utils.get_ros_workspace_from_path)
+            ws = get_ros_workspace()
+            freecad.workbench_ros.g_ros_workspace = ws
+            p = _without_ros_workspace(self.robot.OutputPath)
+            if p != self.robot.OutputPath:
+                self.robot.OutputPath = p
+        output_path = (freecad.workbench_ros.g_ros_workspace.expanduser()
+                       / 'src' / self.robot.OutputPath)
         package_parent, package_name = split_package_path(output_path)
         # TODO: warn if package name doesn't end with `_description`.
         xml = et.fromstring('<robot/>')

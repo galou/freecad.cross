@@ -8,7 +8,7 @@ from PySide import QtGui  # FreeCAD's PySide!
 
 from ..freecad_utils import warn
 from ..gui_utils import tr
-from ..wb_utils import UI_PATH
+from ..wb_gui_utils import get_ros_workspace
 import freecad.workbench_ros
 
 
@@ -30,29 +30,8 @@ class _WbSettingsCommand:
         return True
 
     def Activated(self):
-        self.form = fcgui.PySideUic.loadUi(str(UI_PATH / 'wb_settings.ui'))
-        self.form.lineedit_workspace.setText(freecad.workbench_ros.g_ros_workspace)
-        self.form.button_browse.clicked.connect(self.on_button_browse)
-        self.form.button_box.accepted.connect(self.on_ok)
-        self.form.button_box.rejected.connect(self.on_cancel)
-        self.form.show()
-
-    def on_button_browse(self):
-        path = QtGui.QFileDialog.getExistingDirectory(fcgui.getMainWindow(),
-                                                      'Select the root of your workspace',
-                                                      freecad.workbench_ros.g_ros_workspace)
-        if path:
-            _warn_if_not_workspace(path, True)
-            self.form.lineedit_workspace.setText(path)
-            freecad.workbench_ros.g_ros_workspace = path
-
-    def on_ok(self):
-        path = self.form.lineedit_workspace.text()
-        _warn_if_not_workspace(path, True)
+        path = get_ros_workspace(freecad.workbench_ros.g_ros_workspace)
         freecad.workbench_ros.g_ros_workspace = path
-
-    def on_cancel(self):
-        pass
 
 
 fcgui.addCommand('WbSettings', _WbSettingsCommand())

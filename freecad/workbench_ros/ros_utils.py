@@ -92,7 +92,7 @@ def get_ros_distro_from_env() -> str:
             return c
 
 
-def get_ros_workspace_from_env() -> str:
+def get_ros_workspace_from_env() -> Path:
     """Return the content of environment variable ROS_WORKSPACE.
 
     If not defined, try to guess from environment variable COLCON_PREFIX_PATH.
@@ -100,13 +100,13 @@ def get_ros_workspace_from_env() -> str:
     """
     ws = os.environ.get('ROS_WORKSPACE', '')
     if ws:
-        return ws
+        return Path(ws)
 
     # Guess from COLCON_PREFIX_PATH that looks like /home/user/ros_ws/install.
     colcon_prefix_path = os.environ.get('COLCON_PREFIX_PATH', '')
     if not colcon_prefix_path.endswith('/install'):
-        return ''
-    return colcon_prefix_path[:-len('/install')]
+        return Path()
+    return Path(colcon_prefix_path[:-len('/install')])
 
 
 def get_package_and_file(file_path: [Path | str]) -> tuple[str, str]:

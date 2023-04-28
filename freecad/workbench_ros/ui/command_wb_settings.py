@@ -4,12 +4,10 @@ from pathlib import Path
 
 import FreeCADGui as fcgui
 
-from PySide import QtGui  # FreeCAD's PySide!
-
 from ..freecad_utils import warn
 from ..gui_utils import tr
 from ..wb_gui_utils import get_ros_workspace
-import freecad.workbench_ros
+from .. import wb_globals
 
 
 def _warn_if_not_workspace(path: str, gui: bool = True):
@@ -30,8 +28,8 @@ class _WbSettingsCommand:
         return True
 
     def Activated(self):
-        path = get_ros_workspace(freecad.workbench_ros.g_ros_workspace)
-        freecad.workbench_ros.g_ros_workspace = path
+        path = get_ros_workspace(wb_globals.g_ros_workspace)
+        wb_globals.g_ros_workspace = path
 
 
 fcgui.addCommand('WbSettings', _WbSettingsCommand())

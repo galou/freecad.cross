@@ -29,6 +29,9 @@ class WorkspaceGetter:
         self.form.button_box.rejected.connect(self.on_cancel)
         if self.form.exec_():
             return self.ros_workspace
+        # Implementation note: need to close to avoid a segfault when exiting
+        # FreeCAD.
+        self.form.close()
         return self.old_ros_workspace
 
     def on_button_browse(self):

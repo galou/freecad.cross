@@ -8,14 +8,11 @@ from __future__ import annotations
 from itertools import zip_longest
 from pathlib import Path
 import string
-from typing import Any, Iterable
+from typing import Any, Iterable, Optional
 import xml.etree.ElementTree as et
 from xml.dom import minidom
 
 import FreeCAD as fc
-
-from .freecad_utils import is_container
-from .freecad_utils import warn
 
 # Typing hints.
 DO = fc.DocumentObject
@@ -45,6 +42,9 @@ def warn_unsupported(objects: [DO, DOList],
                      gui: bool = False,
                      ) -> None:
     """Warn the user of an unsupported object type."""
+    # Import here otherwise not fc.GuiUp.
+    from .freecad_utils import warn
+
     if not isinstance(objects, list):
         objects = [objects]
     for o in objects:
@@ -71,6 +71,9 @@ def attr_is(instance: Any, attr: str, value: Any):
 
 def hasallattr(obj: Any, attrs: list[str]):
     """Return True if object has all attributes."""
+    # Import here otherwise not fc.GuiUp.
+    from .freecad_utils import warn
+
     if isinstance(attrs, str):
         # Developer help, call error.
         warn(f'hasallattr({attrs}) was replaced by hasallattr([{attrs}])')
@@ -98,3 +101,43 @@ def grouper(iterable, n, fillvalue=None):
     # From https://docs.python.org/3.8/library/itertools.html.
     args = [iter(iterable)] * n
     return zip_longest(*args, fillvalue=fillvalue)
+
+
+def get_parent_by_pattern(
+        file_path: [Path | str],
+        pattern: str,
+        type: Optional[str] = None,
+        ) -> tuple[Path, str]:
+    """Return the parent directory of the given file containing pattern.
+
+    Return the directory that is parent (possibly indirect) of `filepath` and
+    that contains the directory or file `pattern`.
+
+    If the file path is relative, return `(Path(), file_path)`.
+
+    If the pattern was not found, return `(Path(), '')`.
+
+    """
+    file_path = Path(file_path).expanduser()
+    if not file_path.is_absolute():
+        return Path(), str(file_path)
+    if type in ['f', 'file']:
+        def is_correct_type(p: Path):
+            return p.is_file()
+    elif type in ['d', 'directory']:
+        def is_correct_type(p: Path):
+            return p.is_dir()
+    else:
+        def is_correct_type(p: Path):
+            return p.exists()
+    relative_file_path = ''
+    while True:
+        candidate_path_to_pattern = file_path / pattern
+        if is_correct_type(candidate_path_to_pattern):
+            return file_path, relative_file_path
+        relative_file_path = (f'{file_path.name}/{relative_file_path}'
+                              if relative_file_path else file_path.name)
+        file_path = file_path.parent
+        if file_path.samefile(Path(file_path.root)):
+            # We are at the root.
+            return Path(), relative_file_path

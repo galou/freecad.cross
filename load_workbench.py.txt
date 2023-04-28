@@ -37,6 +37,7 @@ from freecad.workbench_ros.urdf_parser_utils import *
 from freecad.workbench_ros.urdf_utils import *
 from freecad.workbench_ros.utils import *
 from freecad.workbench_ros.version import *
+from freecad.workbench_ros.wb_globals import *
 from freecad.workbench_ros.wb_utils import *
 from freecad.workbench_ros.workcell import *
 from freecad.workbench_ros.xacro_loader import *

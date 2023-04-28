@@ -3,19 +3,21 @@ from __future__ import annotations
 from math import radians
 from pathlib import Path
 from typing import Iterable, Optional
-import os
 import xml.etree.ElementTree as et
 
 import FreeCAD as fc
 
-import freecad.workbench_ros
+from . import wb_globals
 from .freecad_utils import add_property
 from .freecad_utils import error
 from .freecad_utils import get_properties_of_category
 from .freecad_utils import get_valid_property_name
 from .freecad_utils import label_or
+from .freecad_utils import message
 from .freecad_utils import warn
+from .ros_utils import get_ros_workspace_from_file
 from .ros_utils import split_package_path
+from .ros_utils import without_ros_workspace
 from .utils import get_valid_filename
 from .utils import grouper
 from .utils import save_xml
@@ -151,19 +153,6 @@ def _add_joint_variable(
     return used_var_name
 
 
-def _without_ros_workspace(path: str) -> str:
-    """Return the path relative to $ROS_WORKSPACE/src.
-
-    Return the path as-is if it doesn't start with $ROS_WORKSPACE/src.
-
-    """
-    src = str(freecad.workbench_ros.g_ros_workspace / 'src')
-    if path.startswith(src):
-        len_src_with_sep = len(src) + len(os.path.sep)
-        return path[len_src_with_sep:]
-    return path
-
-
 class Robot:
     """The Robot proxy."""
 
@@ -206,9 +195,7 @@ class Robot:
         if prop in ['Group']:
             self.execute(obj)
         if prop == 'OutputPath':
-            rel_path = _without_ros_workspace(obj.OutputPath)
-            if rel_path != obj.OutputPath:
-                obj.OutputPath = rel_path
+            self._remove_ros_workspace(obj)
 
     def onDocumentRestored(self, obj):
         """Restore attributes because __init__ is not called on restore."""
@@ -388,15 +375,13 @@ class Robot:
         if not self.robot.OutputPath:
             warn('Property `OutputPath` cannot be empty', True)
             return
-        if not freecad.workbench_ros.g_ros_workspace.name:
-            # TODO: guess the workspace from OutputPath
-            # (implement ros_utils.get_ros_workspace_from_path)
+        if not wb_globals.g_ros_workspace.name:
             ws = get_ros_workspace()
-            freecad.workbench_ros.g_ros_workspace = ws
-            p = _without_ros_workspace(self.robot.OutputPath)
+            wb_globals.g_ros_workspace = ws
+            p = without_ros_workspace(self.robot.OutputPath)
             if p != self.robot.OutputPath:
                 self.robot.OutputPath = p
-        output_path = (freecad.workbench_ros.g_ros_workspace.expanduser()
+        output_path = (wb_globals.g_ros_workspace.expanduser()
                        / 'src' / self.robot.OutputPath)
         package_parent, package_name = split_package_path(output_path)
         # TODO: warn if package name doesn't end with `_description`.
@@ -440,6 +425,27 @@ class Robot:
                          package_name=package_name,
                          urdf_file=urdf_file)
         return xml
+
+    def _remove_ros_workspace(self, obj) -> None:
+        """Modify `obj.OutputPath` to remove $ROS_WORKSPACE/src."""
+        rel_path = without_ros_workspace(obj.OutputPath)
+        if wb_globals.g_ros_workspace.samefile(Path()):
+            # g_ros_workspace was not defined yet.
+            ws = get_ros_workspace_from_file(
+                    obj.OutputPath)
+            if not ws.samefile(Path()):
+                # A workspace was found.
+                wb_globals.g_ros_workspace = ws
+                message('ROS workspace was set to'
+                        f' {wb_globals.g_ros_workspace},'
+                        ' change if not correct.'
+                        ' Note that packages in this workspace will NOT be'
+                        ' found, though, but only by launching FreeCAD from a'
+                        ' sourced workspace',
+                        True)
+                rel_path = without_ros_workspace(obj.OutputPath)
+        if rel_path != obj.OutputPath:
+            obj.OutputPath = rel_path
 
     def _fix_lost_fc_links(self) -> None:
         """Fix linked objects in ROS links lost on restore.

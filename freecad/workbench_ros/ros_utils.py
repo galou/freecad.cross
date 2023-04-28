@@ -9,6 +9,8 @@ import FreeCAD as fc
 from PySide import QtCore  # FreeCAD's PySide!
 from PySide import QtGui  # FreeCAD's PySide!
 
+from .utils import get_parent_by_pattern
+
 
 def warn(text: str, gui: bool = False) -> None:
     """Warn the user."""
@@ -109,28 +111,43 @@ def get_ros_workspace_from_env() -> Path:
     return Path(colcon_prefix_path[:-len('/install')])
 
 
+def get_ros_workspace_from_file(file_path: [Path | str]) -> Path:
+    """Return the workspace containing the given file or directory.
+
+    Return Path() if no workspace was found.
+
+    """
+    path, _ = get_parent_by_pattern(file_path, 'install/setup.bash')
+    return path
+
+
+def without_ros_workspace(path: [Path | str]) -> str:
+    """Return the path relative to $ROS_WORKSPACE/src.
+
+    Return the path as-is if it doesn't start with $ROS_WORKSPACE/src.
+
+    """
+    # Import here to avoid circular import.
+    from .wb_globals import g_ros_workspace
+
+    src = str(g_ros_workspace / 'src')
+    if str(path).startswith(src):
+        len_src_with_sep = len(src) + len(os.path.sep)
+        return path[len_src_with_sep:]
+    return path
+
+
 def get_package_and_file(file_path: [Path | str]) -> tuple[str, str]:
     """Return the package name and relative file path.
 
     If the file path is relative, return an empty package and `file_path`.
 
     """
-    file_path = Path(file_path).expanduser()
-    if not file_path.is_absolute():
+    path, relative_file_path = get_parent_by_pattern(file_path, 'package.xml')
+    if not path.name:
+        # No package found.
         return '', str(file_path)
-    relative_file_path = ''
-    while True:
-        candidate_package_xml = file_path / 'package.xml'
-        if candidate_package_xml.exists() and candidate_package_xml.is_file():
-            # TODO: the package name is actually given in 'package.xml'
-            # and may differ from the directory name containing this file.
-            return file_path.name, relative_file_path
-        relative_file_path = (f'{file_path.name}/{relative_file_path}'
-                              if relative_file_path else file_path.name)
-        file_path = file_path.parent
-        if file_path == file_path.root:
-            # We are at the root.
-            return '', relative_file_path
+    return file_path.name, relative_file_path
 
 
 def split_package_path(package_path: [Path | str]) -> tuple[Path, Path]:

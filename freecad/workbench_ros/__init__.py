@@ -1,18 +1,13 @@
 """Entry point of the ROS Workbench."""
 
-from pathlib import Path
-
 # import FreeCAD as fc
 
-from .version import __version__
 from .ros_utils import add_ros_python_library
-from .ros_utils import get_ros_workspace_from_env
 from .ros_utils import get_ros_distro_from_env
-
-# Global workbench configuration.
-# Can be changed in the GUI.
-g_ros_distro = get_ros_distro_from_env()
-g_ros_workspace: Path = get_ros_workspace_from_env()
+from .ros_utils import get_ros_workspace_from_env
+from .version import __version__
+from .wb_globals import g_ros_distro
+from .wb_globals import g_ros_workspace
 
 add_ros_python_library(g_ros_distro)
 

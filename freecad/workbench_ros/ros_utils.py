@@ -143,11 +143,11 @@ def get_package_and_file(file_path: [Path | str]) -> tuple[str, str]:
     If the file path is relative, return an empty package and `file_path`.
 
     """
-    path, relative_file_path = get_parent_by_pattern(file_path, 'package.xml')
-    if not path.name:
+    pkg_path, relative_file_path = get_parent_by_pattern(file_path, 'package.xml')
+    if not pkg_path.name:
         # No package found.
         return '', str(file_path)
-    return file_path.name, relative_file_path
+    return pkg_path.name, relative_file_path
 
 
 def split_package_path(package_path: [Path | str]) -> tuple[Path, Path]:
@@ -161,9 +161,9 @@ def split_package_path(package_path: [Path | str]) -> tuple[Path, Path]:
     package_path = Path(package_path)
     if not package_path.is_dir():
         warn('"package_path" must be a directory', True)
-    path = package_path.resolve()
-    parent = path.parent
-    package_name = path.stem
+    package_path = package_path.resolve()
+    parent = package_path.parent
+    package_name = package_path.stem
     return parent, package_name
 
 

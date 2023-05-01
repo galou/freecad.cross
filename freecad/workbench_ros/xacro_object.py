@@ -27,6 +27,7 @@ import FreeCAD as fc
 from .freecad_utils import add_property
 from .freecad_utils import warn
 from .utils import hasallattr
+from .wb_utils import ICON_PATH
 from .wb_utils import is_robot
 from .wb_utils import is_workcell
 from .wb_utils import ros_name
@@ -330,7 +331,9 @@ class _ViewProviderXacroObject:
         vobj.Proxy = self
 
     def getIcon(self):
-        return 'xacro.svg'
+        # Implementation note: "return 'xacro.svg'" works only after
+        # workbench activation in GUI.
+        return str(ICON_PATH / 'xacro.svg')
 
     def attach(self, vobj: VPDO):
         self.ViewObject = vobj

@@ -11,6 +11,7 @@ from .freecad_utils import error
 from .freecad_utils import label_or
 from .freecad_utils import warn
 from .urdf_utils import urdf_origin_from_placement
+from .wb_utils import ICON_PATH
 from .wb_utils import get_valid_urdf_name
 from .wb_utils import is_link
 from .wb_utils import is_robot
@@ -240,7 +241,9 @@ class _ViewProviderJoint:
                      500.0)
 
     def getIcon(self):
-        return 'joint.svg'
+        # Implementation note: "return 'joint.svg'" works only after
+        # workbench activation in GUI.
+        return str(ICON_PATH / 'joint.svg')
 
     def attach(self, vobj):
         """Setup the scene sub-graph of the view provider."""

@@ -22,6 +22,7 @@ from .urdf_utils import urdf_origin_from_placement
 from .utils import get_valid_filename
 from .utils import hasallattr
 from .utils import save_xml
+from .wb_utils import ICON_PATH
 from .wb_utils import export_templates
 from .wb_utils import get_joints
 from .wb_utils import get_valid_urdf_name
@@ -228,7 +229,9 @@ class _ViewProviderWorkcell:
         vobj.Proxy = self
 
     def getIcon(self):
-        return 'workcell.svg'
+        # Implementation note: "return 'workcell.svg'" works only after
+        # workbench activation in GUI.
+        return str(ICON_PATH / 'workcell.svg')
 
     def attach(self, vobj: VPDO):
         self.ViewObject = vobj

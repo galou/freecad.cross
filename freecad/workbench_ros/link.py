@@ -15,6 +15,7 @@ from .urdf_utils import XmlForExport
 from .urdf_utils import urdf_collision_from_object
 from .urdf_utils import urdf_visual_from_object
 from .utils import warn_unsupported
+from .wb_utils import ICON_PATH
 from .wb_utils import get_joints
 from .wb_utils import get_valid_urdf_name
 from .wb_utils import is_joint
@@ -281,7 +282,9 @@ class _ViewProviderLink:
         vobj.Proxy = self
 
     def getIcon(self):
-        return 'link.svg'
+        # Implementation note: "return 'link.svg'" works only after
+        # workbench activation in GUI.
+        return str(ICON_PATH / 'link.svg')
 
     def attach(self, vobj: VPDO):
         self.ViewObject = vobj

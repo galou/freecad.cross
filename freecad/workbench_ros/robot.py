@@ -23,6 +23,7 @@ from .utils import grouper
 from .utils import save_xml
 from .utils import warn_unsupported
 from .wb_gui_utils import get_ros_workspace
+from .wb_utils import ICON_PATH
 from .wb_utils import export_templates
 from .wb_utils import get_chains
 from .wb_utils import get_joints
@@ -476,7 +477,9 @@ class _ViewProviderRobot:
         vobj.Proxy = self
 
     def getIcon(self):
-        return 'robot.svg'
+        # Implementation note: "return 'robot.svg'" works only after
+        # workbench activation in GUI.
+        return str(ICON_PATH / 'robot.svg')
 
     def attach(self, vobj: VPDO):
         self.ViewObject = vobj

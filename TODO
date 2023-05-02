@@ -9,6 +9,7 @@
   - are already child of a joint
   - are parent of this joint, recursively (if not covered by the first condition
 - Avoid duplicating mesh objects when importing
+- Fix visualization of prismatic joints
 - Add a class WorkbenchObject that knows all properties of an object and
   defines a function self.is_execute_ready that
   returns True only when all properties are defined.

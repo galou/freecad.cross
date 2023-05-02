@@ -128,7 +128,7 @@ class Link:
         # This placement is the transform from origin to the location of the
         # joint that is parent of this link.
         add_property(obj, 'App::PropertyPlacement', 'MountedPlacement',
-                     'Internal', 'Placement when building')
+                     'ROS Parameters', 'Shapes placement')
 
     def init_extensions(self, obj: RosLink) -> None:
         # Need a group to put the generated FreeCAD links in.

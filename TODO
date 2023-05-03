@@ -1,3 +1,7 @@
+- Find a better name for the workbench:
+  - CROSS (CAD and ROS, Open-Source Symbiosis or CAD and ROS, Open-Source Synergy), the logo could be similar to the Xacro icon
+  - CROW (CAD and ROS Open-source Workbench)
+  - FROST (FreeCAD ROS S? Tool)
 - Add the possiblity to place a robot.
 - Workcell builder (xacro export without touching the original URDF/xacro files)
 - Solve elements out of their parent group (e.g. XacroObject) on document restore

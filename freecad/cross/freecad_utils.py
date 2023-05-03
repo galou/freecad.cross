@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from abc import ABC
 from copy import copy
 import string
 from typing import Any, Iterable, Optional
@@ -406,3 +407,27 @@ def validate_types(objects: DOList, types: list[str]) -> DOList:
         else:
             outlist.append(objects_of_precise_type.pop(0))
     return outlist
+
+
+class ProxyBase(ABC):
+    """A base class for proxies of dynamic (scripted) objects in FreeCAD."""
+
+    def __init__(self, object_name: str, properties: list[str]):
+        self._object_name: str = object_name
+        self._properties: list[str] = properties
+
+    def is_ready(self) -> bool:
+        """Return True if the object and all properties are defined.
+
+        Return True if `self` has the attribute `self._object_name` and
+        `self._object_name` has all attributes given in `self._properties`.
+
+        """
+        try:
+            obj = getattr(self, self._object_name)
+        except AttributeError:
+            return False
+        for p in self._properties:
+            if not hasattr(obj, p):
+                return False
+        return True

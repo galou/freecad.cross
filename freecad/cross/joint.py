@@ -6,6 +6,7 @@ import xml.etree.ElementTree as et
 
 import FreeCAD as fc
 
+from .freecad_utils import ProxyBase
 from .freecad_utils import add_property
 from .freecad_utils import error
 from .freecad_utils import label_or
@@ -26,7 +27,7 @@ RosJoint = DO  # A Ros::Joint, i.e. a DocumentObject with Proxy "Joint".
 RosRobot = DO  # A Ros::Robot, i.e. a DocumentObject with Proxy "Robot".
 
 
-class Joint:
+class Joint(ProxyBase):
     """The Ros::Joint object."""
 
     # The member is often used in workbenches, particularly in the Draft
@@ -39,6 +40,23 @@ class Joint:
     type_enum = ['fixed', 'prismatic', 'revolute', 'continuous', 'planar', 'floating']
 
     def __init__(self, obj: RosJoint):
+        super().__init__('joint', [
+                'Child',
+                'Effort',
+                'LowerLimit',
+                'Mimic',
+                'MimickedJoint',
+                'Multiplier',
+                'Offset',
+                'Origin',
+                'Parent',
+                'Placement',
+                'Position',
+                'Type',
+                'UpperLimit',
+                'Velocity',
+                '_Type',
+                ])
         obj.Proxy = self
         self.joint = obj
         self.init_properties(obj)
@@ -102,9 +120,7 @@ class Joint:
                 robot.Proxy.add_joint_variables()
 
     def onDocumentRestored(self, obj: RosJoint):
-        obj.Proxy = self
-        self.joint = obj
-        self.init_properties(obj)
+        self.__init__(obj)
 
     def __getstate__(self):
         return self.Type,
@@ -154,7 +170,7 @@ class Joint:
 
     def get_robot(self) -> Optional[RosRobot]:
         """Return the Ros::Robot this joint belongs to."""
-        if not hasattr(self, 'joint'):
+        if not self.is_ready():
             return
         for o in self.joint.InList:
             if is_robot(o):
@@ -209,23 +225,27 @@ class Joint:
         return joint_xml
 
     def _toggle_editor_mode(self):
+        if not self.is_ready():
+            return
         joint = self.joint
         if joint.Mimic:
             editor_mode = []
         else:
             editor_mode = ['Hidden', 'ReadOnly']
-        if hasattr(joint, 'MimickedJoint'):
-            joint.setEditorMode('MimickedJoint', editor_mode)
-        if hasattr(joint, 'Multiplier'):
-            joint.setEditorMode('Multiplier', editor_mode)
-        if hasattr(joint, 'Offset'):
-            joint.setEditorMode('Offset', editor_mode)
+        joint.setEditorMode('MimickedJoint', editor_mode)
+        joint.setEditorMode('Multiplier', editor_mode)
+        joint.setEditorMode('Offset', editor_mode)
 
 
-class _ViewProviderJoint:
+class _ViewProviderJoint(ProxyBase):
     """A view provider for the Joint container object """
 
     def __init__(self, vobj: VPDO):
+        super().__init__('view_object', [
+            'AxisLength',
+            'ShowAxis',
+            'Visibility',
+            ])
         vobj.Proxy = self
         self.set_properties(vobj)
 
@@ -247,7 +267,7 @@ class _ViewProviderJoint:
 
     def attach(self, vobj):
         """Setup the scene sub-graph of the view provider."""
-        pass
+        self.view_object = vobj
 
     def updateData(self,
                    obj: RosJoint,

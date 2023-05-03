@@ -24,6 +24,7 @@ import xml.etree.ElementTree as et
 
 import FreeCAD as fc
 
+from .freecad_utils import ProxyBase
 from .freecad_utils import add_property
 from .freecad_utils import warn
 from .utils import hasallattr
@@ -68,7 +69,7 @@ def _clear_robot(obj: RosRobot) -> None:
         doc.removeObject(link.Name)
 
 
-class XacroObject:
+class XacroObject(ProxyBase):
     """The XacroObject proxy."""
 
     # The member is often used in workbenches, particularly in the Draft
@@ -76,6 +77,12 @@ class XacroObject:
     Type = 'Ros::XacroObject'
 
     def __init__(self, obj: RosXacroObject):
+        super().__init__('xacro_object', [
+            'InputFile',
+            'MainMacro',
+            'Placement',
+            '_Type',
+            ])
         obj.Proxy = self
         self.xacro_object = obj
 
@@ -324,10 +331,13 @@ class XacroObject:
                 return obj
 
 
-class _ViewProviderXacroObject:
+class _ViewProviderXacroObject(ProxyBase):
     """A view provider for the ROS XacroObject object."""
 
     def __init__(self, vobj: VPDO):
+        super().__init__('view_object', [
+            'Visibility',
+            ])
         vobj.Proxy = self
 
     def getIcon(self):

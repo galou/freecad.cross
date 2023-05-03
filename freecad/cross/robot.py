@@ -8,6 +8,7 @@ import xml.etree.ElementTree as et
 import FreeCAD as fc
 
 from . import wb_globals
+from .freecad_utils import ProxyBase
 from .freecad_utils import add_property
 from .freecad_utils import error
 from .freecad_utils import get_properties_of_category
@@ -154,7 +155,7 @@ def _add_joint_variable(
     return used_var_name
 
 
-class Robot:
+class Robot(ProxyBase):
     """The Robot proxy."""
 
     # The member is often used in workbenches, particularly in the Draft
@@ -166,6 +167,12 @@ class Robot:
     _category_of_joint_values = 'JointValues'
 
     def __init__(self, obj: RosRobot):
+        # Implementation note: 'Group' is not required because
+        # DocumentObjectGroupPython.
+        super().__init__('robot', [
+            'OutputPath',
+            '_Type',
+            ])
         obj.Proxy = self
         self.robot = obj
 
@@ -200,9 +207,7 @@ class Robot:
 
     def onDocumentRestored(self, obj):
         """Restore attributes because __init__ is not called on restore."""
-        obj.Proxy = self
-        self.robot = obj
-        self.init_properties(obj)
+        self.__init__(obj)
 
     def __getstate__(self):
         return self.Type,
@@ -241,12 +246,12 @@ class Robot:
                                  * joint.Proxy.get_actuation_placement())
 
     def get_links(self) -> list[RosLink]:
-        if ((not hasattr(self, 'robot')) or (not hasattr(self.robot, 'Group'))):
+        if not self.is_ready():
             return []
         return get_links(self.robot.Group)
 
     def get_joints(self) -> list[RosJoint]:
-        if ((not hasattr(self, 'robot')) or (not hasattr(self.robot, 'Group'))):
+        if not self.is_ready():
             return []
         return get_joints(self.robot.Group)
 
@@ -267,7 +272,7 @@ class Robot:
                 return joint
 
     def get_chains(self) -> list[DOList]:
-        if not hasattr(self, 'robot'):
+        if not self.is_ready():
             return []
         if not is_robot(self.robot):
             warn(f'{label_or(self.robot)} is not a ROS::Robot', True)
@@ -277,11 +282,9 @@ class Robot:
         return get_chains(links, joints)
 
     def reset_group(self) -> None:
-        if ((not hasattr(self, 'robot'))
-                or (not hasattr(self.robot, 'ViewObject'))
-                or (not hasattr(self.robot.ViewObject, 'ShowReal'))
-                or (not hasattr(self.robot.ViewObject, 'ShowVisual'))
-                or (not hasattr(self.robot.ViewObject, 'ShowCollision'))):
+        if ((not self.is_ready())
+                or (not hasattr(self.robot.ViewObject, 'Proxy'))
+                or (not self.robot.ViewObject.Proxy.is_ready())):
             return
 
         links = self.get_links()  # ROS links.
@@ -319,8 +322,7 @@ class Robot:
         the remaining unsupported objects.
 
         """
-        if ((not hasattr(self, 'robot'))
-                or (not is_robot(self.robot))):
+        if (not self.is_ready()):
             return
         for o in self.robot.Group[::-1]:
             if is_link(o) or is_joint(o):
@@ -349,29 +351,27 @@ class Robot:
 
     def add_joint_variables(self) -> list[str]:
         """Add a property for each actuated joint."""
+        if not self.is_ready():
+            return []
         variables: list[str] = []
-        try:
-            # Get all old variables.
-            old_vars: set[str] = set(get_properties_of_category(
-                self.robot,
-                self._category_of_joint_values))
-            # Add a variable for each actuated (supported) joint.
-            for joint in self.get_joints():
-                var = _add_joint_variable(self.robot, joint,
-                                          self._category_of_joint_values)
-                if var:
-                    variables.append(var)
-            # Remove obsoleted variables.
-            for p in old_vars - set(variables):
-                self.robot.removeProperty(p)
-        except AttributeError:
-            pass
+        # Get all old variables.
+        old_vars: set[str] = set(get_properties_of_category(
+            self.robot,
+            self._category_of_joint_values))
+        # Add a variable for each actuated (supported) joint.
+        for joint in self.get_joints():
+            var = _add_joint_variable(self.robot, joint,
+                                      self._category_of_joint_values)
+            if var:
+                variables.append(var)
+        # Remove obsoleted variables.
+        for p in old_vars - set(variables):
+            self.robot.removeProperty(p)
         return variables
 
     def export_urdf(self) -> Optional[et.Element]:
         """Export the robot as URDF, writing files."""
-        if ((not hasattr(self, 'robot'))
-                or (not hasattr(self.robot, 'OutputPath'))):
+        if not self.is_ready():
             return
         if not self.robot.OutputPath:
             warn('Property `OutputPath` cannot be empty', True)
@@ -454,7 +454,7 @@ class Robot:
         Probably because these elements are restored before the ROS links.
 
         """
-        if not hasattr(self, 'robot'):
+        if not self.is_ready():
             return
         links = self.get_links()
         for obj in self.robot.Document.Objects:
@@ -470,10 +470,18 @@ class Robot:
             link.addObject(obj)
 
 
-class _ViewProviderRobot:
+class _ViewProviderRobot(ProxyBase):
     """A view provider for the Robot container object """
 
     def __init__(self, vobj: VPDO):
+        super().__init__('view_object', [
+            'JointAxisLength',
+            'ShowCollision',
+            'ShowJointAxes',
+            'ShowReal',
+            'ShowVisual',
+            'Visibility',
+            ])
         vobj.Proxy = self
 
     def getIcon(self):
@@ -482,7 +490,7 @@ class _ViewProviderRobot:
         return str(ICON_PATH / 'robot.svg')
 
     def attach(self, vobj: VPDO):
-        self.ViewObject = vobj
+        self.view_object = vobj
         self.robot = vobj.Object
 
         # Level of detail.

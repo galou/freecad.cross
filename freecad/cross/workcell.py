@@ -14,6 +14,7 @@ import xml.etree.ElementTree as et
 
 import FreeCAD as fc
 
+from .freecad_utils import ProxyBase
 from .freecad_utils import add_property
 from .freecad_utils import warn
 from .freecad_utils import is_same_placement
@@ -40,7 +41,7 @@ RosWorkcell = DO  # A Ros::Workcell, i.e. a DocumentObject with Proxy "Workcell"
 RosXacroObject = DO  # A Ros::XacroObject, i.e. a DocumentObject with Proxy "XacroObject".
 
 
-class Workcell:
+class Workcell(ProxyBase):
     """Proxy for ROS workcells."""
 
     # The member is often used in workbenches, particularly in the Draft
@@ -48,6 +49,11 @@ class Workcell:
     Type = 'Ros::Workcell'
 
     def __init__(self, obj: RosWorkcell):
+        super().__init__('workcell', [
+            '_Type',
+            'OutputPath',
+            'RootLink',
+            ])
         obj.Proxy = self
         self.workcell = obj
         self.init_properties(obj)
@@ -86,20 +92,18 @@ class Workcell:
             self.Type, = state
 
     def get_xacro_objects(self) -> list[RosXacroObject]:
-        if ((not hasattr(self, 'workcell'))
-                or (not hasattr(self.workcell, 'Group'))):
+        if not self.is_ready():
             return []
         return get_xacro_objects(self.workcell.Group)
 
     def get_joints(self) -> list[RosJoint]:
-        if ((not hasattr(self, 'workcell')) or (not hasattr(self.workcell, 'Group'))):
+        if not self.is_ready():
             return []
         return get_joints(self.workcell.Group)
 
     def set_joint_enum(self) -> None:
         """Set the enum for Child and Parent of all joints."""
-        if ((not hasattr(self, 'workcell'))
-                or (not hasattr(self.workcell, 'RootLink'))):
+        if not self.is_ready():
             return
         # We add the empty string to show that the child or parent
         # was not set yet.
@@ -141,7 +145,7 @@ class Workcell:
                     xo.Placement = placement
 
     def export_urdf(self) -> Optional[et.Element]:
-        if not hasattr(self, 'workcell'):
+        if not self.is_ready():
             return
         obj: RosWorkcell = self.workcell
         if not hasallattr(obj, ['OutputPath', 'RootLink']):
@@ -222,10 +226,13 @@ class Workcell:
                          urdf_file=urdf_file)
 
 
-class _ViewProviderWorkcell:
+class _ViewProviderWorkcell(ProxyBase):
     """A view provider for the Link container object """
 
     def __init__(self, vobj: VPDO):
+        super().__init__('view_object', [
+            'Visibility',
+            ])
         vobj.Proxy = self
 
     def getIcon(self):
@@ -234,7 +241,7 @@ class _ViewProviderWorkcell:
         return str(ICON_PATH / 'workcell.svg')
 
     def attach(self, vobj: VPDO):
-        self.ViewObject = vobj
+        self.view_object = vobj
 
     def updateData(self, obj: VPDO, prop):
         return

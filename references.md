@@ -10,6 +10,14 @@
 
 - [ROSCon'22](https://youtu.be/mkYRL72wiPo?list=PLXUpEXjGC63zhIdE2P9yZioRTXdkW2PFX&t=1107)
 
+# Verbotics' Cell Editor
+
+- [Cell editor](https://verbotics.com/product/cell-editor/)
+- [YouTube](https://www.youtube.com/watch?v=j0nLaukcTIo)
+- [From STEP to weld](https://verbotics.com/wp-content/uploads/2022/10/from-Step-to-Weld.mp4)
+
+Closed-source. Maybe ROS1 only. Linux support.
+
 # Workcell Builder
 
 - [Part of Easy Manipulation Deployment](https://easy-manipulation-deployment-docs.readthedocs.io/en/latest/emd_packages/workcell_builder/workcell_builder.html)

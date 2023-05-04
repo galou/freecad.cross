@@ -2,8 +2,8 @@ import FreeCAD as fc
 import FreeCADGui as fcgui
 
 from ..freecad_utils import error
-from ..freecad_utils import warn
 from ..freecad_utils import strip_subelement
+from ..freecad_utils import warn
 from ..gui_utils import tr
 from ..placement_utils import get_global_placement
 

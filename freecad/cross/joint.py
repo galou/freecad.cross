@@ -138,6 +138,8 @@ class Joint(ProxyBase):
         - joint_value: joint value in mm or deg.
 
         """
+        if not self.is_ready():
+            return fc.Placement()
         # Only actuation around/about z supported.
         if self.joint.Mimic and self.joint.MimickedJoint:
             mult = self.joint.Multiplier

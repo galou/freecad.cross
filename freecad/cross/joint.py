@@ -324,7 +324,7 @@ class _ViewProviderJoint(ProxyBase):
         arrow = arrow_group([p0, py], scale=0.2, color=(0.0, 1.0, 0.0))
         root_node.addChild(arrow)
         if obj.Type == 'prismatic':
-            placement = obj.Proxy.get_actuation_placement() * placement
+            placement *= obj.Proxy.get_actuation_placement()
             scale = length * 0.05
             ps0 = placement * fc.Vector(+scale / 2.0, +scale / 2.0, 0.0)
             ps1 = placement * fc.Vector(-scale / 2.0, +scale / 2.0, 0.0)
@@ -333,7 +333,7 @@ class _ViewProviderJoint(ProxyBase):
             square = face_group([ps0, ps1, ps2, ps3], color=color)
             root_node.addChild(square)
         if obj.Type in ['revolute', 'continuous']:
-            placement = obj.Proxy.get_actuation_placement() * placement
+            placement *= obj.Proxy.get_actuation_placement()
             scale = length * 0.2
             pt0 = placement * fc.Vector(0.0, 0.0, 0.0)
             pt1 = placement * fc.Vector(scale, 0.0, 0.0)

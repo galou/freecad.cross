@@ -2,8 +2,9 @@ import FreeCAD as fc
 import FreeCADGui as fcgui
 
 from ..freecad_utils import error
-from ..freecad_utils import label_or
+from ..freecad_utils import warn
 from ..gui_utils import tr
+from ..placement_utils import get_global_placement
 
 
 class BoxFromBoundingBoxCommand:
@@ -16,37 +17,56 @@ class BoxFromBoundingBoxCommand:
 
     def Activated(self):
         is_one_object_compatible = False
-        for obj in fcgui.Selection.getSelection():
+        is_one_object_incompatible = False
+        selection = fcgui.Selection.getSelectionEx('', 0)
+        if not selection:
+            # Should not happen.
+            return
+        for selection_object in selection:
+            obj = selection_object.Object
+            if selection_object.HasSubObjects:
+                # Inside a part.
+                subpath = selection_object.SubElementNames[0]
+                try:
+                    # Normal Shape.
+                    subobj = obj.getSubObjectList(subpath)[-1].Shape
+                except AttributeError:
+                    # Mesh.
+                    subobj = obj.getSubObjectList(subpath)[-1].Mesh
+                placement = get_global_placement(obj, subpath)
+                # Cancel the rotation because bounding boxes are axis-aligned.
+                placement.Rotation = fc.Rotation()
+                box_name = obj.Label + selection_object.SubElementNames[0] + '_bbox'
+            else:
+                # Outside of any part.
+                # TODO: simplify with subobj.getPropertyOfGeometry()?
+                if hasattr(obj, 'Shape'):
+                    subobj = obj.Shape
+                elif hasattr(obj, 'Mesh'):
+                    subobj = obj.Mesh
+                else:
+                    is_one_object_incompatible = True
+                    continue
+                box_name = obj.Label + '_bbox'
+                placement = fc.Placement()
             # Cf. https://github.com/pboechat/pyobb for oriented bounding-box.
-            has_bbox = False
-            # TODO: simplify with obj.getPropertyOfGeometry()?
-            try:
-                bbox = obj.Shape.BoundBox
-                has_bbox = True
-            except AttributeError:
-                pass
-            try:
-                bbox = obj.Mesh.BoundBox
-                has_bbox = True
-            except AttributeError:
-                pass
-            if not has_bbox:
-                continue
             is_one_object_compatible = True
-            box_name = label_or(obj, 'urdf') + '_bbox'
             doc = fc.activeDocument()
+            bbox = subobj.BoundBox
             doc.openTransaction(tr('Box from bounding box'))
             box = doc.addObject('Part::Box', box_name)
-            box.Length = bbox.XMax - bbox.XMin
-            box.Width = bbox.YMax - bbox.YMin
-            box.Height = bbox.ZMax - bbox.ZMin
+            box.Length = bbox.XLength
+            box.Width = bbox.YLength
+            box.Height = bbox.ZLength
             box.Placement.Base.x = bbox.XMin
             box.Placement.Base.y = bbox.YMin
             box.Placement.Base.z = bbox.ZMin
+            box.Placement = placement * box.Placement
             doc.commitTransaction()
-            doc.recompute()
         if not is_one_object_compatible:
             error(tr('No compatible object selected'), gui=True)
+        if is_one_object_incompatible:
+            warn(tr('One or more incompatible object selected'), gui=True)
 
     def IsActive(self):
         return bool(fcgui.Selection.getSelection())

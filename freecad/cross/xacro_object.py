@@ -67,6 +67,8 @@ def _clear_robot(obj: RosRobot) -> None:
         for fc_link in link.Group:
             doc.removeObject(fc_link.Name)
         doc.removeObject(link.Name)
+    # Created objects.
+    obj.Proxy.delete_created_objects()
 
 
 class XacroObject(ProxyBase):

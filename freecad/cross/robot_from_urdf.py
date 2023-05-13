@@ -61,8 +61,16 @@ def robot_from_urdf(
             urdf_link, robot, parts_group)
         # visual_map[urdf_link.name] = visual_part
         # collision_map[urdf_link.name] = collision_part
-        _add_visual(urdf_link, parts_group, ros_link, visual_part)
-        _add_collision(urdf_link, parts_group, ros_link, collision_part)
+        geoms, fc_links = _add_visual(urdf_link, parts_group, ros_link, visual_part)
+        for geom in geoms:
+            robot.Proxy.created_objects.append(geom)
+        for fc_link in fc_links:
+            robot.Proxy.created_objects.append(fc_link)
+        geoms, fc_links = _add_collision(urdf_link, parts_group, ros_link, collision_part)
+        for geom in geoms:
+            robot.Proxy.created_objects.append(geom)
+        for fc_link in fc_links:
+            robot.Proxy.created_objects.append(fc_link)
     joint_map: dict[str, RosJoint] = {}
     for urdf_joint in urdf_robot.joints:
         ros_joint = _add_ros_joint(urdf_joint, robot)
@@ -93,6 +101,7 @@ def _make_robot(
     robot.ViewObject.ShowCollision = False
     # Create a group 'Parts' to hold all parts in the assembly document.
     parts_group = make_group(doc, 'URDF Parts', visible=False)
+    robot.Proxy.created_objects.append(parts_group)
 
     return robot, parts_group
 
@@ -120,24 +129,28 @@ def _add_ros_link(
     name = urdf_link.name
     doc = robot.Document
     visual_part = add_object(parts_group, 'App::Part', f'visual_{name}_')
+    robot.Proxy.created_objects.append(visual_part)
     visual_part.Visibility = False
     collision_part = add_object(parts_group, 'App::Part', f'collision_{name}_')
     collision_part.Visibility = False
+    robot.Proxy.created_objects.append(collision_part)
     ros_link = make_link(name, doc)
     ros_link.Label2 = name
     ros_link.adjustRelativeLinks(robot)
     robot.addObject(ros_link)
-    # Implementation note: ros_link.Visual.append() doesn't work because ros_link.Visual
-    # is a new object on each evoking.
     link_to_visual_part = add_object(parts_group, 'App::Link',
                                      f'visual_{name}')
+    robot.Proxy.created_objects.append(link_to_visual_part)
     # TODO: make a function utils.make_link.
     link_to_visual_part.setLink(visual_part)
     link_to_visual_part.Visibility = False
+    # Implementation note: ros_link.Visual.append() doesn't work because
+    # ros_link.Visual is a new object on each evoking.
     ros_link.Visual = [link_to_visual_part]
 
     link_to_collision_part = add_object(parts_group, 'App::Link',
                                         f'collision_{name}')
+    robot.Proxy.created_objects.append(link_to_collision_part)
     link_to_collision_part.setLink(collision_part)
     link_to_collision_part.Visibility = False
     ros_link.Collision = [link_to_collision_part]

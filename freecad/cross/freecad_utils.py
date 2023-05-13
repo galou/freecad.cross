@@ -249,6 +249,11 @@ def is_part(obj: DO) -> bool:
     return is_derived_from(obj, 'App::Part')
 
 
+def is_origin(obj: DO) -> bool:
+    """Return True if the object is a 'App::Origin'."""
+    return is_derived_from(obj, 'App::Origin')
+
+
 def is_group(obj: DO) -> bool:
     """Return True if the object is a 'App::DocumentObjectGroup'."""
     return is_derived_from(obj, 'App::DocumentObjectGroup')

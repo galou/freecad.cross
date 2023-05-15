@@ -9,7 +9,7 @@ from .utils import UI_PATH
 
 class TaskPanelLink:
     """Dialog for the Task Panel to define a link."""
-    def __init__(self, link: 'workbench_ros.link.Link'):
+    def __init__(self, link: 'cross.link.Link'):
         self.link = link
         # The UI must be in self.form.
         self.form = fcgui.PySideUic.loadUi(str(UI_PATH.joinpath('task_panel_link.ui')))

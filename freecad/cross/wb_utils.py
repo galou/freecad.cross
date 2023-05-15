@@ -23,7 +23,7 @@ RosRobot = DO  # A Ros::Robot, i.e. a DocumentObject with Proxy "Robot".
 RosXacroObject = DO  # Ros::XacroObject, i.e. DocumentObject with Proxy "XacroObject".
 DOList = Iterable[DO]
 
-MOD_PATH = Path(fc.getUserAppDataDir()) / 'Mod/freecad.workbench_ros'
+MOD_PATH = Path(fc.getUserAppDataDir()) / 'Mod/freecad.cross'
 RESOURCES_PATH = MOD_PATH / 'resources'
 UI_PATH = RESOURCES_PATH / 'ui'
 ICON_PATH = RESOURCES_PATH / 'icons'

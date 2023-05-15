@@ -17,7 +17,7 @@ from .ui import command_wb_settings
 from .wb_utils import ICON_PATH
 
 
-class RosWorkbench(fcgui.Workbench):
+class CrossWorkbench(fcgui.Workbench):
     """Class which gets initiated at startup of the GUI."""
 
     MenuText = 'ROS workbench'
@@ -64,4 +64,4 @@ class RosWorkbench(fcgui.Workbench):
         pass
 
 
-fcgui.addWorkbench(RosWorkbench())
+fcgui.addWorkbench(CrossWorkbench())

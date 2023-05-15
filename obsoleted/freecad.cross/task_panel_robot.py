@@ -9,7 +9,7 @@ from .utils import UI_PATH
 
 class TaskPanelRobot:
     """Dialog for the Task Panel to define a robot."""
-    def __init__(self, robot: 'workbench_ros.robot.Robot'):
+    def __init__(self, robot: 'cross.robot.Robot'):
         self.robot = robot
         # The UI must be in self.form.
         self.form = fcgui.PySideUic.loadUi(str(UI_PATH.joinpath('task_panel_robot.ui')))

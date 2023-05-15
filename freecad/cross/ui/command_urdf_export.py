@@ -107,7 +107,7 @@ class _UrdfExportCommand:
                     xmls.append(obj.Proxy.export_urdf())
             elif is_link(obj):
                 if hasattr(obj, 'Proxy'):
-                    temp_dir = tempfile.TemporaryDirectory(prefix='workbench_ros-')
+                    temp_dir = tempfile.TemporaryDirectory(prefix='cross-')
                     package_path = Path(temp_dir.name)
                     xmls.append(obj.Proxy.export_urdf(package_path, 'package_name'))
                     if list(package_path.iterdir()):

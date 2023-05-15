@@ -8,7 +8,7 @@ if hasattr(fc, 'GuiUp') and fc.GuiUp:
     from PySide import QtGui  # FreeCAD's PySide!
 
     def tr(text: str) -> str:
-        return QtGui.QApplication.translate('workbench_ros', text)
+        return QtGui.QApplication.translate('cross', text)
 else:
     def tr(text: str) -> str:
         return text

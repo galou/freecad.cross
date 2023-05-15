@@ -2,7 +2,7 @@ import sys
 sys.path.append('/usr/lib/freecad-daily-python3/lib')
 sys.path.append('/usr/share/freecad-daily/Ext')
 sys.path.append('/usr/lib/python3/dist-packages')
-sys.path.append('$HOME/.local/share/FreeCAD/Mod/freecad.workbench_ros')
+sys.path.append('$HOME/.local/share/FreeCAD/Mod/freecad.cross')
 sys.path.append('$HOME/.local/share/FreeCAD/Mod/MeshRemodel')
 sys.path.append('$HOME/.local/share/FreeCAD/Mod/Assembly4')
 sys.path.append('/usr/share/freecad-daily/Mod/PartDesign')
@@ -17,29 +17,29 @@ sys.path.append('/usr/lib/freecad-daily/Mod/Draft')
 sys.path.append('$HOME/.local/share/FreeCAD/Macro/')
 sys.path.append('/usr/lib/freecad-daily/Macro')
 
-from freecad.workbench_ros.assembly4_utils import *
-from freecad.workbench_ros.assembly_from_urdf import *
-from freecad.workbench_ros.coin_utils import *
-from freecad.workbench_ros.deep_copy import *
-from freecad.workbench_ros.freecad_utils import *
-from freecad.workbench_ros.freecadgui_utils import *
-from freecad.workbench_ros.gui_utils import *
-from freecad.workbench_ros.import_dae import *
-from freecad.workbench_ros.joint import *
-from freecad.workbench_ros.link import *
-from freecad.workbench_ros.mesh_utils import *
-from freecad.workbench_ros.placement_utils import *
-from freecad.workbench_ros.robot import *
-from freecad.workbench_ros.robot_from_urdf import *
-from freecad.workbench_ros.ros_utils import *
-from freecad.workbench_ros.urdf_loader import *
-from freecad.workbench_ros.urdf_parser_utils import *
-from freecad.workbench_ros.urdf_utils import *
-from freecad.workbench_ros.utils import *
-from freecad.workbench_ros.version import *
-from freecad.workbench_ros.wb_globals import *
-from freecad.workbench_ros.wb_utils import *
-from freecad.workbench_ros.workcell import *
-from freecad.workbench_ros.xacro_loader import *
-from freecad.workbench_ros.xacro_object import *
+from freecad.cross.assembly4_utils import *
+from freecad.cross.assembly_from_urdf import *
+from freecad.cross.coin_utils import *
+from freecad.cross.deep_copy import *
+from freecad.cross.freecad_utils import *
+from freecad.cross.freecadgui_utils import *
+from freecad.cross.gui_utils import *
+from freecad.cross.import_dae import *
+from freecad.cross.joint import *
+from freecad.cross.link import *
+from freecad.cross.mesh_utils import *
+from freecad.cross.placement_utils import *
+from freecad.cross.robot import *
+from freecad.cross.robot_from_urdf import *
+from freecad.cross.ros_utils import *
+from freecad.cross.urdf_loader import *
+from freecad.cross.urdf_parser_utils import *
+from freecad.cross.urdf_utils import *
+from freecad.cross.utils import *
+from freecad.cross.version import *
+from freecad.cross.wb_globals import *
+from freecad.cross.wb_utils import *
+from freecad.cross.workcell import *
+from freecad.cross.xacro_loader import *
+from freecad.cross.xacro_object import *
 

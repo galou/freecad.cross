@@ -6,19 +6,19 @@ from setuptools import setup
 # Packages using the same name here cannot be installed together
 
 version_path = os.path.join(os.path.abspath(os.path.dirname(__file__)),
-                            'freecad', 'workbench_ros', 'version.py')
+                            'freecad', 'cross', 'version.py')
 with open(version_path) as fp:
     exec(fp.read())
 
-setup(name='freecad.workbench_ros',
+setup(name='freecad.cross',
       version=str(__version__),
       packages=['freecad',
-                'freecad.workbench_ros',
+                'freecad.cross',
                 ],
       maintainer='galou',
       maintainer_email='gael.ecorchard@cvut.cz',
-      url='https://github.com/galou/freecad.workbench_ros',
-      description='A workbench to work with ROS',
+      url='https://github.com/galou/freecad.cross.git',
+      description='CROSS, a workbench to work with ROS in FreeCAD',
       install_requires=[],
       include_package_data=True)
 

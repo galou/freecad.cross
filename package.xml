@@ -9,7 +9,7 @@
   <license file="LICENSE">LGPL-2.1-or-later</license>
   <url type="repository" branch="main">https://github.com/galou/freecad.cross.git</url>
   <url type="readme">https://github.com/galou/freecad.cross/blob/main/README.md</url>
-  <icon>resources/icons/ros_9dotslogo_color.svg</icon>
+  <icon>resources/icons/cross.svg</icon>
 
   <freecadmin>0.20.0</freecadmin>
 

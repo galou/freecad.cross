@@ -22,7 +22,7 @@ class CrossWorkbench(fcgui.Workbench):
 
     MenuText = 'ROS workbench'
     ToolTip = 'ROS-related workbench'
-    Icon = str(ICON_PATH / 'ros_9dotslogo_color.svg')
+    Icon = str(ICON_PATH / 'cross.svg')
 
     def GetClassName(self):
         return 'Gui::PythonWorkbench'

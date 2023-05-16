@@ -1,6 +1,8 @@
-"""Proxy for a CrossWorkcell, i.e. a combination of CrossXacroObject and CrossJoint
+"""Proxy for Cross::Workcell FreeCAD objects
 
-A CrossWorkcell allows to combine existing URDF and xacro file to generate a
+A workcell is a combination of CrossXacroObject and CrossJoint
+
+A Cross::Workcell allows to combine existing URDF and xacro file to generate a
 single robot description (or more generally a workcell description).
 Joints must be defined between the included CrossXacroObject.
 
@@ -8,7 +10,6 @@ Joints must be defined between the included CrossXacroObject.
 
 from __future__ import annotations
 
-from pathlib import Path
 from typing import Iterable, Optional
 import xml.etree.ElementTree as et
 
@@ -30,7 +31,9 @@ from .wb_utils import get_valid_urdf_name
 from .wb_utils import get_xacro_chains
 from .wb_utils import get_xacro_object_attachments
 from .wb_utils import get_xacro_objects
+from .wb_utils import remove_ros_workspace
 from .wb_utils import ros_name
+from .wb_utils import split_outputpath
 
 # Typing hints.
 DO = fc.DocumentObject
@@ -79,7 +82,10 @@ class Workcell(ProxyBase):
         pass
 
     def onChanged(self, obj: CrossWorkcell, prop: str) -> None:
-        pass
+        if prop == 'OutputPath':
+            rel_path = remove_ros_workspace(obj.OutputPath)
+            if rel_path != obj.OutputPath:
+                obj.OutputPath = rel_path
 
     def onDocumentRestored(self, obj: CrossWorkcell) -> None:
         self.__init__(obj)
@@ -206,12 +212,16 @@ class Workcell(ProxyBase):
             robot_et.append(joint_et)
 
         # Write out files.
-        output_path = Path(obj.OutputPath).expanduser()
+        # TODO: also accept OutputPath as package name.
+        p, output_path = split_outputpath(obj.OutputPath)
+        if p != obj.OutputPath:
+            obj.OutputPath = p
         package_parent, package_name = split_package_path(output_path)
-        output_path.mkdir(parents=True, exist_ok=True)
+        # TODO: warn if package name doesn't end with `_description`.
         robot_name = ros_name(self.workcell)
         file_base = get_valid_filename(robot_name)
         urdf_file = f'{file_base}.urdf.xacro'
+        output_path.mkdir(parents=True, exist_ok=True)
         urdf_path = output_path / f'urdf/{urdf_file}'
         save_xml(robot_et, urdf_path)
         template_files = [

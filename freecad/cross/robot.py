@@ -1,13 +1,18 @@
+"""Proxy for Cross::Robot FreeCAD objects
+
+A robot is a combination of Cross::Link and Cross::Joint objects that can be
+exported as URDF file.
+
+"""
+
 from __future__ import annotations
 
 from math import radians
-from pathlib import Path
 from typing import Iterable, Optional
 import xml.etree.ElementTree as et
 
 import FreeCAD as fc
 
-from . import wb_globals
 from .freecad_utils import ProxyBase
 from .freecad_utils import add_property
 from .freecad_utils import error
@@ -15,16 +20,12 @@ from .freecad_utils import get_properties_of_category
 from .freecad_utils import get_valid_property_name
 from .freecad_utils import is_origin
 from .freecad_utils import label_or
-from .freecad_utils import message
 from .freecad_utils import warn
-from .ros_utils import get_ros_workspace_from_file
 from .ros_utils import split_package_path
-from .ros_utils import without_ros_workspace
 from .utils import get_valid_filename
 from .utils import grouper
 from .utils import save_xml
 from .utils import warn_unsupported
-from .wb_gui_utils import get_ros_workspace
 from .wb_utils import ICON_PATH
 from .wb_utils import export_templates
 from .wb_utils import get_chains
@@ -34,7 +35,9 @@ from .wb_utils import get_valid_urdf_name
 from .wb_utils import is_joint
 from .wb_utils import is_link
 from .wb_utils import is_robot
+from .wb_utils import remove_ros_workspace
 from .wb_utils import ros_name
+from .wb_utils import split_outputpath
 
 # Typing hints.
 DO = fc.DocumentObject
@@ -214,7 +217,9 @@ class Robot(ProxyBase):
         if prop in ['Group']:
             self.execute(obj)
         if prop == 'OutputPath':
-            self._remove_ros_workspace(obj)
+            rel_path = remove_ros_workspace(obj.OutputPath)
+            if rel_path != obj.OutputPath:
+                obj.OutputPath = rel_path
 
     def onDocumentRestored(self, obj):
         """Restore attributes because __init__ is not called on restore."""
@@ -434,16 +439,13 @@ class Robot(ProxyBase):
         if not self.is_ready():
             return
         if not self.robot.OutputPath:
+            # TODO: ask the user for OutputPath.
             warn('Property `OutputPath` cannot be empty', True)
             return
-        if not wb_globals.g_ros_workspace.name:
-            ws = get_ros_workspace()
-            wb_globals.g_ros_workspace = ws
-            p = without_ros_workspace(self.robot.OutputPath)
-            if p != self.robot.OutputPath:
-                self.robot.OutputPath = p
-        output_path = (wb_globals.g_ros_workspace.expanduser()
-                       / 'src' / self.robot.OutputPath)
+        # TODO: also accept OutputPath as package name.
+        p, output_path = split_outputpath(self.robot.OutputPath)
+        if p != self.robot.OutputPath:
+            self.robot.OutputPath = p
         package_parent, package_name = split_package_path(output_path)
         # TODO: warn if package name doesn't end with `_description`.
         xml = et.fromstring('<robot/>')
@@ -486,27 +488,6 @@ class Robot(ProxyBase):
                          package_name=package_name,
                          urdf_file=urdf_file)
         return xml
-
-    def _remove_ros_workspace(self, obj) -> None:
-        """Modify `obj.OutputPath` to remove $ROS_WORKSPACE/src."""
-        rel_path = without_ros_workspace(obj.OutputPath)
-        if wb_globals.g_ros_workspace.samefile(Path()):
-            # g_ros_workspace was not defined yet.
-            ws = get_ros_workspace_from_file(
-                    obj.OutputPath)
-            if not ws.samefile(Path()):
-                # A workspace was found.
-                wb_globals.g_ros_workspace = ws
-                message('ROS workspace was set to'
-                        f' {wb_globals.g_ros_workspace},'
-                        ' change if not correct.'
-                        ' Note that packages in this workspace will NOT be'
-                        ' found, though, but only by launching FreeCAD from a'
-                        ' sourced workspace',
-                        True)
-                rel_path = without_ros_workspace(obj.OutputPath)
-        if rel_path != obj.OutputPath:
-            obj.OutputPath = rel_path
 
     def _fix_lost_fc_links(self) -> None:
         """Fix linked objects in CROSS links lost on restore.

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from copy import copy
 import os
 from pathlib import Path
 import sys
@@ -121,6 +122,15 @@ def get_ros_workspace_from_file(file_path: [Path | str]) -> Path:
     return path
 
 
+def is_in_ros_workspace(path: [Path | str]) -> bool:
+    """Return true if the given path starts with $ROS_WORKSPACE/src."""
+    # Import here to avoid circular import.
+    from .wb_globals import g_ros_workspace
+
+    src = str(g_ros_workspace / 'src')
+    return str(path).startswith(src)
+
+
 def without_ros_workspace(path: [Path | str]) -> str:
     """Return the path relative to $ROS_WORKSPACE/src.
 
@@ -134,7 +144,7 @@ def without_ros_workspace(path: [Path | str]) -> str:
     if str(path).startswith(src):
         len_src_with_sep = len(src) + len(os.path.sep)
         return path[len_src_with_sep:]
-    return path
+    return copy(path)
 
 
 def get_package_and_file(file_path: [Path | str]) -> tuple[str, str]:

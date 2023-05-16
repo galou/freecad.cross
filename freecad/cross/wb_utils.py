@@ -8,11 +8,15 @@ from typing import Callable, Iterable, Optional
 
 import FreeCAD as fc
 
+from . import wb_globals
 from .freecad_utils import is_box
 from .freecad_utils import is_cylinder
 from .freecad_utils import is_sphere
 from .freecad_utils import label_or
+from .freecad_utils import message
 from .freecad_utils import warn
+from .ros_utils import get_ros_workspace_from_file
+from .ros_utils import without_ros_workspace
 from .utils import attr_equals
 
 # Typing hints.
@@ -254,6 +258,54 @@ def get_valid_urdf_name(name: str) -> str:
         return 'no_name'
     # TODO: special XML characters must be escaped.
     return name.replace('"', '&quot;')
+
+
+def split_outputpath(path: str) -> tuple[str, Path]:
+    """Return the path relative to the workspace and the absolute path.
+
+    Return the path relative to the ROS workspace and the absolute path to the
+    file.
+    The input path can be a path relative to the ROS workspace or an absolute
+    path.
+    If the input path is relative, it is return as-is.
+
+    If `wb_globals.g_ros_workspace` is not set, ask the user to configure it.
+
+    """
+    # Import here to avoid circular import.
+    from .wb_gui_utils import get_ros_workspace
+
+    if not wb_globals.g_ros_workspace.name:
+        ws = get_ros_workspace()
+        wb_globals.g_ros_workspace = ws
+    p = without_ros_workspace(path)
+    full_path = (wb_globals.g_ros_workspace.expanduser()
+                 / 'src' / p)
+    return p, full_path
+
+
+def remove_ros_workspace(path) -> str:
+    """Modify `path` to remove $ROS_WORKSPACE/src.
+
+    Modify `wb_globals.g_ros_workspace` if a workspace was found.
+
+    """
+    rel_path = without_ros_workspace(path)
+    if wb_globals.g_ros_workspace.samefile(Path()):
+        # g_ros_workspace was not defined yet.
+        ws = get_ros_workspace_from_file(path)
+        if not ws.samefile(Path()):
+            # A workspace was found.
+            wb_globals.g_ros_workspace = ws
+            message('ROS workspace was set to'
+                    f' {wb_globals.g_ros_workspace},'
+                    ' change if not correct.'
+                    ' Note that packages in this workspace will NOT be'
+                    ' found, though, but only by launching FreeCAD from a'
+                    ' sourced workspace',
+                    True)
+            rel_path = without_ros_workspace(path)
+    return rel_path
 
 
 def export_templates(

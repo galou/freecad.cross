@@ -41,12 +41,12 @@ DO = fc.DocumentObject
 DOList = Iterable[DO]
 VPDO = 'FreeCADGui.ViewProviderDocumentObject'
 AppLink = DO  # TypeId == 'App::Link'.
-RosLink = DO  # A Ros::Link, i.e. a DocumentObject with Proxy "Link".
-RosJoint = DO  # A Ros::Joint, i.e. a DocumentObject with Proxy "Joint".
-RosRobot = DO  # A Ros::Robot, i.e. a DocumentObject with Proxy "Robot".
+CrossLink = DO  # A Cross::Link, i.e. a DocumentObject with Proxy "Link".
+CrossJoint = DO  # A Cross::Joint, i.e. a DocumentObject with Proxy "Joint".
+CrossRobot = DO  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot".
 
 
-def _existing_link(link: RosLink, obj: DO, lod: str) -> Optional[AppLink]:
+def _existing_link(link: CrossLink, obj: DO, lod: str) -> Optional[AppLink]:
     """Return the link to obj if it exists in link.Group with the given lod.
 
     Return the link to obj if it exists in link.Group with the given level of
@@ -54,7 +54,7 @@ def _existing_link(link: RosLink, obj: DO, lod: str) -> Optional[AppLink]:
 
     Parameters
     ----------
-    - link: a FreeCAD object of type Ros::Link.
+    - link: a FreeCAD object of type Cross::Link.
     - obj: a FreeCAD object of which to search a link.
     - lod: string describing the level of details, {'real', 'visual',
             'collision'}.
@@ -67,7 +67,7 @@ def _existing_link(link: RosLink, obj: DO, lod: str) -> Optional[AppLink]:
 
 
 def _add_links_lod(
-        link: RosLink,
+        link: CrossLink,
         objects: DOList,
         lod: str,
         ) -> list[AppLink]:
@@ -77,7 +77,7 @@ def _add_links_lod(
 
     Parameters
     ----------
-    - link: a FreeCAD object of type Ros::Link.
+    - link: a FreeCAD object of type Cross::Link.
     - objects: the list of objects to potentially add.
     - lod: string describing the level of details, {'real', 'visual',
             'collision'}.
@@ -107,8 +107,8 @@ def _add_links_lod(
 
 
 def _add_joint_variable(
-        robot: RosRobot,
-        joint: RosJoint,
+        robot: CrossRobot,
+        joint: CrossJoint,
         category: str,
         ) -> str:
     """Add a property for the actuator value to `robot` and return its name.
@@ -120,7 +120,7 @@ def _add_joint_variable(
     """
     if not is_joint(joint):
         warn(f'Wrong object type. {joint.Name} ({joint.Label})'
-             ' is not a ROS::Joint')
+             ' is not a Cross::Joint')
         return
     if joint.Mimic:
         # No acuator for mimic joints.
@@ -161,13 +161,13 @@ class Robot(ProxyBase):
 
     # The member is often used in workbenches, particularly in the Draft
     # workbench, to identify the object type.
-    Type = 'Ros::Robot'
+    Type = 'Cross::Robot'
 
     # Name of the category (or group) for the joint values, which are saved as
     # properties of `self.robot`.
     _category_of_joint_values = 'JointValues'
 
-    def __init__(self, obj: RosRobot):
+    def __init__(self, obj: CrossRobot):
         # Implementation note: 'Group' is not required because
         # DocumentObjectGroupPython.
         super().__init__('robot', [
@@ -190,7 +190,7 @@ class Robot(ProxyBase):
         """Return the list of objects created for the robot."""
         return self._created_objects
 
-    def init_properties(self, obj: RosRobot):
+    def init_properties(self, obj: CrossRobot):
         add_property(obj, 'App::PropertyString', '_Type', 'Internal',
                      'The type')
         obj.setPropertyStatus('_Type', ['Hidden', 'ReadOnly'])
@@ -203,14 +203,14 @@ class Robot(ProxyBase):
                      'The path to the ROS package to export files to,'
                      ' relative to $ROS_WORKSPACE/src')
 
-    def execute(self, obj: RosRobot) -> None:
+    def execute(self, obj: CrossRobot) -> None:
         self.cleanup_group()
         self.set_joint_enum()
         self.add_joint_variables()
         self.compute_poses()
         self.reset_group()
 
-    def onChanged(self, obj: RosRobot, prop: str) -> None:
+    def onChanged(self, obj: CrossRobot, prop: str) -> None:
         if prop in ['Group']:
             self.execute(obj)
         if prop == 'OutputPath':
@@ -257,17 +257,17 @@ class Robot(ProxyBase):
                     placement = (new_joint_placement
                                  * joint.Proxy.get_actuation_placement())
 
-    def get_links(self) -> list[RosLink]:
+    def get_links(self) -> list[CrossLink]:
         if not self.is_ready():
             return []
         return get_links(self.robot.Group)
 
-    def get_joints(self) -> list[RosJoint]:
+    def get_joints(self) -> list[CrossJoint]:
         if not self.is_ready():
             return []
         return get_joints(self.robot.Group)
 
-    def get_link(self, name: str) -> Optional[RosLink]:
+    def get_link(self, name: str) -> Optional[CrossLink]:
         if not name:
             # Shortcut.
             return
@@ -275,7 +275,7 @@ class Robot(ProxyBase):
             if ros_name(link) == name:
                 return link
 
-    def get_joint(self, name: str) -> Optional[RosJoint]:
+    def get_joint(self, name: str) -> Optional[CrossJoint]:
         if not name:
             # Shortcut.
             return
@@ -299,7 +299,7 @@ class Robot(ProxyBase):
                 or (not self.robot.ViewObject.Proxy.is_ready())):
             return
 
-        links = self.get_links()  # ROS links.
+        links = self.get_links()  # CROSS links.
 
         # Add objects from selected components.
         all_linked_objects: list[AppLink] = []
@@ -315,7 +315,7 @@ class Robot(ProxyBase):
             for link in links:
                 all_linked_objects += _add_links_lod(link, link.Collision, 'collision')
 
-        # List of linked objects from all Ros::Link in robot.Group.
+        # List of linked objects from all Cross::Link in robot.Group.
         current_linked_objects: list[AppLink] = []
         for link in links:
             for o in link.Group:
@@ -448,9 +448,9 @@ class Robot(ProxyBase):
         # TODO: warn if package name doesn't end with `_description`.
         xml = et.fromstring('<robot/>')
         xml.attrib['name'] = get_valid_urdf_name(self.robot.Label)
-        xml.append(et.Comment('Generated by the ROS Workbench for'
-                              ' FreeCAD (https://github.com/galou/'
-                              'freecad.cross)'))
+        xml.append(et.Comment('Generated by CROSS, a ROS Workbench for'
+                              ' FreeCAD ('
+                              'https://github.com/galou/freecad.cross)'))
         for link in self.get_links():
             if not hasattr(link, 'Proxy'):
                 error(f"Internal error with '{link.Label}', has no 'Proxy' attribute",
@@ -509,9 +509,9 @@ class Robot(ProxyBase):
             obj.OutputPath = rel_path
 
     def _fix_lost_fc_links(self) -> None:
-        """Fix linked objects in ROS links lost on restore.
+        """Fix linked objects in CROSS links lost on restore.
 
-        Probably because these elements are restored before the ROS links.
+        Probably because these elements are restored before the CROSS links.
 
         """
         if not self.is_ready():
@@ -571,7 +571,7 @@ class _ViewProviderRobot(ProxyBase):
                      "Length of the arrow for the joints axes",
                      500.0)
 
-    def updateData(self, obj: RosRobot, prop: str):
+    def updateData(self, obj: CrossRobot, prop: str):
         return
 
     def onChanged(self, vobj: VPDO, prop: str):
@@ -586,7 +586,7 @@ class _ViewProviderRobot(ProxyBase):
                     if hasattr(j.ViewObject, 'AxisLength'):
                         j.ViewObject.AxisLength = vobj.JointAxisLength
         if prop in ['ShowReal', 'ShowVisual', 'ShowCollision']:
-            robot: RosRobot = vobj.Object
+            robot: CrossRobot = vobj.Object
             robot.Proxy.execute(robot)
 
     def doubleClicked(self, vobj: VPDO):
@@ -611,8 +611,8 @@ class _ViewProviderRobot(ProxyBase):
         return
 
 
-def make_robot(name, doc: Optional[fc.Document] = None) -> RosRobot:
-    """Add a Ros::Robot to the current document."""
+def make_robot(name, doc: Optional[fc.Document] = None) -> CrossRobot:
+    """Add a Cross::Robot to the current document."""
     if doc is None:
         doc = fc.activeDocument()
     if doc is None:

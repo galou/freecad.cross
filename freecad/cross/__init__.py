@@ -1,4 +1,4 @@
-"""Entry point of the ROS Workbench."""
+"""Entry point of the CROSS workbench."""
 
 # import FreeCAD as fc
 

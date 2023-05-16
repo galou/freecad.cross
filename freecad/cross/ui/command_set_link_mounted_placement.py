@@ -25,7 +25,7 @@ class _SetLinkMountedPlacementCommand:
         try:
             ros_link, lcs, obj = validate_types(
                 fcgui.Selection.getSelection(),
-                ['Ros::Link', 'PartDesign::CoordinateSystem', 'Any'])
+                ['Cross::Link', 'PartDesign::CoordinateSystem', 'Any'])
         except RuntimeError as e:
             message(f'{e}. Select a ROS::Link, a LCS, and something.', gui=True)
             return

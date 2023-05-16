@@ -20,7 +20,7 @@ from .wb_utils import ICON_PATH
 class CrossWorkbench(fcgui.Workbench):
     """Class which gets initiated at startup of the GUI."""
 
-    MenuText = 'ROS workbench'
+    MenuText = 'CROSS - ROS workbench'
     ToolTip = 'ROS-related workbench'
     Icon = str(ICON_PATH / 'cross.svg')
 
@@ -49,8 +49,8 @@ class CrossWorkbench(fcgui.Workbench):
             'WbSettings',  # Defined in ./ui/command_wb_settings.py.
             'Reload',  # Comment out to disable this developer tool.
             ]
-        self.appendToolbar('ROS', commands)
-        self.appendMenu('ROS', commands)
+        self.appendToolbar('CROSS', commands)
+        self.appendMenu('CROSS', commands)
 
         fcgui.addIconPath(str(ICON_PATH))
         # fcgui.addLanguagePath(joinDir('Resources/translations'))

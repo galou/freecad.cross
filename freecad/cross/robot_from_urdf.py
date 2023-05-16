@@ -39,9 +39,9 @@ DOList = Iterable[DO]
 DOG = fc.DocumentObjectGroup
 AppLink = DO  # TypeId == 'App::Link'
 AppPart = DO  # TypeId == 'App::Part'
-RosLink = DO  # A Ros::Link, i.e. a DocumentObject with Proxy "Link".
-RosJoint = DO  # A Ros::Joint, i.e. a DocumentObject with Proxy "Joint".
-RosRobot = DO  # A Ros::Robot, i.e. a DocumentObject with Proxy "Robot".
+CrossLink = DO  # A Cross::Link, i.e. a DocumentObject with Proxy "Link".
+CrossJoint = DO  # A Cross::Joint, i.e. a DocumentObject with Proxy "Joint".
+CrossRobot = DO  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot".
 # List of UrdfVisual or List of UrdfCollision.
 VisualList = Iterable[UrdfVisual]
 CollisionList = Iterable[UrdfCollision]
@@ -50,7 +50,7 @@ CollisionList = Iterable[UrdfCollision]
 def robot_from_urdf(
         doc: fc.Document,
         urdf_robot: UrdfRobot,
-        ) -> RosRobot:
+        ) -> CrossRobot:
     """Creates a ROS::Robot from URDF."""
 
     robot, parts_group = _make_robot(doc, urdf_robot.name)
@@ -71,7 +71,7 @@ def robot_from_urdf(
             robot.Proxy.created_objects.append(geom)
         for fc_link in fc_links:
             robot.Proxy.created_objects.append(fc_link)
-    joint_map: dict[str, RosJoint] = {}
+    joint_map: dict[str, CrossJoint] = {}
     for urdf_joint in urdf_robot.joints:
         ros_joint = _add_ros_joint(urdf_joint, robot)
         joint_map[urdf_joint.name] = ros_joint
@@ -85,7 +85,7 @@ def robot_from_urdf(
 def _make_robot(
         doc: fc.Document,
         name: str = 'robot',
-        ) -> tuple[RosRobot, DOG]:
+        ) -> tuple[CrossRobot, DOG]:
     """Create a ROS::Robot
 
     Return (robot object, parts group).
@@ -108,20 +108,20 @@ def _make_robot(
 
 def _add_ros_link(
         urdf_link: UrdfLink,
-        robot: RosRobot,
+        robot: CrossRobot,
         parts_group: DOG,
-        ) -> Tuple[RosLink, AppPart, AppPart]:
+        ) -> Tuple[CrossLink, AppPart, AppPart]:
     """Add two App::Part to the group and links to them to the robot.
 
     - Add an "App::Part" for the visual of each link.
     - Add an "App::Part for the collision of each link.
-    - Add a "Ros::Link" with references to them.
+    - Add a "Cross::Link" with references to them.
 
     Return ???.
 
     Parameters
     ----------
-    - robot: robot to add the Ros::Link to.
+    - robot: robot to add the Cross::Link to.
     - part_groups: group for geometries and "App::Part" objects.
     - name: name of the link if the URDF description.
 
@@ -159,8 +159,8 @@ def _add_ros_link(
 
 def _add_ros_joint(
         urdf_joint: UrdfJoint,
-        robot: RosRobot,
-        ) -> RosJoint:
+        robot: CrossRobot,
+        ) -> CrossJoint:
     doc = robot.Document
     ros_joint = make_joint(urdf_joint.name, doc)
     ros_joint.Label2 = urdf_joint.name
@@ -175,7 +175,7 @@ def _add_ros_joint(
 
 def _define_mimic_joints(
         urdf_robot: UrdfRobot,
-        joint_map: dict[str, RosJoint],
+        joint_map: dict[str, CrossJoint],
         ) -> None:
     """Add the correct properties for mimic joints."""
     for name, ros_joint in joint_map.items():
@@ -212,13 +212,13 @@ def _define_mimic_joints(
 
 
 def _compensate_joint_placement(
-        robot: RosRobot,
+        robot: CrossRobot,
         urdf_robot: UrdfRobot,
-        joint_map: dict[str, RosJoint],
+        joint_map: dict[str, CrossJoint],
         ) -> None:
     """Make all joints about/around the z axis."""
     chains = robot.Proxy.get_chains()
-    already_compensated_joints: set[RosJoint] = set()
+    already_compensated_joints: set[CrossJoint] = set()
     for chain in chains:
         ros_joints = get_joints(chain)
         previous_rotation_to_z = fc.Rotation()
@@ -236,9 +236,9 @@ def _compensate_joint_placement(
 
 
 def _set_child_placement(
-        robot: RosRobot,
+        robot: CrossRobot,
         urdf_joint: UrdfJoint,
-        ros_joint: RosJoint,
+        ros_joint: CrossJoint,
         ) -> None:
     """Set Child.MountedPlacement to compensate for joints not along z."""
     if not ros_joint.Child:
@@ -251,7 +251,7 @@ def _set_child_placement(
 def _add_visual(
         urdf_link: UrdfLink,
         parts_group: DOG,
-        ros_link: RosLink,
+        ros_link: CrossLink,
         visual_part: AppPart,
         ) -> tuple[DOList, DOList]:
     """Add the visual geometries to an assembly.
@@ -276,7 +276,7 @@ def _add_visual(
 def _add_collision(
         urdf_link: UrdfLink,
         parts_group: DOG,
-        ros_link: RosLink,
+        ros_link: CrossLink,
         collision_part: AppPart,
         ) -> tuple[DOList, DOList]:
     """Add the visual geometries to an assembly.

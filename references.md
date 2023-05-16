@@ -15,12 +15,29 @@
 - [Cell editor](https://verbotics.com/product/cell-editor/)
 - [YouTube](https://www.youtube.com/watch?v=j0nLaukcTIo)
 - [From STEP to weld](https://verbotics.com/wp-content/uploads/2022/10/from-Step-to-Weld.mp4)
+- Closed-source.
+- Maybe ROS1 only.
+- Linux support.
 
-Closed-source. Maybe ROS1 only. Linux support.
+# PTC Creo to URDF
+
+- [PTC Creo to URDF](https://github.com/icub-tech-iit/cad-libraries/wiki/Prepare-PTC-Creo-Mechanism-for-URDF)
+- [PTC Creo](https://www.ptc.com/en/products/creo)
+- Matlab <= 2017a
+- Simscape Multibody Link Plug-In [version <= 5.0]
+- [simmechanics-to-urdf](https://github.com/robotology-playground/simmechanics-to-urdf)
+- ROS1
+
+# OnShape-to-robot
+
+- [OnShape to Robot](https://onshape-to-robot.readthedocs.io/en/latest/)
+- OnShape account necessary
+- Cross-platform
 
 # Workcell Builder
 
 - [Part of Easy Manipulation Deployment](https://easy-manipulation-deployment-docs.readthedocs.io/en/latest/emd_packages/workcell_builder/workcell_builder.html)
+- Not very user-friendly
 
 # Parsing xacro files
 

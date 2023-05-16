@@ -17,10 +17,10 @@ from .utils import attr_equals
 
 # Typing hints.
 DO = fc.DocumentObject
-RosJoint = DO  # A Ros::Joint, i.e. a DocumentObject with Proxy "Joint".
-RosLink = DO  # A Ros::Link, i.e. a DocumentObject with Proxy "Link".
-RosRobot = DO  # A Ros::Robot, i.e. a DocumentObject with Proxy "Robot".
-RosXacroObject = DO  # Ros::XacroObject, i.e. DocumentObject with Proxy "XacroObject".
+CrossJoint = DO  # A Cross::Joint, i.e. a DocumentObject with Proxy "Joint".
+CrossLink = DO  # A Cross::Link, i.e. a DocumentObject with Proxy "Link".
+CrossRobot = DO  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot".
+CrossXacroObject = DO  # Cross::XacroObject, i.e. DocumentObject with Proxy "XacroObject".
 DOList = Iterable[DO]
 
 MOD_PATH = Path(fc.getUserAppDataDir()) / 'Mod/freecad.cross'
@@ -31,36 +31,36 @@ ICON_PATH = RESOURCES_PATH / 'icons'
 
 @dataclass
 class XacroObjectAttachment:
-    xacro_object: RosXacroObject
-    attached_to: Optional[RosLink] = None
-    attached_by: Optional[RosJoint] = None
+    xacro_object: CrossXacroObject
+    attached_to: Optional[CrossLink] = None
+    attached_by: Optional[CrossJoint] = None
     # ROS object `attached_to` belongs to.
-    attachement_ros_object: Optional[RosXacroObject | RosRobot] = None
+    attachement_ros_object: Optional[CrossXacroObject | CrossRobot] = None
 
 
 def is_robot(obj: DO) -> bool:
-    """Return True if the object is a Ros::Robot."""
-    return _has_ros_type(obj, 'Ros::Robot')
+    """Return True if the object is a Cross::Robot."""
+    return _has_ros_type(obj, 'Cross::Robot')
 
 
 def is_link(obj: DO) -> bool:
-    """Return True if the object is a Ros::Link."""
-    return _has_ros_type(obj, 'Ros::Link')
+    """Return True if the object is a Cross::Link."""
+    return _has_ros_type(obj, 'Cross::Link')
 
 
 def is_joint(obj: DO) -> bool:
-    """Return True if the object is a Ros::Link."""
-    return _has_ros_type(obj, 'Ros::Joint')
+    """Return True if the object is a Cross::Link."""
+    return _has_ros_type(obj, 'Cross::Joint')
 
 
 def is_xacro_object(obj: DO) -> bool:
-    """Return True if the object is a Ros::Xacro."""
-    return _has_ros_type(obj, 'Ros::XacroObject')
+    """Return True if the object is a Cross::Xacro."""
+    return _has_ros_type(obj, 'Cross::XacroObject')
 
 
 def is_workcell(obj: DO) -> bool:
-    """Return True if the object is a Ros::Workcell."""
-    return _has_ros_type(obj, 'Ros::Workcell')
+    """Return True if the object is a Cross::Workcell."""
+    return _has_ros_type(obj, 'Cross::Workcell')
 
 
 def is_simple_joint(obj: DO) -> bool:
@@ -75,43 +75,43 @@ def is_primitive(obj: DO) -> bool:
 
 
 def is_robot_selected() -> bool:
-    """Return True if the first selected object is a Ros::Object."""
+    """Return True if the first selected object is a Cross::Robot."""
     return is_selected_from_lambda(is_robot)
 
 
 def is_joint_selected() -> bool:
-    """Return True if the first selected object is a Ros::Object."""
+    """Return True if the first selected object is a Cross::Joint."""
     return is_selected_from_lambda(is_joint)
 
 
 def is_link_selected() -> bool:
-    """Return True if the first selected object is a Ros::Link."""
+    """Return True if the first selected object is a Cross::Link."""
     return is_selected_from_lambda(is_link)
 
 
 def is_workcell_selected() -> bool:
-    """Return True if the first selected object is a Ros::Workcell."""
+    """Return True if the first selected object is a Cross::Workcell."""
     return is_selected_from_lambda(is_workcell)
 
 
-def get_links(objs: DOList) -> list[RosLink]:
-    """Return only the objects that are Ros::Link instances."""
+def get_links(objs: DOList) -> list[CrossLink]:
+    """Return only the objects that are Cross::Link instances."""
     return [o for o in objs if is_link(o)]
 
 
-def get_joints(objs: DOList) -> list[RosJoint]:
-    """Return only the objects that are Ros::Joint instances."""
+def get_joints(objs: DOList) -> list[CrossJoint]:
+    """Return only the objects that are Cross::Joint instances."""
     return [o for o in objs if is_joint(o)]
 
 
-def get_xacro_objects(objs: DOList) -> list[RosXacroObject]:
-    """Return only the objects that are Ros::XacroObject instances."""
+def get_xacro_objects(objs: DOList) -> list[CrossXacroObject]:
+    """Return only the objects that are Cross::XacroObject instances."""
     return [o for o in objs if is_xacro_object(o)]
 
 
 def get_chains(
-        links: list[RosLink],
-        joints: list[RosJoint],
+        links: list[CrossLink],
+        joints: list[CrossJoint],
         ) -> list[DOList]:
     """Return the list of chains.
 
@@ -119,8 +119,8 @@ def get_chains(
     at the last joint of the chain.
 
     """
-    base_links: list[RosLink] = []
-    tip_links: list[RosLink] = []
+    base_links: list[CrossLink] = []
+    tip_links: list[CrossLink] = []
     for link in links:
         if link.Proxy.may_be_base_link():
             base_links.append(link)
@@ -137,7 +137,7 @@ def get_chains(
     return chains
 
 
-def get_chain(link: RosLink) -> DOList:
+def get_chain(link: CrossLink) -> DOList:
     """Return the chain from base link to link, excluded.
 
     The chain start with the base link, then alternates a joint and a link. The
@@ -171,8 +171,8 @@ def is_subchain(subchain: DOList, chain: DOList) -> bool:
 
 
 def get_xacro_object_attachments(
-        xacro_objects: list[RosXacroObject],
-        joints: list[RosJoint],
+        xacro_objects: list[CrossXacroObject],
+        joints: list[CrossJoint],
         ) -> list[XacroObjectAttachment]:
     """Return attachment details of xacro objects."""
     attachments: list[XacroObjectAttachment] = []
@@ -196,8 +196,8 @@ def get_xacro_object_attachments(
 
 
 def get_xacro_chains(
-        xacro_objects: list[RosXacroObject],
-        joints: list[RosJoint],
+        xacro_objects: list[CrossXacroObject],
+        joints: list[CrossJoint],
         ) -> list[list[XacroObjectAttachment]]:
     """Return the list of chains.
 
@@ -206,7 +206,7 @@ def get_xacro_chains(
     the xacro object to which no other xacro object is attached.
 
     """
-    def is_parent(xacro_object: RosXacroObject,
+    def is_parent(xacro_object: CrossXacroObject,
                   attachments: list[XacroObjectAttachment],
                   ) -> bool:
         for attachment in attachments:
@@ -214,7 +214,7 @@ def get_xacro_chains(
                 return True
         return False
 
-    def get_chain(xacro_object: RosXacroObject,
+    def get_chain(xacro_object: CrossXacroObject,
                   attachments: list[XacroObjectAttachment],
                   ) -> list[XacroObjectAttachment]:
         for attachment in attachments:
@@ -227,7 +227,7 @@ def get_xacro_chains(
             return [attachment]
 
     attachments = get_xacro_object_attachments(xacro_objects, joints)
-    tip_xacros: list[RosXacroObject] = []
+    tip_xacros: list[CrossXacroObject] = []
     for attachment in attachments:
         if not is_parent(attachment.xacro_object, attachments):
             tip_xacros.append(attachment.xacro_object)

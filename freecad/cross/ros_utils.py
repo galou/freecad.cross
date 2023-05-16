@@ -19,7 +19,7 @@ def warn(text: str, gui: bool = False) -> None:
     fc.Console.PrintWarning(text + '\n')
     if gui and hasattr(fc, 'GuiUp') and fc.GuiUp:
         diag = QtGui.QMessageBox(QtGui.QMessageBox.Warning,
-                                 u'ROS Workbench', text)
+                                 'CROSS - FreeCAD ROS Workbench', text)
         diag.setWindowModality(QtCore.Qt.ApplicationModal)
         diag.exec_()
 

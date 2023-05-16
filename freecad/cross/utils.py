@@ -17,10 +17,10 @@ import FreeCAD as fc
 # Typing hints.
 DO = fc.DocumentObject
 DOList = Iterable[DO]
-RosLink = DO  # A Ros::Link, i.e. a DocumentObject with Proxy "Link".
-RosJoint = DO  # A Ros::Joint, i.e. a DocumentObject with Proxy "Joint".
-RosRobot = DO  # A Ros::Robot, i.e. a DocumentObject with Proxy "Robot".
-RosXacroObject = DO  # Ros::XacroObject, i.e. DocumentObject with Proxy "XacroObject".
+CrossLink = DO  # A Cross::Link, i.e. a DocumentObject with Proxy "Link".
+CrossJoint = DO  # A Cross::Joint, i.e. a DocumentObject with Proxy "Joint".
+CrossRobot = DO  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot".
+CrossXacroObject = DO  # Cross::XacroObject, i.e. DocumentObject with Proxy "XacroObject".
 
 # Otherwise et.tostring uses xlmns:ns0 as xacro namespace.
 et.register_namespace('xacro', 'http://ros.org/wiki/xacro')

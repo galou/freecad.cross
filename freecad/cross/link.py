@@ -29,13 +29,13 @@ from .wb_utils import ros_name
 DO = fc.DocumentObject
 DOList = Iterable[DO]
 VPDO = 'FreeCADGui.ViewProviderDocumentObject'
-RosLink = DO  # A Ros::Link, i.e. a DocumentObject with Proxy "Link".
-RosJoint = DO  # A Ros::Joint, i.e. a DocumentObject with Proxy "Joint".
-RosRobot = DO  # A Ros::Robot, i.e. a DocumentObject with Proxy "Robot".
+CrossLink = DO  # A Cross::Link, i.e. a DocumentObject with Proxy "Link".
+CrossJoint = DO  # A Cross::Joint, i.e. a DocumentObject with Proxy "Joint".
+CrossRobot = DO  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot".
 
 
 def _skim_links_joints_from(group) -> tuple[DOList, DOList]:
-    """Remove all Ros::Link and Ros::Joint from the list.
+    """Remove all Cross::Link and Cross::Joint from the list.
 
     `group` is a property that looks like a list but behaves differently
     (behaves like a tuple and is a copy of the original property content,
@@ -96,9 +96,9 @@ class Link(ProxyBase):
 
     # The member is often used in workbenches, particularly in the Draft
     # workbench, to identify the object type.
-    Type = 'Ros::Link'
+    Type = 'Cross::Link'
 
-    def __init__(self, obj: RosLink):
+    def __init__(self, obj: CrossLink):
         super().__init__('link', [
             'Collision',
             'Group',
@@ -113,7 +113,7 @@ class Link(ProxyBase):
         self.init_properties(obj)
         self.init_extensions(obj)
 
-    def init_properties(self, obj: RosLink):
+    def init_properties(self, obj: CrossLink):
         add_property(obj, 'App::PropertyString', '_Type', 'Internal',
                      'The type')
         obj.setPropertyStatus('_Type', ['Hidden', 'ReadOnly'])
@@ -140,18 +140,18 @@ class Link(ProxyBase):
         add_property(obj, 'App::PropertyPlacement', 'MountedPlacement',
                      'ROS Parameters', 'Shapes placement')
 
-    def init_extensions(self, obj: RosLink) -> None:
+    def init_extensions(self, obj: CrossLink) -> None:
         # Need a group to put the generated FreeCAD links in.
         obj.addExtension('App::GroupExtensionPython')
 
-    def execute(self, obj: RosLink) -> None:
+    def execute(self, obj: CrossLink) -> None:
         pass
 
-    def onBeforeChange(self, obj: RosLink, prop: str) -> None:
+    def onBeforeChange(self, obj: CrossLink, prop: str) -> None:
         # TODO: save the old ros_name and update all joints that used it.
         pass
 
-    def onChanged(self, obj: RosLink, prop: str) -> None:
+    def onChanged(self, obj: CrossLink, prop: str) -> None:
         if prop in ['Group', 'Real', 'Visual', 'Collision']:
             self.cleanup_children()
         if prop in ['Label', 'Label2']:
@@ -159,7 +159,7 @@ class Link(ProxyBase):
             if robot and hasattr(robot, 'Proxy'):
                 robot.Proxy.set_joint_enum()
 
-    def onDocumentRestored(self, obj: RosLink) -> None:
+    def onDocumentRestored(self, obj: CrossLink) -> None:
         self.__init__(obj)
 
     def __getstate__(self):
@@ -208,15 +208,15 @@ class Link(ProxyBase):
 
         return list(removed_objects)
 
-    def get_robot(self) -> Optional[RosRobot]:
-        """Return the Ros::Robot this link belongs to."""
+    def get_robot(self) -> Optional[CrossRobot]:
+        """Return the Cross::Robot this link belongs to."""
         if not self.is_ready():
             return
         for o in self.link.InList:
             if is_robot(o):
                 return o
 
-    def get_ref_joint(self) -> Optional[RosJoint]:
+    def get_ref_joint(self) -> Optional[CrossJoint]:
         """Return the joint this link is the child of."""
         robot = self.get_robot()
         if robot is None:
@@ -281,7 +281,7 @@ class Link(ProxyBase):
 
 
 class _ViewProviderLink(ProxyBase):
-    """A view provider for the Ros::Link object """
+    """A view provider for the Cross::Link object """
 
     def __init__(self, vobj: VPDO):
         super().__init__('view_object', [
@@ -327,8 +327,8 @@ class _ViewProviderLink(ProxyBase):
         return None
 
 
-def make_link(name, doc: Optional[fc.Document] = None) -> RosLink:
-    """Add a Ros::Link to the current document."""
+def make_link(name, doc: Optional[fc.Document] = None) -> CrossLink:
+    """Add a Cross::Link to the current document."""
     if doc is None:
         doc = fc.activeDocument()
     if doc is None:
@@ -342,7 +342,7 @@ def make_link(name, doc: Optional[fc.Document] = None) -> RosLink:
 
         _ViewProviderLink(obj.ViewObject)
 
-        # Make `obj` part of the selected `Ros::Robot`.
+        # Make `obj` part of the selected `Cross::Robot`.
         sel = fcgui.Selection.getSelection()
         if sel:
             candidate = sel[0]

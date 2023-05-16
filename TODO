@@ -1,14 +1,11 @@
-- Find a better name for the workbench:
-  - CROSS (CAD and ROS, Open-Source Symbiosis or CAD and ROS, Open-Source Synergy), the logo could be similar to the Xacro icon
-  - CROW (CAD and ROS Open-source Workbench)
-  - FROST (FreeCAD ROS S? Tool)
 - Add the possiblity to place a robot.
 - Implement the placement of xacro objects in workcell builder
 - Solve elements out of their parent group (e.g. XacroObject) on document restore
 - Use a workbench-global ROS_WORKSPACE variable (init with environment variable $ROS_WORKSPACE on start) and save only the path relative to ROS_WORKSPACE in OutputPath. If ROS_WORKSPACE is not defined, ask for it on first export or import.
 - Maintain a list of generated objects in Robot when using `robot_from_urdf` and offer a function `clean` to remove them.
 - Respect joint limits.
-- Use `Joint.onBeforeChange` to remember the parent and child RosLinks, then restore `Parent` and `Child` with `obj.Parent = ros_name(saved_parent_link)
+- Add inertial elements to links.
+- Use `Joint.onBeforeChange` to remember the parent and child CrossLinks, then restore `Parent` and `Child` with `obj.Parent = ros_name(saved_parent_link)
 - Remove from `Joint.Child` enum all links that:
   - are already child of a joint
   - are parent of this joint, recursively (if not covered by the first condition
@@ -22,6 +19,6 @@
 - Validate Label2 (and Label if Label2 is not defined) against valid URDF names
 - Clear necessary fields when `XacroObject.InputFile` is reset
 - Fix Attachment for the root link in `assembly_from_urdf`
-- Add two coordinate systems for each Ros::Joint (parent = urdf_joint.origin, child = parent * get_actuation_placement())
+- Add two coordinate systems for each Cross::Joint (parent = urdf_joint.origin, child = parent * get_actuation_placement())
 - Do not create an extra FreeCAD link when importing a URDF since the part can be directly added to the ROS links (i.e. instead of creating a FreeCAD link and adding the FreeCAD link to the ROS link). FreeCAD links are only necessary if the parts are in a different file.
 - Support all joint types

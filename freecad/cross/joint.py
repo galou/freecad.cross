@@ -23,23 +23,23 @@ from .wb_utils import ros_name
 DO = fc.DocumentObject
 DOList = Iterable[DO]
 VPDO = 'FreeCADGui.ViewProviderDocumentObject'
-RosJoint = DO  # A Ros::Joint, i.e. a DocumentObject with Proxy "Joint".
-RosRobot = DO  # A Ros::Robot, i.e. a DocumentObject with Proxy "Robot".
+CrossJoint = DO  # A Cross::Joint, i.e. a DocumentObject with Proxy "Joint".
+CrossRobot = DO  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot".
 
 
 class Joint(ProxyBase):
-    """The Ros::Joint object."""
+    """The Cross::Joint object."""
 
     # The member is often used in workbenches, particularly in the Draft
     # workbench, to identify the object type.
-    Type = 'Ros::Joint'
+    Type = 'Cross::Joint'
 
     # The names cannot be changed because they are used as-is in the generated
     # URDF. The order can be changed and influences the order in the GUI.
     # The first element is the default.
     type_enum = ['fixed', 'prismatic', 'revolute', 'continuous', 'planar', 'floating']
 
-    def __init__(self, obj: RosJoint):
+    def __init__(self, obj: CrossJoint):
         super().__init__('joint', [
                 'Child',
                 'Effort',
@@ -61,7 +61,7 @@ class Joint(ProxyBase):
         self.joint = obj
         self.init_properties(obj)
 
-    def init_properties(self, obj: RosJoint):
+    def init_properties(self, obj: CrossJoint):
         add_property(obj, 'App::PropertyString', '_Type', 'Internal',
                      'The type')
         obj.setPropertyStatus('_Type', ['Hidden', 'ReadOnly'])
@@ -71,9 +71,9 @@ class Joint(ProxyBase):
                      'The kinematical type of the joint')
         obj.Type = Joint.type_enum
         add_property(obj, 'App::PropertyEnumeration', 'Parent', 'Elements',
-                     'Parent link (from the ROS Workbench)')
+                     'Parent link (from CROSS)')
         add_property(obj, 'App::PropertyEnumeration', 'Child', 'Elements',
-                     'Child link (from the ROS Workbench)')
+                     'Child link (from CROSS)')
         add_property(obj, 'App::PropertyPlacement', 'Origin', 'Elements',
                      'Joint origin relative to the parent link')
         add_property(obj, 'App::PropertyFloat', 'LowerLimit', 'Limits',
@@ -103,7 +103,7 @@ class Joint(ProxyBase):
                      'Placement of the joint in the robot frame')
         obj.setEditorMode('Placement', ['ReadOnly'])
 
-    def onChanged(self, obj: RosJoint, prop: str) -> None:
+    def onChanged(self, obj: CrossJoint, prop: str) -> None:
         if prop == 'Mimic':
             self._toggle_editor_mode()
         if prop == 'MimickedJoint':
@@ -119,7 +119,7 @@ class Joint(ProxyBase):
             if robot and hasattr(robot, 'Proxy'):
                 robot.Proxy.add_joint_variables()
 
-    def onDocumentRestored(self, obj: RosJoint):
+    def onDocumentRestored(self, obj: CrossJoint):
         self.__init__(obj)
 
     def __getstate__(self):
@@ -170,15 +170,15 @@ class Joint(ProxyBase):
                                             joint_value))
         return fc.Placement()
 
-    def get_robot(self) -> Optional[RosRobot]:
-        """Return the Ros::Robot this joint belongs to."""
+    def get_robot(self) -> Optional[CrossRobot]:
+        """Return the Cross::Robot this joint belongs to."""
         if not self.is_ready():
             return
         for o in self.joint.InList:
             if is_robot(o):
                 return o
 
-    def get_predecessor(self) -> Optional[RosJoint]:
+    def get_predecessor(self) -> Optional[CrossJoint]:
         """Return the predecessing joint."""
         robot = self.get_robot()
         if robot is None:
@@ -272,7 +272,7 @@ class _ViewProviderJoint(ProxyBase):
         self.view_object = vobj
 
     def updateData(self,
-                   obj: RosJoint,
+                   obj: CrossJoint,
                    prop: str):
         vobj = obj.ViewObject
         if not hasattr(vobj, 'Visibility'):
@@ -363,8 +363,8 @@ class _ViewProviderJoint(ProxyBase):
         return
 
 
-def make_joint(name, doc: Optional[fc.Document] = None) -> RosJoint:
-    """Add a Ros::Joint to the current document."""
+def make_joint(name, doc: Optional[fc.Document] = None) -> CrossJoint:
+    """Add a Cross::Joint to the current document."""
     if doc is None:
         doc = fc.activeDocument()
     if doc is None:
@@ -380,7 +380,7 @@ def make_joint(name, doc: Optional[fc.Document] = None) -> RosJoint:
 
         _ViewProviderJoint(obj.ViewObject)
 
-        # Make `obj` part of the selected `Ros::Robot`.
+        # Make `obj` part of the selected `Cross::Robot`.
         sel = fcgui.Selection.getSelection()
         if sel:
             candidate = sel[0]

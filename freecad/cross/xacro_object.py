@@ -46,12 +46,12 @@ except ImportError as e:
 # Typing hints.
 DO = fc.DocumentObject
 VPDO = 'FreeCADGui.ViewProviderDocumentObject'
-RosXacroObject = DO  # A Ros::XacroObject, i.e. a DocumentObject with Proxy "XacroObject".
-RosLink = DO  # A Ros::Link, i.e. a DocumentObject with Proxy "Link".
-RosRobot = DO  # A Ros::Robot, i.e. a DocumentObject with Proxy "Robot".
+CrossXacroObject = DO  # A Cross::XacroObject, i.e. a DocumentObject with Proxy "XacroObject".
+CrossLink = DO  # A Cross::Link, i.e. a DocumentObject with Proxy "Link".
+CrossRobot = DO  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot".
 
 
-def _clear_robot(obj: RosRobot) -> None:
+def _clear_robot(obj: CrossRobot) -> None:
     """Delete all joints and links from a robot."""
     doc = obj.Document
     # Let robot clean its generated objects.
@@ -76,9 +76,9 @@ class XacroObject(ProxyBase):
 
     # The member is often used in workbenches, particularly in the Draft
     # workbench, to identify the object type.
-    Type = 'Ros::XacroObject'
+    Type = 'Cross::XacroObject'
 
-    def __init__(self, obj: RosXacroObject):
+    def __init__(self, obj: CrossXacroObject):
         super().__init__('xacro_object', [
             'InputFile',
             'MainMacro',
@@ -117,7 +117,7 @@ class XacroObject(ProxyBase):
             return ''
         return link_name in self._urdf_robot.link_map
 
-    def get_link(self, link_name: str) -> Optional[RosLink]:
+    def get_link(self, link_name: str) -> Optional[CrossLink]:
         """Return True if the link belongs to the xacro object.
 
         The link_name is the full name after macro expansion.
@@ -127,7 +127,7 @@ class XacroObject(ProxyBase):
             if ros_name(link) == link_name:
                 return link
 
-    def get_links(self) -> list[RosLink]:
+    def get_links(self) -> list[CrossLink]:
         if ((not hasattr(self, 'xacro_object')
              or (not hasattr(self.xacro_object, 'Group'))
              or (not self.xacro_object.Group))):
@@ -147,7 +147,7 @@ class XacroObject(ProxyBase):
             if ros_name(link) == link_name:
                 return link.Placement
 
-    def init_properties(self, obj: RosXacroObject):
+    def init_properties(self, obj: CrossXacroObject):
         add_property(obj, 'App::PropertyString', '_Type', 'Internal',
                      'The type')
         obj.setPropertyStatus('_Type', ['Hidden', 'ReadOnly'])
@@ -165,7 +165,7 @@ class XacroObject(ProxyBase):
 
         self._toggle_editor_mode(obj)
 
-    def init_extensions(self, obj: RosXacroObject):
+    def init_extensions(self, obj: CrossXacroObject):
         # Needed to make this object able to attach parameterically to other objects.
         # obj.addExtension('Part::AttachExtensionPython')
         # Need a group to put the generated robot in.
@@ -175,7 +175,7 @@ class XacroObject(ProxyBase):
         # Managed in self.reset_group().
         obj.setPropertyStatus('Group', ['ReadOnly', 'Hidden'])
 
-    def execute(self, obj: RosXacroObject) -> None:
+    def execute(self, obj: CrossXacroObject) -> None:
         """Update the embedded robot.
 
         Called on recompute(), this method is mandatory for scripted objects.
@@ -195,11 +195,11 @@ class XacroObject(ProxyBase):
         self.set_param_properties(obj)
         self.reset_group(obj)
 
-    def onChanged(self, obj: RosXacroObject, prop: str) -> None:
+    def onChanged(self, obj: CrossXacroObject, prop: str) -> None:
         if prop in ['InputFile', 'Label', 'Label2', 'MainMacro']:
             self.execute(obj)
 
-    def onDocumentRestored(self, obj: RosXacroObject):
+    def onDocumentRestored(self, obj: CrossXacroObject):
         """Restore attributes because __init__ is not called on restore."""
         self.__init__(obj)
 
@@ -210,7 +210,7 @@ class XacroObject(ProxyBase):
         if state:
             self.Type, = state
 
-    def set_param_properties(self, obj: RosXacroObject) -> None:
+    def set_param_properties(self, obj: CrossXacroObject) -> None:
         if not hasattr(self, 'xacro_object'):
             # Implementation note: xacro_object is defined with other
             # required members.
@@ -242,7 +242,7 @@ class XacroObject(ProxyBase):
             if name not in self.param_properties:
                 obj.removeProperty(name)
 
-    def reset_group(self, obj: RosXacroObject):
+    def reset_group(self, obj: CrossXacroObject):
         if not hasallattr(obj, ['Group', 'InputFile', 'MainMacro']):
             return
         new_robot = self._generate_robot(obj)
@@ -271,7 +271,7 @@ class XacroObject(ProxyBase):
         """Export the xacro object as URDF, writing files."""
         if not hasattr(self, 'xacro_object'):
             return
-        obj: RosXacroObject = self.xacro_object
+        obj: CrossXacroObject = self.xacro_object
 
         # Generate the URDF to obtain the root link.
         robot_name = ros_name(obj)
@@ -287,7 +287,7 @@ class XacroObject(ProxyBase):
             return []
         return [link.name for link in self._urdf_robot.links]
 
-    def _toggle_editor_mode(self, obj: RosXacroObject) -> None:
+    def _toggle_editor_mode(self, obj: CrossXacroObject) -> None:
         """Show/hide properties."""
         # Hide until an input file is given and macros are defined.
         if (hasattr(obj, 'InputFile')
@@ -300,7 +300,7 @@ class XacroObject(ProxyBase):
         else:
             obj.setPropertyStatus('MainMacro', ['Hidden'])
 
-    def _generate_robot(self, obj: RosXacroObject) -> Optional[RosRobot]:
+    def _generate_robot(self, obj: CrossXacroObject) -> Optional[CrossRobot]:
         if not hasattr(self, 'xacro_object'):
             # Implementation note: xacro_object is defined with other required members.
             return
@@ -324,7 +324,7 @@ class XacroObject(ProxyBase):
         urdf_robot = UrdfLoader.load_from_string(urdf_txt)
         return urdf_robot
 
-    def _get_robot(self) -> Optional[RosRobot]:
+    def _get_robot(self) -> Optional[CrossRobot]:
         if ((not hasattr(self, 'xacro_object'))
                 or (not hasattr(self.xacro_object, 'Group'))):
             return
@@ -352,7 +352,7 @@ class _ViewProviderXacroObject(ProxyBase):
         # vobj.addExtension('Gui::ViewProviderGroupExtensionPython')
         vobj.addExtension('Gui::ViewProviderGeoFeatureGroupExtensionPython')
 
-    def updateData(self, obj: RosXacroObject, prop: str):
+    def updateData(self, obj: CrossXacroObject, prop: str):
         return
 
     def onChanged(self, vobj: VPDO, prop: str):
@@ -374,8 +374,8 @@ class _ViewProviderXacroObject(ProxyBase):
         return None
 
 
-def make_xacro_object(name, doc: Optional[fc.Document] = None) -> RosXacroObject:
-    """Add a Ros::XacroObject to the current document."""
+def make_xacro_object(name, doc: Optional[fc.Document] = None) -> CrossXacroObject:
+    """Add a Cross::XacroObject to the current document."""
     if doc is None:
         doc = fc.activeDocument()
     if doc is None:
@@ -390,7 +390,7 @@ def make_xacro_object(name, doc: Optional[fc.Document] = None) -> RosXacroObject
 
         _ViewProviderXacroObject(obj.ViewObject)
 
-        # Make `obj` part of the selected `Ros::Workcell`.
+        # Make `obj` part of the selected `Cross::Workcell`.
         sel = fcgui.Selection.getSelection()
         if sel:
             candidate = sel[0]

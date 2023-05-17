@@ -260,14 +260,16 @@ def get_valid_urdf_name(name: str) -> str:
     return name.replace('"', '&quot;')
 
 
-def split_outputpath(path: str) -> tuple[str, Path]:
-    """Return the path relative to the workspace and the absolute path.
+def get_rel_and_abs_path(path: str) -> tuple[str, Path]:
+    """Return the path relative to src and the absolute path.
 
-    Return the path relative to the ROS workspace and the absolute path to the
-    file.
+    Return the path relative to the `src` folder in the  ROS workspace and
+    the absolute path to the file.
     The input path can be a path relative to the ROS workspace or an absolute
     path.
-    If the input path is relative, it is return as-is.
+    If the input path is relative, it is returned as-is.
+
+    The existence of the given path is not checked.
 
     If `wb_globals.g_ros_workspace` is not set, ask the user to configure it.
 

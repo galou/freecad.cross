@@ -27,13 +27,13 @@ from .utils import save_xml
 from .wb_utils import ICON_PATH
 from .wb_utils import export_templates
 from .wb_utils import get_joints
+from .wb_utils import get_rel_and_abs_path
 from .wb_utils import get_valid_urdf_name
 from .wb_utils import get_xacro_chains
 from .wb_utils import get_xacro_object_attachments
 from .wb_utils import get_xacro_objects
 from .wb_utils import remove_ros_workspace
 from .wb_utils import ros_name
-from .wb_utils import split_outputpath
 
 # Typing hints.
 DO = fc.DocumentObject
@@ -213,7 +213,7 @@ class Workcell(ProxyBase):
 
         # Write out files.
         # TODO: also accept OutputPath as package name.
-        p, output_path = split_outputpath(obj.OutputPath)
+        p, output_path = get_rel_and_abs_path(obj.OutputPath)
         if p != obj.OutputPath:
             obj.OutputPath = p
         package_parent, package_name = split_package_path(output_path)

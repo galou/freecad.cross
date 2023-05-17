@@ -11,8 +11,8 @@ Generates a xacro file that includes the input xacro, add a transform from
 robot, a workcell, a static object is generated from the xacro depends on the
 input xacro and the chosen macro from this xacro file.
 
-The object type is called XacroObject to avoid confusion with the ROS package xacro
-(and Python module xacro).
+The object type is called XacroObject to avoid confusion with the ROS package
+xacro (and Python module xacro).
 
 """
 
@@ -24,13 +24,16 @@ import xml.etree.ElementTree as et
 
 import FreeCAD as fc
 
+from xacro import Macro
+
 from .freecad_utils import ProxyBase
 from .freecad_utils import add_property
 from .freecad_utils import warn
-from .utils import hasallattr
 from .wb_utils import ICON_PATH
+from .wb_utils import get_rel_and_abs_path
 from .wb_utils import is_robot
 from .wb_utils import is_workcell
+from .wb_utils import remove_ros_workspace
 from .wb_utils import ros_name
 try:
     from .robot_from_urdf import robot_from_urdf
@@ -80,6 +83,7 @@ class XacroObject(ProxyBase):
 
     def __init__(self, obj: CrossXacroObject):
         super().__init__('xacro_object', [
+            'Group',
             'InputFile',
             'MainMacro',
             'Placement',
@@ -166,7 +170,8 @@ class XacroObject(ProxyBase):
         self._toggle_editor_mode(obj)
 
     def init_extensions(self, obj: CrossXacroObject):
-        # Needed to make this object able to attach parameterically to other objects.
+        # Needed to make this object able to attach parameterically to other
+        # objects.
         # obj.addExtension('Part::AttachExtensionPython')
         # Need a group to put the generated robot in.
         # obj.addExtension('App::GroupExtensionPython')
@@ -182,12 +187,13 @@ class XacroObject(ProxyBase):
 
         """
         # obj.positionBySupport()
-        if not hasallattr(obj, ['InputFile', 'MainMacro']):
+        if not self.is_ready():
             return
         if not obj.InputFile:
             self._root_link = ''
             return
-        self.xacro = XacroLoader.load_from_file(obj.InputFile)
+        _, input_path = get_rel_and_abs_path(obj.InputFile)
+        self.xacro = XacroLoader.load_from_file(input_path)
         macro_names = self.xacro.get_macro_names()
         if obj.getEnumerationsOfProperty('MainMacro') != macro_names:
             obj.MainMacro = macro_names
@@ -196,7 +202,12 @@ class XacroObject(ProxyBase):
         self.reset_group(obj)
 
     def onChanged(self, obj: CrossXacroObject, prop: str) -> None:
-        if prop in ['InputFile', 'Label', 'Label2', 'MainMacro']:
+        if prop in ['Label', 'Label2', 'MainMacro']:
+            self.execute(obj)
+        if prop == 'InputFile':
+            rel_path = remove_ros_workspace(obj.InputFile)
+            if rel_path != obj.InputFile:
+                obj.InputFile = rel_path
             self.execute(obj)
 
     def onDocumentRestored(self, obj: CrossXacroObject):
@@ -220,11 +231,11 @@ class XacroObject(ProxyBase):
         old_param_properties: list[str] = copy(self.param_properties)
 
         self.param_properties.clear()
-        if not hasallattr(obj, ['InputFile', 'MainMacro']):
+        if not self.is_ready():
             return
         if not self.xacro:
             return
-        macro = self.xacro.macros[obj.MainMacro]
+        macro: Macro = self.xacro.macros[obj.MainMacro]
         for name in macro.params:
             self.param_properties.append(name)
             if name in macro.defaultmap:
@@ -243,7 +254,7 @@ class XacroObject(ProxyBase):
                 obj.removeProperty(name)
 
     def reset_group(self, obj: CrossXacroObject):
-        if not hasallattr(obj, ['Group', 'InputFile', 'MainMacro']):
+        if not self.is_ready():
             return
         new_robot = self._generate_robot(obj)
         if new_robot and obj.Group:

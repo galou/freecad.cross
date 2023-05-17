@@ -31,13 +31,13 @@ from .wb_utils import export_templates
 from .wb_utils import get_chains
 from .wb_utils import get_joints
 from .wb_utils import get_links
+from .wb_utils import get_rel_and_abs_path
 from .wb_utils import get_valid_urdf_name
 from .wb_utils import is_joint
 from .wb_utils import is_link
 from .wb_utils import is_robot
 from .wb_utils import remove_ros_workspace
 from .wb_utils import ros_name
-from .wb_utils import split_outputpath
 
 # Typing hints.
 DO = fc.DocumentObject
@@ -443,7 +443,7 @@ class Robot(ProxyBase):
             warn('Property `OutputPath` cannot be empty', True)
             return
         # TODO: also accept OutputPath as package name.
-        p, output_path = split_outputpath(self.robot.OutputPath)
+        p, output_path = get_rel_and_abs_path(self.robot.OutputPath)
         if p != self.robot.OutputPath:
             self.robot.OutputPath = p
         package_parent, package_name = split_package_path(output_path)

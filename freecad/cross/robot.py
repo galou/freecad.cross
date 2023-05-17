@@ -234,9 +234,9 @@ class Robot(ProxyBase):
             self.Type, = state
 
     def compute_poses(self) -> None:
-        """Compute the pose of all joints and links.
+        """Set `Placement` of all joints and links.
 
-        Compute the pose of all joints and links relative the the robot
+        Compute and set the pose of all joints and links relative the the robot
         root link.
 
         """

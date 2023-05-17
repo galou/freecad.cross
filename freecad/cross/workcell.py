@@ -143,10 +143,14 @@ class Workcell(ProxyBase):
                 xo = attachment.xacro_object
                 joint = attachment.attached_by
                 link = attachment.attached_to
-                if joint:
-                    placement = joint.Origin * placement
                 if link:
-                    placement = link.Placement * placement
+                    placement *= link.Placement
+                if joint:
+                    placement *= joint.Origin
+                    if joint.Placement != placement:
+                        # Avoid recursive recompute.
+                        joint.Placement = placement
+                    placement *= joint.Proxy.get_actuation_placement()
                 if not is_same_placement(xo.Placement, placement):
                     xo.Placement = placement
 

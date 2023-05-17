@@ -302,7 +302,7 @@ class _ViewProviderJoint(ProxyBase):
         if not hasattr(vobj.Object, 'Placement'):
             return
         obj = vobj.Object
-        placement = obj.Placement
+        placement = obj.Placement  # A copy.
         if placement is None:
             return
         if obj.Type == 'fixed':

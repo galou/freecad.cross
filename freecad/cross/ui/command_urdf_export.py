@@ -86,7 +86,7 @@ class _UrdfExportCommand:
                 # Object already exported.
                 continue
             exported_objects.append(obj)
-            xmls: list[et.ElementTree] = []
+            xmls: list[Optional[et.ElementTree]] = []
             if is_box(obj):
                 xmls.append(urdf_collision_from_box(
                     obj, placement, ignore_obj_placement=True))
@@ -127,8 +127,9 @@ class _UrdfExportCommand:
             if xmls:
                 txt += f'  <!-- {obj.Label} -->\n'
                 for xml in xmls:
-                    txt += et.tostring(xml).decode('utf-8')
-                    txt += '\n'
+                    if xml is not None:
+                        txt += et.tostring(xml).decode('utf-8')
+                        txt += '\n'
         if txt and show_xml:
             if 'dummy>' in txt:
                 fc.Console.PrintError('Object labels cannot contain '

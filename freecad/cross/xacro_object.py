@@ -163,7 +163,8 @@ class XacroObject(ProxyBase):
                      'The macro to use')
 
         # The computed placement (or the placement defined by the user if no
-        # attachment mode is defined).
+        # attachment mode is defined). This is only
+        # when using `Part::AttachExtensionPython`.
         add_property(obj, 'App::PropertyPlacement', 'Placement',
                      'Base', 'Placement')
 
@@ -320,7 +321,7 @@ class XacroObject(ProxyBase):
         if xacro_txt == self._old_xacro_file_content:
             return
         self._old_xacro_file_content = xacro_txt
-        self._urdf_robot = self._generate_urdf(ros_name(obj), obj.MainMacro, params)
+        self._urdf_robot = self._generate_urdf(f'{ros_name(obj)}_robot', obj.MainMacro, params)
         self._root_link = self._urdf_robot.get_root()
         robot = robot_from_urdf(obj.Document, self._urdf_robot)
         return robot

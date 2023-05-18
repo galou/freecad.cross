@@ -22,7 +22,6 @@ from .freecad_utils import is_same_placement
 from .ros_utils import split_package_path
 from .urdf_utils import urdf_origin_from_placement
 from .utils import get_valid_filename
-from .utils import hasallattr
 from .utils import save_xml
 from .wb_utils import ICON_PATH
 from .wb_utils import export_templates
@@ -158,8 +157,6 @@ class Workcell(ProxyBase):
         if not self.is_ready():
             return
         obj: CrossWorkcell = self.workcell
-        if not hasallattr(obj, ['OutputPath', 'RootLink']):
-            return
         if not obj.OutputPath:
             # TODO: ask the user for OutputPath.
             warn('Property `OutputPath` cannot be empty', True)
@@ -238,6 +235,7 @@ class Workcell(ProxyBase):
                          package_parent,
                          package_name=package_name,
                          urdf_file=urdf_file)
+        return robot_et
 
 
 class _ViewProviderWorkcell(ProxyBase):

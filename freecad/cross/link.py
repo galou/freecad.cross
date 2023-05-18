@@ -32,6 +32,38 @@ VPDO = 'FreeCADGui.ViewProviderDocumentObject'
 CrossLink = DO  # A Cross::Link, i.e. a DocumentObject with Proxy "Link".
 CrossJoint = DO  # A Cross::Joint, i.e. a DocumentObject with Proxy "Joint".
 CrossRobot = DO  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot".
+AppLink = DO  # TypeId == 'App::Link'.
+
+
+def _add_fc_links_lod(
+        link: CrossLink,
+        objects: DOList,
+        lod: str,
+        ) -> list[AppLink]:
+    """Create links to real, visual or collision elements.
+
+    Return the list of created FreeCAD link objects.
+    The objects are not added to the link.
+
+    Parameters
+    ----------
+    - link: a FreeCAD object of type Cross::Link.
+    - objects: the list of objects to potentially add.
+    - lod: string describing the level of details, {'real', 'visual',
+            'collision'}.
+
+    """
+    doc = link.Document
+    fc_links: DOList = []
+    for o in objects:
+        name = f'{lod}_{link.Label}_'
+        lod_link = doc.addObject('App::Link', name)
+        lod_link.Label = name
+        lod_link.LinkPlacement = link.Placement
+        lod_link.setLink(o)
+        lod_link.adjustRelativeLinks(link)
+        fc_links.append(lod_link)
+    return fc_links
 
 
 def _skim_links_joints_from(group) -> tuple[DOList, DOList]:
@@ -39,7 +71,7 @@ def _skim_links_joints_from(group) -> tuple[DOList, DOList]:
 
     `group` is a property that looks like a list but behaves differently
     (behaves like a tuple and is a copy of the original property content,
-     so cannot be set here).
+    so cannot be changed here).
 
     Return (kept_objects, removed_objects).
 
@@ -110,8 +142,17 @@ class Link(ProxyBase):
             ])
         obj.Proxy = self
         self.link = obj
-        self.init_properties(obj)
         self.init_extensions(obj)
+        self.init_properties(obj)
+
+        # Lists to keep track of the objects that were added to the link.
+        self._fc_links_real: DOList = []
+        self._fc_links_visual: DOList = []
+        self._fc_links_collision: DOList = []
+
+    def init_extensions(self, obj: CrossLink) -> None:
+        # Need a group to put the generated FreeCAD links in.
+        obj.addExtension('App::GroupExtensionPython')
 
     def init_properties(self, obj: CrossLink):
         add_property(obj, 'App::PropertyString', '_Type', 'Internal',
@@ -140,10 +181,6 @@ class Link(ProxyBase):
         add_property(obj, 'App::PropertyPlacement', 'MountedPlacement',
                      'ROS Parameters', 'Shapes placement')
 
-    def init_extensions(self, obj: CrossLink) -> None:
-        # Need a group to put the generated FreeCAD links in.
-        obj.addExtension('App::GroupExtensionPython')
-
     def execute(self, obj: CrossLink) -> None:
         pass
 
@@ -161,6 +198,8 @@ class Link(ProxyBase):
 
     def onDocumentRestored(self, obj: CrossLink) -> None:
         self.__init__(obj)
+        self._fix_lost_fc_links()
+        self._fill_fc_link_lists()
 
     def __getstate__(self):
         return self.Type,
@@ -171,7 +210,6 @@ class Link(ProxyBase):
 
     def cleanup_children(self) -> DOList:
         """Remove and return all objects not supported by ROS::Link."""
-
         if not self.is_ready():
             return
         removed_objects: set[DO] = set()
@@ -244,6 +282,69 @@ class Link(ProxyBase):
                 return False
         return True
 
+    def update_fc_links(self) -> None:
+        """Update the FreeCAD link according to the level of details."""
+        if not self.is_ready():
+            return
+        link = self.link
+        if not hasattr(link, 'ViewObject'):
+            # No need to change `Group` without GUI.
+            return
+        vlink = link.ViewObject
+
+        old_show_real = len(self._fc_links_real) != 0
+        old_show_visual = len(self._fc_links_visual) != 0
+        old_show_collision = len(self._fc_links_collision) != 0
+        update_real = old_show_real != vlink.ShowReal
+        update_visual = old_show_visual != vlink.ShowVisual
+        update_collision = old_show_collision != vlink.ShowCollision
+
+        # Old objects that will be removed after having been excluded from
+        # `Group`, to avoid recursive calls.
+        old_fc_links: DOList = []
+        if update_real:
+            old_fc_links += self._fc_links_real
+        if update_visual:
+            old_fc_links += self._fc_links_visual
+        if update_collision:
+            old_fc_links += self._fc_links_collision
+
+        # Free the labels because of delayed removal.
+        for o in old_fc_links:
+            # Free the label.
+            o.Label = 'to_be_removed'
+
+        # Clear the lists that are regenerated right after and create new
+        # objects.
+        if update_real:
+            self._fc_links_real.clear()
+        if update_visual:
+            self._fc_links_visual.clear()
+        if update_collision:
+            self._fc_links_collision.clear()
+
+        # Create new objects.
+        if update_real and vlink.ShowReal:
+            self._fc_links_real = _add_fc_links_lod(link, link.Real, 'real')
+        if update_visual and vlink.ShowVisual:
+            self._fc_links_visual = _add_fc_links_lod(
+                    link, link.Visual, 'visual')
+        if update_collision and vlink.ShowCollision:
+            self._fc_links_collision = _add_fc_links_lod(
+                    link, link.Collision, 'collision')
+
+        # Reset the group.
+        new_group = (self._fc_links_real
+                     + self._fc_links_visual
+                     + self._fc_links_collision)
+        if new_group != link.Group:
+            link.Group = new_group
+
+        # Remove old objects.
+        doc = link.Document
+        for o in old_fc_links:
+            doc.removeObject(o.Name)
+
     def export_urdf(self,
                     package_parent: Path,
                     package_name: [Path | str],
@@ -279,6 +380,48 @@ class Link(ProxyBase):
                 link_xml.append(xml)
         return link_xml
 
+    def _fix_lost_fc_links(self) -> None:
+        """Fix linked objects in CROSS links lost on restore.
+
+        Probably because these elements are restored before the CROSS links.
+
+        """
+        if not self.is_ready():
+            return
+        link = self.link
+        for obj in link.Document.Objects:
+            if (not hasattr(obj, 'InList')) or (len(obj.InList) != 1):
+                continue
+            potential_self = obj.InList[0]
+            if ((obj is link)
+                    or (potential_self is not link)
+                    or (obj in link.Group)
+                    or (obj in link.Real)
+                    or (obj in link.Visual)
+                    or (obj in link.Collision)):
+                continue
+            link.addObject(obj)
+
+    def _fill_fc_link_lists(self) -> None:
+        """Fill the lists of FreeCAD links.
+
+        The lists `_fc_links_real` and similar are empty on document restore
+        and need to be filled up.
+
+        Must be called after `_fix_lost_fc_links`.
+        Not very elegant but the lists cannot be serialized easily.
+
+        """
+        if not self.is_ready():
+            return
+        for o in self.link.Group:
+            if o.Label.startswith('real'):
+                self._fc_links_real.append(o)
+            elif o.Label.startswith('visual'):
+                self._fc_links_visual.append(o)
+            elif o.Label.startswith('collision'):
+                self._fc_links_collision.append(o)
+
 
 class _ViewProviderLink(ProxyBase):
     """A view provider for the Cross::Link object """
@@ -296,13 +439,31 @@ class _ViewProviderLink(ProxyBase):
 
     def attach(self, vobj: VPDO):
         self.view_object = vobj
+        self.init_extensions(vobj)
+        self.init_properties(vobj)
+
+    def init_extensions(self, vobj: VPDO):
         vobj.addExtension('Gui::ViewProviderGroupExtensionPython')
+
+    def init_properties(self, vobj: VPDO):
+        # Level of detail.
+        add_property(vobj, 'App::PropertyBool', 'ShowReal', 'ROS Display Options',
+                     'Whether to show the real parts')
+        add_property(vobj, 'App::PropertyBool', 'ShowVisual', 'ROS Display Options',
+                     'Whether to show the parts for URDF visual')
+        add_property(vobj, 'App::PropertyBool', 'ShowCollision', 'ROS Display Options',
+                     'Whether to show the parts for URDF collision')
+
+        self._old_show_real = vobj.ShowReal
+        self._old_show_visual = vobj.ShowVisual
+        self._old_show_collision = vobj.ShowCollision
 
     def updateData(self, obj: VPDO, prop):
         return
 
     def onChanged(self, vobj: VPDO, prop: str):
-        return
+        if prop in ['ShowReal', 'ShowVisual', 'ShowCollision']:
+            vobj.Object.Proxy.update_fc_links()
 
     def doubleClicked(self, vobj: VPDO):
         gui_doc = vobj.Document

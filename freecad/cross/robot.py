@@ -49,66 +49,6 @@ CrossJoint = DO  # A Cross::Joint, i.e. a DocumentObject with Proxy "Joint".
 CrossRobot = DO  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot".
 
 
-def _existing_link(link: CrossLink, obj: DO, lod: str) -> Optional[AppLink]:
-    """Return the link to obj if it exists in link.Group with the given lod.
-
-    Return the link to obj if it exists in link.Group with the given level of
-    detail.
-
-    Parameters
-    ----------
-    - link: a FreeCAD object of type Cross::Link.
-    - obj: a FreeCAD object of which to search a link.
-    - lod: string describing the level of details, {'real', 'visual',
-            'collision'}.
-
-    """
-    for linked_lod in link.Group:
-        if ((linked_lod.LinkedObject is obj)
-                and linked_lod.Name.startswith(lod)):
-            return linked_lod
-
-
-def _add_links_lod(
-        link: CrossLink,
-        objects: DOList,
-        lod: str,
-        ) -> list[AppLink]:
-    """Add a level of detail as links to real, visual or collision elements.
-
-    Return the full list of linked objects (existing + created).
-
-    Parameters
-    ----------
-    - link: a FreeCAD object of type Cross::Link.
-    - objects: the list of objects to potentially add.
-    - lod: string describing the level of details, {'real', 'visual',
-            'collision'}.
-
-    """
-    doc = link.Document
-    old_and_new_objects: DOList = []
-    for o in objects:
-        link_to_o = _existing_link(link, o, lod)
-        if link_to_o is not None:
-            if link_to_o.LinkPlacement != link.Placement:
-                # Avoid recursive recompute.
-                link_to_o.LinkPlacement = link.Placement
-            old_and_new_objects.append(link_to_o)
-            continue
-        name = f'{lod}_{link.Label}_'
-        lod_link = doc.addObject('App::Link', name)
-        lod_link.Label = name
-        if lod_link.LinkPlacement != link.Placement:
-            # Avoid recursive recompute.
-            lod_link.LinkPlacement = link.Placement
-        lod_link.setLink(o)
-        lod_link.adjustRelativeLinks(link)
-        link.addObject(lod_link)
-        old_and_new_objects.append(lod_link)
-    return old_and_new_objects
-
-
 def _add_joint_variable(
         robot: CrossRobot,
         joint: CrossJoint,
@@ -159,6 +99,37 @@ def _add_joint_variable(
     return used_var_name
 
 
+def _dispatch_to_joint_view_objects(
+        robot: CrossRobot,
+        prop: str,
+        joint_prop: str,
+        ) -> None:
+    """Dispatch a property to the view objects of the joints of `robot`."""
+    if not is_robot(robot):
+        return
+    if (not hasattr(robot, 'Proxy')) or (not robot.Proxy.is_ready()):
+        return
+    prop_value = getattr(robot.ViewObject, prop)
+    for joint in get_joints(robot.Group):
+        if hasattr(joint.ViewObject, joint_prop):
+            setattr(joint.ViewObject, joint_prop, prop_value)
+
+
+def _dispatch_to_link_view_objects(
+        robot: CrossRobot,
+        prop: str,
+        link_prop: str,
+        ) -> None:
+    if not is_robot(robot):
+        return
+    if (not hasattr(robot, 'Proxy')) or (not robot.Proxy.is_ready()):
+        return
+    prop_value = getattr(robot.ViewObject, prop)
+    for link in get_links(robot.Group):
+        if hasattr(link.ViewObject, link_prop):
+            setattr(link.ViewObject, link_prop, prop_value)
+
+
 class Robot(ProxyBase):
     """The Robot proxy."""
 
@@ -186,6 +157,7 @@ class Robot(ProxyBase):
         # This class doesn't add any object to this list itself.
         self._created_objects: DOList = []
 
+        self.init_extensions(obj)
         self.init_properties(obj)
 
     @property
@@ -206,12 +178,21 @@ class Robot(ProxyBase):
                      'The path to the ROS package to export files to,'
                      ' relative to $ROS_WORKSPACE/src')
 
+    def init_extensions(self, obj: CrossRobot) -> None:
+        # Needed to make this object able to attach parameterically to other
+        # objects.
+        # obj.addExtension('Part::AttachExtensionPython')
+        # Need a group to put the links and joints in.
+        # obj.addExtension('App::GroupExtensionPython')
+        # obj.addExtension('App::GeoFeatureGroupExtensionPython')
+        pass
+
     def execute(self, obj: CrossRobot) -> None:
         self.cleanup_group()
         self.set_joint_enum()
         self.add_joint_variables()
         self.compute_poses()
-        self.reset_group()
+        # self.reset_group()
 
     def onChanged(self, obj: CrossRobot, prop: str) -> None:
         if prop in ['Group']:
@@ -224,7 +205,6 @@ class Robot(ProxyBase):
     def onDocumentRestored(self, obj):
         """Restore attributes because __init__ is not called on restore."""
         self.__init__(obj)
-        self._fix_lost_fc_links()
 
     def __getstate__(self):
         return self.Type,
@@ -299,47 +279,24 @@ class Robot(ProxyBase):
         return get_chains(links, joints)
 
     def reset_group(self) -> None:
+        """Add FreeCAD links in CrossLinks for Real, Visual, and Collision."""
         if ((not self.is_ready())
                 or (not hasattr(self.robot.ViewObject, 'Proxy'))
                 or (not self.robot.ViewObject.Proxy.is_ready())):
             return
 
-        links = self.get_links()  # CROSS links.
-
-        # Add objects from selected components.
-        all_linked_objects: list[AppLink] = []
-        if self.robot.ViewObject.ShowReal:
-            for link in links:
-                all_linked_objects += _add_links_lod(link, link.Real, 'real')
-
-        if self.robot.ViewObject.ShowVisual:
-            for link in links:
-                all_linked_objects += _add_links_lod(link, link.Visual, 'visual')
-
-        if self.robot.ViewObject.ShowCollision:
-            for link in links:
-                all_linked_objects += _add_links_lod(link, link.Collision, 'collision')
-
-        # List of linked objects from all Cross::Link in robot.Group.
-        current_linked_objects: list[AppLink] = []
+        links: list[CrossLink] = self.get_links()
         for link in links:
-            for o in link.Group:
-                current_linked_objects.append(o)
-
-        # Remove objects that do not belong to `all_linked_objects`.
-        objects_to_remove = set(current_linked_objects) - set(all_linked_objects)
-        for o in objects_to_remove:
-            self.robot.Document.removeObject(o.Name)
-        # TODO?: doc.recompute() if objects_to_remove or (set(current_linked_objects)!= set(all_linked_objects))
+            link.Proxy.update_fc_links()
 
     def cleanup_group(self) -> DO:
-        """Remove the last object not supported by ROS::Robot.
+        """Remove the objects not supported by ROS::Robot.
 
         Recursion provoked by modifying `Group` will take care of removing
         the remaining unsupported objects.
 
         """
-        if (not self.is_ready()):
+        if not self.is_ready():
             return
         for o in self.robot.Group[::-1]:
             if is_link(o) or is_joint(o):
@@ -489,27 +446,6 @@ class Robot(ProxyBase):
                          urdf_file=urdf_file)
         return xml
 
-    def _fix_lost_fc_links(self) -> None:
-        """Fix linked objects in CROSS links lost on restore.
-
-        Probably because these elements are restored before the CROSS links.
-
-        """
-        if not self.is_ready():
-            return
-        links = self.get_links()
-        for obj in self.robot.Document.Objects:
-            if (not hasattr(obj, 'InList')) or (len(obj.InList) != 1):
-                continue
-            link = obj.InList[0]
-            if ((link not in links)
-                    or (obj in link.Group)
-                    or (obj in link.Real)
-                    or (obj in link.Visual)
-                    or (obj in link.Collision)):
-                continue
-            link.addObject(obj)
-
 
 class _ViewProviderRobot(ProxyBase):
     """A view provider for the Robot container object """
@@ -534,6 +470,8 @@ class _ViewProviderRobot(ProxyBase):
         self.view_object = vobj
         self.robot = vobj.Object
 
+        # vobj.addExtension('Gui::ViewProviderGeoFeatureGroupExtensionPython')
+
         # Level of detail.
         add_property(vobj, 'App::PropertyBool', 'ShowReal', 'ROS Display Options',
                      'Whether to show the real parts')
@@ -556,19 +494,15 @@ class _ViewProviderRobot(ProxyBase):
         return
 
     def onChanged(self, vobj: VPDO, prop: str):
+        robot: CrossRobot = vobj.Object
+
         if prop == 'ShowJointAxes':
-            if is_robot(vobj.Object):
-                for j in get_joints(vobj.Object.Group):
-                    if hasattr(j.ViewObject, 'ShowAxis'):
-                        j.ViewObject.ShowAxis = vobj.ShowJointAxes
+            _dispatch_to_joint_view_objects(robot, prop, 'ShowAxis')
         if prop == 'JointAxisLength':
-            if is_robot(vobj.Object):
-                for j in get_joints(vobj.Object.Group):
-                    if hasattr(j.ViewObject, 'AxisLength'):
-                        j.ViewObject.AxisLength = vobj.JointAxisLength
+            _dispatch_to_joint_view_objects(robot, prop, 'AxisLength')
         if prop in ['ShowReal', 'ShowVisual', 'ShowCollision']:
-            robot: CrossRobot = vobj.Object
-            robot.Proxy.execute(robot)
+            _dispatch_to_link_view_objects(robot, prop, prop)
+            # robot.Proxy.execute(robot)
 
     def doubleClicked(self, vobj: VPDO):
         gui_doc = vobj.Document
@@ -600,6 +534,7 @@ def make_robot(name, doc: Optional[fc.Document] = None) -> CrossRobot:
         warn('No active document, doing nothing', False)
         return
     obj = doc.addObject('App::DocumentObjectGroupPython', name)
+    # obj = doc.addObject('Part::FeaturePython', name)
     Robot(obj)
 
     if hasattr(fc, 'GuiUp') and fc.GuiUp:

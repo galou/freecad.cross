@@ -104,12 +104,42 @@ class XacroObject(ProxyBase):
         if not hasattr(self, '_root_link'):
             self._root_link = ''
 
-        self.init_properties(obj)
         self.init_extensions(obj)
+        self.init_properties(obj)
 
     @property
     def root_link(self) -> str:
         return str(self._root_link)
+
+    def init_extensions(self, obj: CrossXacroObject) -> None:
+        # Needed to make this object able to attach parameterically to other
+        # objects.
+        obj.addExtension('Part::AttachExtensionPython')
+        # Need a group to put the generated robot in.
+        # obj.addExtension('App::GroupExtensionPython')
+        obj.addExtension('App::GeoFeatureGroupExtensionPython')
+
+        # Managed in self.reset_group().
+        obj.setPropertyStatus('Group', ['ReadOnly', 'Hidden'])
+
+    def init_properties(self, obj: CrossXacroObject):
+        add_property(obj, 'App::PropertyString', '_Type', 'Internal',
+                     'The type')
+        obj.setPropertyStatus('_Type', ['Hidden', 'ReadOnly'])
+        obj._Type = self.Type
+
+        add_property(obj, 'App::PropertyFile', 'InputFile', 'Input',
+                     'The source xacro or URDF file')
+        add_property(obj, 'App::PropertyEnumeration', 'MainMacro', 'Input',
+                     'The macro to use')
+
+        # The computed placement (or the placement defined by the user if no
+        # attachment mode is defined). This is only
+        # when using `Part::AttachExtensionPython`.
+        add_property(obj, 'App::PropertyPlacement', 'Placement',
+                     'Base', 'Placement')
+
+        self._toggle_editor_mode(obj)
 
     def has_link(self, link_name: str) -> bool:
         """Return True if the link belongs to the xacro object.
@@ -151,43 +181,13 @@ class XacroObject(ProxyBase):
             if ros_name(link) == link_name:
                 return link.Placement
 
-    def init_properties(self, obj: CrossXacroObject):
-        add_property(obj, 'App::PropertyString', '_Type', 'Internal',
-                     'The type')
-        obj.setPropertyStatus('_Type', ['Hidden', 'ReadOnly'])
-        obj._Type = self.Type
-
-        add_property(obj, 'App::PropertyFile', 'InputFile', 'Input',
-                     'The source xacro or URDF file')
-        add_property(obj, 'App::PropertyEnumeration', 'MainMacro', 'Input',
-                     'The macro to use')
-
-        # The computed placement (or the placement defined by the user if no
-        # attachment mode is defined). This is only
-        # when using `Part::AttachExtensionPython`.
-        add_property(obj, 'App::PropertyPlacement', 'Placement',
-                     'Base', 'Placement')
-
-        self._toggle_editor_mode(obj)
-
-    def init_extensions(self, obj: CrossXacroObject):
-        # Needed to make this object able to attach parameterically to other
-        # objects.
-        # obj.addExtension('Part::AttachExtensionPython')
-        # Need a group to put the generated robot in.
-        # obj.addExtension('App::GroupExtensionPython')
-        obj.addExtension('App::GeoFeatureGroupExtensionPython')
-
-        # Managed in self.reset_group().
-        obj.setPropertyStatus('Group', ['ReadOnly', 'Hidden'])
-
     def execute(self, obj: CrossXacroObject) -> None:
         """Update the embedded robot.
 
         Called on recompute(), this method is mandatory for scripted objects.
 
         """
-        # obj.positionBySupport()
+        obj.positionBySupport()
         if not self.is_ready():
             return
         if not obj.InputFile:

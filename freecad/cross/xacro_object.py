@@ -210,6 +210,11 @@ class XacroObject(ProxyBase):
             if rel_path != obj.InputFile:
                 obj.InputFile = rel_path
             self.execute(obj)
+        if prop == 'Placement':
+            robot = self._get_robot()
+            if robot and (robot.Placement != obj.Placement):
+                # Avoid recursive recompute.
+                robot.Placement = obj.Placement
 
     def onDocumentRestored(self, obj: CrossXacroObject):
         """Restore attributes because __init__ is not called on restore."""

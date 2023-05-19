@@ -195,6 +195,13 @@ class Link(ProxyBase):
             robot = self.get_robot()
             if robot and hasattr(robot, 'Proxy'):
                 robot.Proxy.set_joint_enum()
+        if prop == 'Placement':
+            if not self.is_ready():
+                return
+            for fclink in obj.Group:
+                if (is_freecad_link(fclink)
+                        and (fclink.LinkPlacement != obj.Placement)):
+                    fclink.LinkPlacement = obj.Placement
 
     def onDocumentRestored(self, obj: CrossLink) -> None:
         self.__init__(obj)

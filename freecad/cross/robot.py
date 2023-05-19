@@ -157,7 +157,6 @@ class Robot(ProxyBase):
         # This class doesn't add any object to this list itself.
         self._created_objects: DOList = []
 
-        self.init_extensions(obj)
         self.init_properties(obj)
 
     @property
@@ -178,14 +177,10 @@ class Robot(ProxyBase):
                      'The path to the ROS package to export files to,'
                      ' relative to $ROS_WORKSPACE/src')
 
-    def init_extensions(self, obj: CrossRobot) -> None:
-        # Needed to make this object able to attach parameterically to other
-        # objects.
-        # obj.addExtension('Part::AttachExtensionPython')
-        # Need a group to put the links and joints in.
-        # obj.addExtension('App::GroupExtensionPython')
-        # obj.addExtension('App::GeoFeatureGroupExtensionPython')
-        pass
+        # The `Placement` is not used directly by the robot but it is used to
+        # transform the pose of its links.
+        add_property(obj, 'App::PropertyPlacement', 'Placement',
+                     'Base', 'Placement')
 
     def execute(self, obj: CrossRobot) -> None:
         self.cleanup_group()
@@ -222,7 +217,7 @@ class Robot(ProxyBase):
         """
         chains = self.get_chains()
         for chain in chains:
-            placement = fc.Placement()
+            placement = self.robot.Placement  # A copy.
             for link, joint in grouper(chain, 2):
                 # TODO: some links and joints are already placed, re-use.
                 if hasattr(link, 'MountedPlacement'):

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from copy import copy
-import os
 from pathlib import Path
+from typing import Optional
+import os
 import sys
 
 import FreeCAD as fc
@@ -160,8 +161,77 @@ def get_package_and_file(file_path: [Path | str]) -> tuple[str, str]:
     return pkg_path.name, relative_file_path
 
 
-def split_package_path(package_path: [Path | str]) -> tuple[Path, Path]:
+def pkg_and_file_from_ros_path(
+        path: str,
+        ) -> tuple[Optional[str], Optional[str]]:
+    """Return the tuple (package_name, relative_file_path).
+
+    Return (None, None) if the guessed package does not exist.
+
+    The input path must have the following format
+    `package://<package_name>/<relative_file_path>`.
+
+    """
+    # Import here to be able to import the module without ROS.
+    from ament_index_python.packages import PackageNotFoundError
+    from ament_index_python.packages import get_package_share_directory
+
+    if not path or not isinstance(path, str):
+        return None, None
+    if not path.startswith('package://'):
+        return None, None
+    try:
+        pkg, _, rel_path = path[len('package://'):].partition('/')
+    except ValueError:
+        return None, None
+    try:
+        get_package_share_directory(pkg)
+    except PackageNotFoundError:
+        return None, None
+    return pkg, rel_path
+
+
+def path_from_ros_path(
+        path: str,
+        relative_to: Optional[Path | str] = None,
+        ) -> Optional[Path]:
+    """Return the absolute path to a file given in ROS format.
+
+    Return the absolute path to a file given in ROS format.
+    Supported formats are:
+    - `package://<package_name>/<relative_file_path>` and
+    - `file://<absolute_file_path>`.
+    - `file://<relative_file_path>` if `relative_to` is given.
+
+    With the `file://` format, if the input path is relative and `relative_to`
+    is not given, the output path will also be relative. You've been warned.
+
+    """
+    # Import here to be able to import the module without ROS.
+    from ament_index_python.packages import get_package_share_directory
+
+    if not path:
+        return
+    if (not (path.startswith('package://')
+             or path.startswith('file://'))):
+        return
+    if path.startswith('package://'):
+        pkg, rel_path = pkg_and_file_from_ros_path(path)
+        if not pkg:
+            return
+        pkg_path = get_package_share_directory(pkg)
+        return Path(pkg_path) / rel_path
+    elif path.startswith('file://'):
+        if relative_to is not None:
+            return Path(relative_to) / path[len('file://'):]
+        return Path(path[len('file://'):])
+
+
+def split_package_path(package_path: [Path | str]) -> tuple[Path, str]:
     """Return the package parent and the package name.
+
+    For example, if `package_path` is `/home/user/ros_ws/src/my_pkg`,
+    return (Path('/home/user/ros_ws/src'), 'my_pkg').
 
     Parameters
     ----------
@@ -173,7 +243,7 @@ def split_package_path(package_path: [Path | str]) -> tuple[Path, Path]:
         warn('"package_path" must be a directory', True)
     package_path = package_path.resolve()
     parent = package_path.parent
-    package_name = package_path.stem
+    package_name = package_path.name
     return parent, package_name
 
 

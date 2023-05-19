@@ -9,9 +9,6 @@ import FreeCAD as fc
 
 import Mesh as fcmesh  # FreeCAD.
 
-from ament_index_python.packages import PackageNotFoundError
-from ament_index_python.packages import get_package_share_directory
-
 from urdf_parser_py.urdf import Box
 from urdf_parser_py.urdf import Cylinder
 from urdf_parser_py.urdf import Joint as UrdfJoint
@@ -25,6 +22,8 @@ from .freecad_utils import is_group
 from .freecad_utils import warn
 from .mesh_utils import read_mesh_dae
 from .mesh_utils import scale_mesh_object
+from .ros_utils import path_from_ros_path
+from .ros_utils import pkg_and_file_from_ros_path
 from .urdf_utils import rotation_from_rpy
 
 # Typing hints.
@@ -47,43 +46,6 @@ def obj_from_geometry(
     if isinstance(geometry, Sphere):
         return obj_from_sphere(geometry, doc_or_group)
     raise NotImplementedError('Primitive not implemented')
-
-
-def pkg_and_file_from_urdf_path(
-        path: str,
-        ) -> tuple[Optional[str], Optional[str]]:
-    """Return the tuple (package_name, relative_file_path)."""
-    if not path or not isinstance(path, str):
-        return None, None
-    if not path.startswith('package://'):
-        return None, None
-    try:
-        pkg, _, rel_path = path[len('package://'):].partition('/')
-    except ValueError:
-        return None, None
-    try:
-        get_package_share_directory(pkg)
-    except PackageNotFoundError:
-        return None, None
-    return pkg, rel_path
-
-
-def mesh_path_from_urdf(
-        mesh_path: str,
-        ) -> Optional[Path]:
-    if not mesh_path:
-        return
-    if (not (mesh_path.startswith('package://')
-             or mesh_path.startswith('file://'))):
-        return
-    if mesh_path.startswith('package://'):
-        pkg, rel_path = pkg_and_file_from_urdf_path(mesh_path)
-        if not pkg:
-            return
-        pkg_path = get_package_share_directory(pkg)
-        return Path(pkg_path) / rel_path
-    elif mesh_path.startswith('file://'):
-        return Path(mesh_path[len('file://'):])
 
 
 def placement_from_origin(
@@ -172,9 +134,9 @@ def obj_from_mesh(
         geometry: Mesh,
         doc_or_group: [Doc | DO],
         ) -> tuple[Optional[DO], Optional[Path]]:
-    mesh_path = mesh_path_from_urdf(geometry.filename)
+    mesh_path = path_from_ros_path(geometry.filename)
     if not mesh_path:
-        pkg, rel_path = pkg_and_file_from_urdf_path(mesh_path)
+        pkg, rel_path = pkg_and_file_from_ros_path(mesh_path)
         if pkg:
             warn(f'ROS package {pkg} not found, cannot read {geometry.filename}')
         else:

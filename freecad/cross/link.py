@@ -189,8 +189,11 @@ class Link(ProxyBase):
         pass
 
     def onChanged(self, obj: CrossLink, prop: str) -> None:
-        if prop in ['Group', 'Real', 'Visual', 'Collision']:
+        if prop == 'Group':
             self.cleanup_children()
+        if prop in ['Real', 'Visual', 'Collision']:
+            self.cleanup_children()
+            self.update_fc_links()
         if prop in ['Label', 'Label2']:
             robot = self.get_robot()
             if robot and hasattr(robot, 'Proxy'):
@@ -517,10 +520,16 @@ def make_link(name, doc: Optional[fc.Document] = None) -> CrossLink:
             if is_robot(candidate):
                 obj.adjustRelativeLinks(candidate)
                 candidate.addObject(obj)
+                obj.ViewObject.ShowReal = candidate.ViewObject.ShowReal
+                obj.ViewObject.ShowVisual = candidate.ViewObject.ShowVisual
+                obj.ViewObject.ShowCollision = candidate.ViewObject.ShowCollision
             elif is_joint(candidate):
                 robot = candidate.Proxy.get_robot()
                 if robot:
                     obj.adjustRelativeLinks(robot)
                     robot.addObject(obj)
                     candidate.Child = ros_name(obj)
+                    obj.ViewObject.ShowReal = robot.ViewObject.ShowReal
+                    obj.ViewObject.ShowVisual = robot.ViewObject.ShowVisual
+                    obj.ViewObject.ShowCollision = robot.ViewObject.ShowCollision
     return obj

@@ -75,7 +75,9 @@ class Xacro:
         robot.setAttribute('xmlns:xacro', 'http://ros.org/wiki/xacro')
         include = robot.appendChild(out_xml.createElement('xacro:include'))
         pkg, xacro_file = get_package_and_file(self.input_xacro_file)
-        include.setAttribute('filename', f'package://{pkg}/{xacro_file}')
+        # Implementation note, xacro does not support the
+        # `package://{pkg}/{xacro_file}` syntax.
+        include.setAttribute('filename', f'$(find {pkg})/{xacro_file}')
         use = robot.appendChild(out_xml.createElement(f'xacro:{macro}'))
         for k, v in parameters.items():
             use.setAttribute(k, str(v))

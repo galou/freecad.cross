@@ -301,6 +301,8 @@ class Link(ProxyBase):
             # No need to change `Group` without GUI.
             return
         vlink = link.ViewObject
+        if vlink is None:
+            return
 
         old_show_real = len(self._fc_links_real) != 0
         old_show_visual = len(self._fc_links_visual) != 0

@@ -79,6 +79,12 @@ def robot_from_urdf(
     # mimicking joint can be defined before the mimicked joint in URDF.
     _define_mimic_joints(urdf_robot, joint_map)
     _compensate_joint_placement(robot, urdf_robot, joint_map)
+
+    # Change the visual properties after having added all links.
+    if hasattr(fc, 'GuiUp') and fc.GuiUp:
+        robot.ViewObject.ShowReal = False
+        robot.ViewObject.ShowVisual = True
+        robot.ViewObject.ShowCollision = False
     return robot
 
 
@@ -96,9 +102,6 @@ def _make_robot(
     """
 
     robot = make_robot(name, doc)
-    robot.ViewObject.ShowReal = False
-    robot.ViewObject.ShowVisual = True
-    robot.ViewObject.ShowCollision = False
     # Create a group 'Parts' to hold all parts in the assembly document.
     parts_group = make_group(doc, 'URDF Parts', visible=False)
     robot.Proxy.created_objects.append(parts_group)

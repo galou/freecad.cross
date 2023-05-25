@@ -14,6 +14,7 @@ from .freecad_utils import warn
 from .mesh_utils import save_mesh_dae
 from .urdf_utils import XmlForExport
 from .urdf_utils import urdf_collision_from_object
+from .urdf_utils import urdf_inertial
 from .urdf_utils import urdf_visual_from_object
 from .utils import warn_unsupported
 from .wb_utils import ICON_PATH
@@ -168,6 +169,26 @@ class Link(ProxyBase):
         add_property(obj, 'App::PropertyLinkList', 'Collision', 'Elements',
                      'The part objects this link that constitutes the URDF'
                      ' collision elements, optional')
+
+        add_property(obj, 'App::PropertyQuantity', 'Mass', 'Inertial Parameters',
+                     'Mass of the link')
+        obj.Mass = fc.Units.Mass
+        add_property(obj, 'App::PropertyPlacement', 'CenterOfMass', 'Inertial Parameters',
+                     'Center of mass of the link, with orientation determining the principal axes of inertia')
+        # Implementation note: App.Units.MomentOfInertia is not a valid unit in
+        # FC v0.21.
+        add_property(obj, 'App::PropertyFloat', 'Ixx', 'Inertial Parameters',
+                     'Moment of inertia around the x axis, in kg m^2')
+        add_property(obj, 'App::PropertyFloat', 'Ixy', 'Inertial Parameters',
+                     'Moment of inertia around the y axis when rotating around the x axis, in kg m^2')
+        add_property(obj, 'App::PropertyFloat', 'Ixz', 'Inertial Parameters',
+                     'Moment of inertia around the z axis when rotating around the x axis, in kg m^2')
+        add_property(obj, 'App::PropertyFloat', 'Iyy', 'Inertial Parameters',
+                     'Moment of inertia around the y axis, in kg m^2')
+        add_property(obj, 'App::PropertyFloat', 'Iyz', 'Inertial Parameters',
+                     'Moment of inertia around the z axis when rotating around the y axis, in kg m^2')
+        add_property(obj, 'App::PropertyFloat', 'Izz', 'Inertial Parameters',
+                     'Moment of inertia around the z axis, in kg m^2')
 
         add_property(obj, 'App::PropertyPlacement', 'Placement', 'Internal',
                      'Placement of elements in the robot frame')
@@ -390,6 +411,16 @@ class Link(ProxyBase):
                     package_parent,
                     package_name):
                 link_xml.append(xml)
+        link_xml.append(urdf_inertial(
+            mass=self.link.Mass.Value,
+            center_of_mass=self.link.CenterOfMass,
+            ixx=self.link.Ixx,
+            ixy=self.link.Ixy,
+            ixz=self.link.Ixz,
+            iyy=self.link.Iyy,
+            iyz=self.link.Iyz,
+            izz=self.link.Izz,
+            ))
         return link_xml
 
     def _fix_lost_fc_links(self) -> None:

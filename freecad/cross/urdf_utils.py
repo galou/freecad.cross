@@ -647,6 +647,29 @@ def urdf_collision_from_object(
     return _urdf_generic_from_object(obj, 'collision', package_name, placement)
 
 
+def urdf_inertial(
+        mass: float,
+        center_of_mass: fc.Placement,
+        ixx: float,
+        ixy: float,
+        ixz: float,
+        iyy: float,
+        iyz: float,
+        izz: float,
+        ) -> et.Element:
+    """Return the xml element for inertial."""
+    inertial_et = et.Element('inertial')
+    et.SubElement(inertial_et, 'mass', {'value': str(mass)})
+    origin_et = urdf_origin_from_placement(center_of_mass)
+    inertial_et.append(origin_et)
+    pattern = ('<inertia ixx="{ixx}" ixy="{ixy}" ixz="{ixz}"'
+               ' iyy="{iyy}" iyz="{iyz}" izz="{izz}"/>')
+    inertia_et = et.fromstring(pattern.format(ixx=ixx, ixy=ixy, ixz=ixz,
+                                              iyy=iyy, iyz=iyz, izz=izz))
+    inertial_et.append(inertia_et)
+    return inertial_et
+
+
 def export_group_with_lcs(group: fc.DocumentObjectGroup,
                           package_path: [str | Path],
                           ) -> bool:

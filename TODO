@@ -1,9 +1,6 @@
-- Add the possiblity to place a robot.
-- Implement the placement of xacro objects in workcell builder
 - Modify (and rename) command SetLinkMountedPlacement to also work for Joint.Origin
 - Solve elements out of their parent group (e.g. XacroObject) on document restore
 - Respect joint limits.
-- Add inertial elements to links.
 - Solve visibility toggle for links.
 - Use `Joint.onBeforeChange` to remember the parent and child CrossLinks, then restore `Parent` and `Child` with `obj.Parent = ros_name(saved_parent_link)
 - Remove from `Joint.Child` enum all links that:

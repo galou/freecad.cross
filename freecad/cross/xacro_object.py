@@ -187,7 +187,6 @@ class XacroObject(ProxyBase):
         Called on recompute(), this method is mandatory for scripted objects.
 
         """
-        obj.positionBySupport()
         if not self.is_ready():
             return
         if not obj.InputFile:
@@ -209,7 +208,6 @@ class XacroObject(ProxyBase):
             rel_path = remove_ros_workspace(obj.InputFile)
             if rel_path != obj.InputFile:
                 obj.InputFile = rel_path
-            self.execute(obj)
         if prop == 'Placement':
             robot = self._get_robot()
             if robot and (robot.Placement != obj.Placement):

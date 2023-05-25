@@ -70,4 +70,5 @@
 # Mesh simplification
 
 - [The V-HACD library](https://github.com/kmammou/v-hacd/) decomposes a 3D surface into a set of "near" convex parts
+- [trimesh interface to V-HACD](https://trimsh.org/trimesh.interfaces.vhacd.html)
 - [Mesh-to-SDF](https://github.com/kmammou/v-hacd/) converter (uses V-HACD).

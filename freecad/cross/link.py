@@ -220,7 +220,7 @@ class Link(ProxyBase):
             if robot and hasattr(robot, 'Proxy'):
                 robot.Proxy.set_joint_enum()
         if prop == 'Placement':
-            if not self.is_ready():
+            if not self.is_execute_ready():
                 return
             for fclink in obj.Group:
                 if (is_freecad_link(fclink)
@@ -241,7 +241,7 @@ class Link(ProxyBase):
 
     def cleanup_children(self) -> DOList:
         """Remove and return all objects not supported by ROS::Link."""
-        if not self.is_ready():
+        if not self.is_execute_ready():
             return
         removed_objects: set[DO] = set()
         # Group is managed by us and the containing robot.
@@ -279,7 +279,7 @@ class Link(ProxyBase):
 
     def get_robot(self) -> Optional[CrossRobot]:
         """Return the Cross::Robot this link belongs to."""
-        if not self.is_ready():
+        if not self.is_execute_ready():
             return
         for o in self.link.InList:
             if is_robot(o):
@@ -315,7 +315,7 @@ class Link(ProxyBase):
 
     def update_fc_links(self) -> None:
         """Update the FreeCAD link according to the level of details."""
-        if not self.is_ready():
+        if not self.is_execute_ready():
             return
         link = self.link
         if not hasattr(link, 'ViewObject'):
@@ -429,7 +429,7 @@ class Link(ProxyBase):
         Probably because these elements are restored before the CROSS links.
 
         """
-        if not self.is_ready():
+        if not self.is_execute_ready():
             return
         link = self.link
         for obj in link.Document.Objects:
@@ -455,7 +455,7 @@ class Link(ProxyBase):
         Not very elegant but the lists cannot be serialized easily.
 
         """
-        if not self.is_ready():
+        if not self.is_execute_ready():
             return
         for o in self.link.Group:
             if o.Label.startswith('real'):

@@ -421,7 +421,7 @@ class ProxyBase(ABC):
         self._object_name: str = object_name
         self._properties: list[str] = properties
 
-    def is_ready(self) -> bool:
+    def is_execute_ready(self) -> bool:
         """Return True if the object and all properties are defined.
 
         Return True if `self` has the attribute `self._object_name` and

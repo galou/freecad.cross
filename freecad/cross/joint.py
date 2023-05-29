@@ -138,7 +138,7 @@ class Joint(ProxyBase):
         - joint_value: joint value in mm or deg.
 
         """
-        if not self.is_ready():
+        if not self.is_execute_ready():
             return fc.Placement()
         # Only actuation around/about z supported.
         if self.joint.Mimic and self.joint.MimickedJoint:
@@ -172,7 +172,7 @@ class Joint(ProxyBase):
 
     def get_robot(self) -> Optional[CrossRobot]:
         """Return the Cross::Robot this joint belongs to."""
-        if not self.is_ready():
+        if not self.is_execute_ready():
             return
         for o in self.joint.InList:
             if is_robot(o):
@@ -227,7 +227,7 @@ class Joint(ProxyBase):
         return joint_xml
 
     def _toggle_editor_mode(self):
-        if not self.is_ready():
+        if not self.is_execute_ready():
             return
         joint = self.joint
         if joint.Mimic:

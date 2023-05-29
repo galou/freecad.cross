@@ -112,9 +112,6 @@ class XacroObject(ProxyBase):
         return str(self._root_link)
 
     def init_extensions(self, obj: CrossXacroObject) -> None:
-        # Needed to make this object able to attach parameterically to other
-        # objects.
-        obj.addExtension('Part::AttachExtensionPython')
         # Need a group to put the generated robot in.
         # obj.addExtension('App::GroupExtensionPython')
         obj.addExtension('App::GeoFeatureGroupExtensionPython')
@@ -187,7 +184,7 @@ class XacroObject(ProxyBase):
         Called on recompute(), this method is mandatory for scripted objects.
 
         """
-        if not self.is_ready():
+        if not self.is_execute_ready():
             return
         if not obj.InputFile:
             self._root_link = ''
@@ -235,7 +232,7 @@ class XacroObject(ProxyBase):
         old_param_properties: list[str] = copy(self.param_properties)
 
         self.param_properties.clear()
-        if not self.is_ready():
+        if not self.is_execute_ready():
             return
         if not self.xacro:
             return
@@ -258,7 +255,8 @@ class XacroObject(ProxyBase):
                 obj.removeProperty(name)
 
     def reset_group(self, obj: CrossXacroObject):
-        if not self.is_ready():
+        """Rebuild the CrossRobot object."""
+        if not self.is_execute_ready():
             return
         new_robot = self._generate_robot(obj)
         if new_robot and obj.Group:

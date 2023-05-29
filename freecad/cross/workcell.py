@@ -97,18 +97,18 @@ class Workcell(ProxyBase):
             self.Type, = state
 
     def get_xacro_objects(self) -> list[CrossXacroObject]:
-        if not self.is_ready():
+        if not self.is_execute_ready():
             return []
         return get_xacro_objects(self.workcell.Group)
 
     def get_joints(self) -> list[CrossJoint]:
-        if not self.is_ready():
+        if not self.is_execute_ready():
             return []
         return get_joints(self.workcell.Group)
 
     def set_joint_enum(self) -> None:
         """Set the enum for Child and Parent of all joints."""
-        if not self.is_ready():
+        if not self.is_execute_ready():
             return
         # We add the empty string to show that the child or parent
         # was not set yet.
@@ -154,7 +154,7 @@ class Workcell(ProxyBase):
                     xo.Placement = placement
 
     def export_urdf(self) -> Optional[et.Element]:
-        if not self.is_ready():
+        if not self.is_execute_ready():
             return
         obj: CrossWorkcell = self.workcell
         if not obj.OutputPath:

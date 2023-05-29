@@ -10,7 +10,7 @@ from .ui import command_new_workcell
 from .ui import command_new_xacro_object
 from .ui import command_reload # Developer tool.
 from .ui import command_robot_from_urdf
-from .ui import command_set_link_mounted_placement
+from .ui import command_set_placement
 from .ui import command_sphere_from_bounding_box
 from .ui import command_urdf_export
 from .ui import command_wb_settings
@@ -45,7 +45,7 @@ class CrossWorkbench(fcgui.Workbench):
             'UrdfImport',  # Defined in ./ui/command_robot_from_urdf.py.
             'AssemblyFromUrdf',  # Defined in ./ui/command_assembly_from_urdf.py.
             'UrdfExport',  # Defined in ./ui/command_urdf_export.py.
-            'SetLinkMountedPlacement',  # Defined in ./ui/command_set_link_mounted_placement.py.
+            'SetCROSSPlacement',  # Defined in ./ui/command_set_placement.py.
             'WbSettings',  # Defined in ./ui/command_wb_settings.py.
             'Reload',  # Comment out to disable this developer tool.
             ]

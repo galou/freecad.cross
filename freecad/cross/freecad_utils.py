@@ -9,6 +9,8 @@ from typing import Any, Iterable, Optional
 
 import FreeCAD as fc
 
+from .utils import true_then_false
+
 if hasattr(fc, 'GuiUp') and fc.GuiUp:
     from PySide import QtCore  # FreeCAD's PySide!
     from PySide import QtGui  # FreeCAD's PySide!
@@ -370,30 +372,50 @@ def get_leafs_and_subnames(obj: DO) -> list[tuple[DO, str]]:
     return get_subobjects_recursive(obj, '')
 
 
-def validate_types(objects: DOList, types: list[str]) -> DOList:
+def validate_types(
+        objects: DOList,
+        types: list[str],
+        respect_order: [bool | list[bool]] = False,
+        ) -> DOList:
     """Sort objects by required types.
 
+    Return a list of objects sorted by the order in `types`.
+    If `respect_order` is True, the required type must be in the same order as
+    the objects in the input list. If `respect_order` is a list of booleans, it
+    must have the same length as `types` and the strict order is only required if
+    the corresponding boolean is True.
     Raises a RuntimeError if a listed type has no appropriate object in the input
     list.
 
     """
     if len(objects) < len(types):
         raise RuntimeError('Less types required that the number of objects')
+    if isinstance(respect_order, bool):
+        respect_order = [respect_order] * len(types)
+    if len(respect_order) != len(types):
+        raise RuntimeError('`respect_order` must be a boolean or a'
+                           ' list of booleans with the same length as `types`')
+    if not true_then_false(respect_order):
+        raise RuntimeError('`respect_order` must be a list of booleans with no'
+                           ' False after a True')
 
     copy_of_objects = copy(objects)
     copy_of_types = copy(types)
     objects_of_precise_type: DOList = []
     indexes_of_any: list[int] = []
-    for i, type_ in enumerate(types):
+    for i_in_types, (type_, exact_position) in enumerate(zip(types, respect_order)):
         object_found = False
-        for o in copy_of_objects:
+        any_type = (type_ in [None, 'any', 'Any'])
+        i_in_objects = -1
+        for j, o in enumerate(copy_of_objects):
             if object_found:
                 # Indirectly, next `type_`.
                 continue
-            if type_ in [None, 'any', 'Any']:
-                indexes_of_any.append(i)
+            if any_type:
+                indexes_of_any.append(i_in_types)
                 copy_of_types.pop(0)
                 object_found = True
+                i_in_objects = j
                 # Indirectly, next `type_`.
                 continue
             if has_type(o, type_):
@@ -401,10 +423,20 @@ def validate_types(objects: DOList, types: list[str]) -> DOList:
                 copy_of_objects.remove(o)
                 copy_of_types.pop(0)
                 object_found = True
+                i_in_objects = j
                 # Indirectly, next `type_`.
                 continue
         if not object_found:
             raise RuntimeError(f'No object of type "{type_}"')
+        if (exact_position
+                and (i_in_types != i_in_objects)
+                and (not any_type)):
+            if hasattr(o, 'TypeId'):
+                raise RuntimeError(f'Object at position {i_in_objects + 1} is not'
+                                   f' of type "{type_}" but of type "{o.TypeId}"')
+            else:
+                raise RuntimeError(f'Object at position {i_in_objects + 1} is not'
+                                   f' of type "{type_}"')
     outlist: DOList = []
     for i in range(len(types)):
         if i in indexes_of_any:

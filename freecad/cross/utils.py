@@ -141,3 +141,29 @@ def get_parent_by_pattern(
         if file_path.samefile(Path(file_path.root)):
             # We are at the root.
             return Path(), relative_file_path
+
+
+def true_then_false(list: Iterable[bool]) -> None:
+    """Return True if no False is found after a True.
+
+    >>> true_then_false([True])
+    True
+    >>> true_then_false([False])
+    True
+    >>> true_then_false([True, True, False])
+    True
+    >>> true_then_false([True, False, True])
+    False
+    >>> true_then_false([False, True, True])
+    False
+
+    """
+    if not list:
+        return True
+    v0 = list[0]
+    for v in list:
+        if v0 or not v:
+            v0 = v
+            continue
+        return False
+    return True

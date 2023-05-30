@@ -507,6 +507,9 @@ class _ViewProviderLink(ProxyBase):
     def onChanged(self, vobj: VPDO, prop: str):
         if prop in ['ShowReal', 'ShowVisual', 'ShowCollision']:
             vobj.Object.Proxy.update_fc_links()
+        if prop == 'Visibility':
+            for o in vobj.Object.Group:
+                o.ViewObject.Visibility = vobj.Visibility
 
     def doubleClicked(self, vobj: VPDO):
         gui_doc = vobj.Document

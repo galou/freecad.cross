@@ -34,13 +34,17 @@ def get_relative_placement(
 
 
 class _SetCROSSPlacementCommand:
-    """Command to set the mounted placement of a Link."""
+    """Command to set the placement of a Link or a Joint.
+
+    Command to set the mounted placement of a Link or the Origin of a Joint.
+
+    """
 
     def GetResources(self):
-        return {'Pixmap': 'set_link_mounted_placement.svg',
-                'MenuText': tr('Set the mounted placement of a link'),
+        return {'Pixmap': 'set_cross_placement.svg',
+                'MenuText': tr('Set placement'),
                 'Accel': 'N, L',
-                'ToolTip': tr('Set the mounted placement of a link.')}
+                'ToolTip': tr('Set the mounted placement of a link or the origin of a joint.')}
 
     def IsActive(self):
         return True

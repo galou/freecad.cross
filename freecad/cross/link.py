@@ -18,7 +18,9 @@ from .urdf_utils import urdf_inertial
 from .urdf_utils import urdf_visual_from_object
 from .utils import warn_unsupported
 from .wb_utils import ICON_PATH
+from .wb_utils import get_chain
 from .wb_utils import get_joints
+from .wb_utils import get_links
 from .wb_utils import get_valid_urdf_name
 from .wb_utils import is_joint
 from .wb_utils import is_link
@@ -312,6 +314,30 @@ class Link(ProxyBase):
             if joint.Parent == ros_name(self.link):
                 return False
         return True
+
+    def is_in_chain_to_joint(self, joint: CrossJoint) -> bool:
+        """Return True if `link` is in the chain from base to joint.
+
+        Return True if the link is in the chain from the base link to
+        `joint.Parent`.
+
+        """
+        if ((not self.is_execute_ready())
+                or (not hasattr(joint, 'Proxy'))
+                or (not joint.Proxy.is_execute_ready())
+                or (not joint.Parent)):
+            return False
+        robot = joint.Proxy.get_robot()
+        if robot is None:
+            return False
+        parent_link = robot.Proxy.get_link(joint.Parent)
+        if parent_link is None:
+            return False
+        chain = get_chain(parent_link)
+        for chain_link in get_links(chain):
+            if chain_link is self.link:
+                return True
+        return False
 
     def update_fc_links(self) -> None:
         """Update the FreeCAD link according to the level of details."""

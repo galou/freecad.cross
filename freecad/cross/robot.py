@@ -363,21 +363,45 @@ class Robot(ProxyBase):
 
     def set_joint_enum(self) -> None:
         """Set the enum for Child and Parent of all joints."""
-        # We add the empty string to show that the child or parent
-        # was not set yet.
-        links: list[str] = ['']
-        for link in self.get_links():
-            links.append(ros_name(link))
+        def get_possible_parent_links(joint: CrossJoint) -> list[str]:
+            links: list[str] = []
+            for link in self.get_links():
+                link_name = ros_name(link)
+                if ((joint.Parent == link_name)
+                    or (hasattr(link, 'Proxy')
+                        and link.Proxy.is_execute_ready())):
+                    links.append(link_name)
+            return links
+
+        def get_possible_child_links(joint: CrossJoint) -> list[str]:
+            links: list[str] = []
+            for link in self.get_links():
+                link_name = ros_name(link)
+                if ((joint.Child == link_name)
+                    or (hasattr(link, 'Proxy')
+                        and link.Proxy.is_execute_ready()
+                        and link.Proxy.may_be_base_link()
+                        and (not link.Proxy.is_in_chain_to_joint(joint))
+                        and (joint.Parent != link_name))):
+                    links.append(link_name)
+            return links
+
         for joint in self.get_joints():
+            # We add the empty string to show that the child or parent
+            # was not set yet.
+            parent_links: list[str] = ['']
+            parent_links += get_possible_parent_links(joint)
+            child_links: list[str] = ['']
+            child_links += get_possible_child_links(joint)
             # Implementation note: setting to a list sets the enumeration.
-            if joint.getEnumerationsOfProperty('Child') != links:
+            if joint.getEnumerationsOfProperty('Parent') != parent_links:
                 # Avoid recursive recompute.
                 # Doesn't change the value if in the new enum.
-                joint.Child = links
-            if joint.getEnumerationsOfProperty('Parent') != links:
+                joint.Parent = parent_links
+            if joint.getEnumerationsOfProperty('Child') != child_links:
                 # Avoid recursive recompute.
                 # Doesn't change the value if in the new enum.
-                joint.Parent = links
+                joint.Child = child_links
 
     def add_joint_variables(self) -> list[str]:
         """Add a property for each actuated joint."""

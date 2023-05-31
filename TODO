@@ -1,7 +1,4 @@
 - Use `Joint.onBeforeChange` to remember the parent and child CrossLinks, then restore `Parent` and `Child` with `obj.Parent = ros_name(saved_parent_link)
-- Remove from `Joint.Child` enum all links that:
-  - are already child of a joint
-  - are parent of this joint, recursively (if not covered by the first condition
 - Avoid duplicating mesh objects when importing
 - URDF editor integrated in Robot
 - Avoid duplication of Label2

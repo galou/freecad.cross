@@ -77,13 +77,13 @@ class Joint(ProxyBase):
         add_property(obj, 'App::PropertyPlacement', 'Origin', 'Elements',
                      'Joint origin relative to the parent link')
         add_property(obj, 'App::PropertyFloat', 'LowerLimit', 'Limits',
-                     'Lower position limit (m or rad)')
+                     'Lower position limit (mm or deg)')
         add_property(obj, 'App::PropertyFloat', 'UpperLimit', 'Limits',
-                     'Upper position limit (m or rad)')
+                     'Upper position limit (mm or deg)')
         add_property(obj, 'App::PropertyFloat', 'Effort', 'Limits',
-                     'Maximal effort (N)')
+                     'Maximal effort (N or Nm)')
         add_property(obj, 'App::PropertyFloat', 'Velocity', 'Limits',
-                     'Maximal velocity (m/s or rad/s)')
+                     'Maximal velocity (mm/s or deg/s)')
         add_property(obj, 'App::PropertyFloat', 'Position', 'Value',
                      'Joint position (m or rad)')
         obj.setEditorMode('Position', ['ReadOnly'])
@@ -97,11 +97,12 @@ class Joint(ProxyBase):
                      'value = Multiplier * other_joint_value + Offset', 1.0)
         add_property(obj, 'App::PropertyFloat', 'Offset', 'Mimic',
                      'value = Multiplier * other_joint_value + Offset, in mm or deg')
-        self._toggle_editor_mode()
 
         add_property(obj, 'App::PropertyPlacement', 'Placement', 'Internal',
                      'Placement of the joint in the robot frame')
         obj.setEditorMode('Placement', ['ReadOnly'])
+
+        self._toggle_editor_mode()
 
     def onChanged(self, obj: CrossJoint, prop: str) -> None:
         if prop == 'Mimic':
@@ -118,6 +119,8 @@ class Joint(ProxyBase):
             robot = self.get_robot()
             if robot and hasattr(robot, 'Proxy'):
                 robot.Proxy.add_joint_variables()
+        if prop == 'Type':
+            self._toggle_editor_mode()
 
     def onDocumentRestored(self, obj: CrossJoint):
         self.__init__(obj)
@@ -203,16 +206,21 @@ class Joint(ProxyBase):
         else:
             joint_xml.append(et.fromstring('<child link="NO_CHILD_DEFINED"/>'))
         joint_xml.append(urdf_origin_from_placement(joint.Origin))
-        joint_xml.append(et.fromstring('<axis xyz="0 0 1" />'))
-        limit_xml = et.fromstring('<limit/>')
-        limit_xml.attrib['lower'] = str(joint.LowerLimit)
-        limit_xml.attrib['upper'] = str(joint.UpperLimit)
-        limit_xml.attrib['effort'] = str(joint.Effort)
-        limit_xml.attrib['velocity'] = str(joint.Velocity)
-        joint_xml.append(limit_xml)
+        if joint.Type != 'fixed':
+            joint_xml.append(et.fromstring('<axis xyz="0 0 1" />'))
+            limit_xml = et.fromstring('<limit/>')
+            if joint.Type == 'revolute':
+                factor = radians(1.0)
+            else:
+                factor = 0.001
+            limit_xml.attrib['lower'] = str(joint.LowerLimit * factor)
+            limit_xml.attrib['upper'] = str(joint.UpperLimit * factor)
+            limit_xml.attrib['velocity'] = str(joint.Velocity * factor)
+            limit_xml.attrib['effort'] = str(joint.Effort)
+            joint_xml.append(limit_xml)
         if joint.Mimic:
             mimic_xml = et.fromstring('<mimic/>')
-            mimic_joint = label_or(joint.MimickedJoint, 'no_joint_defined')
+            mimic_joint = label_or(joint.MimickedJoint, 'NO_JOINT_DEFINED')
             mimic_xml.attrib['joint'] = get_valid_urdf_name(mimic_joint)
             mimic_xml.attrib['multiplier'] = str(joint.Multiplier)
             if joint.Type == 'prismatic':
@@ -231,12 +239,26 @@ class Joint(ProxyBase):
             return
         joint = self.joint
         if joint.Mimic:
-            editor_mode = []
+            mimic_editor_mode = []
         else:
-            editor_mode = ['Hidden', 'ReadOnly']
-        joint.setEditorMode('MimickedJoint', editor_mode)
-        joint.setEditorMode('Multiplier', editor_mode)
-        joint.setEditorMode('Offset', editor_mode)
+            mimic_editor_mode = ['Hidden', 'ReadOnly']
+        joint.setEditorMode('MimickedJoint', mimic_editor_mode)
+        joint.setEditorMode('Multiplier', mimic_editor_mode)
+        joint.setEditorMode('Offset', mimic_editor_mode)
+
+        if joint.Type in ['revolute', 'prismatic']:
+            continuous_editor_mode = []
+        else:
+            continuous_editor_mode = ['Hidden']
+        joint.setEditorMode('LowerLimit', continuous_editor_mode)
+        joint.setEditorMode('UpperLimit', continuous_editor_mode)
+
+        if joint.Type == 'fixed':
+            fixed_editor_mode = ['Hidden']
+        else:
+            fixed_editor_mode = []
+        joint.setEditorMode('Velocity', fixed_editor_mode)
+        joint.setEditorMode('Effort', fixed_editor_mode)
 
 
 class _ViewProviderJoint(ProxyBase):

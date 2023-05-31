@@ -83,14 +83,27 @@ def _add_joint_variable(
     label = joint.Label
     id_ = rname if rname == label else f'{rname} ({label})'
     help_txt = f'{id_}{f" in {unit}" if unit else ""}'
+    if joint.Type in ['prismatic', 'revolute']:
+        prop_type = 'App::PropertyFloatConstraint'
+    else:
+        prop_type = 'App::PropertyFloat'
     _, used_var_name = add_property(robot,
-                                    'App::PropertyFloat', var_name,
+                                    prop_type, var_name,
                                     category, help_txt)
+    if joint.Type in ['prismatic', 'revolute']:
+        # Set the default value to the current value to set min/max.
+        value = robot.getPropertyByName(used_var_name)
+        if (joint.LowerLimit == 0.0) and (joint.UpperLimit == 0.0):
+            # Properties are not set.
+            min_, max_ = -1e999, 1e999
+        else:
+            min_, max_ = joint.LowerLimit, joint.UpperLimit
+        setattr(robot, used_var_name, (value, min_, max_, 1.0))
     value: Optional[float] = None
     if joint.Type == 'prismatic':
-        value = robot.getPropertyByName(var_name) * 0.001
-    elif joint.Type == 'revolute':
-        value = radians(robot.getPropertyByName(var_name))
+        value = robot.getPropertyByName(used_var_name) * 0.001
+    elif joint.Type in ['revolute', 'continuous']:
+        value = radians(robot.getPropertyByName(used_var_name))
     if ((value is not None)
             and (joint.Position != value)
             and (not joint.Mimic)):

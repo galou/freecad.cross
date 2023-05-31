@@ -19,7 +19,7 @@ xacro (and Python module xacro).
 from __future__ import annotations
 
 from copy import copy
-from typing import Any, Optional
+from typing import Any, Iterable, Optional
 import xml.etree.ElementTree as et
 
 import FreeCAD as fc
@@ -28,6 +28,7 @@ from xacro import Macro
 
 from .freecad_utils import ProxyBase
 from .freecad_utils import add_property
+from .freecad_utils import is_group
 from .freecad_utils import warn
 from .wb_utils import ICON_PATH
 from .wb_utils import get_rel_and_abs_path
@@ -48,6 +49,7 @@ except ImportError as e:
 
 # Typing hints.
 DO = fc.DocumentObject
+DOList = Iterable[DO]
 VPDO = 'FreeCADGui.ViewProviderDocumentObject'
 CrossXacroObject = DO  # A Cross::XacroObject, i.e. a DocumentObject with Proxy "XacroObject".
 CrossLink = DO  # A Cross::Link, i.e. a DocumentObject with Proxy "Link".
@@ -214,6 +216,7 @@ class XacroObject(ProxyBase):
     def onDocumentRestored(self, obj: CrossXacroObject):
         """Restore attributes because __init__ is not called on restore."""
         self.__init__(obj)
+        self._fix_lost_fc_links()
 
     def __getstate__(self):
         return self.Type,
@@ -344,6 +347,40 @@ class XacroObject(ProxyBase):
         for obj in self.xacro_object.Group:
             if is_robot(obj):
                 return obj
+
+    def _fix_lost_fc_links(self) -> None:
+        """Fix children lost on restore."""
+        if not self.is_execute_ready():
+            return
+        xo = self.xacro_object
+        # Keep track of objects that are in a group because we need to put them
+        # back into this group. This is the case for parts in the group
+        # `URDF Parts` created by this workbench and that FreeCAD decides to
+        # put into `xo.Group` for some reason.
+        objects_in_group: DOList = []
+        for obj in xo.Document.Objects:
+            if not hasattr(obj, 'InList'):
+                continue
+            if any([is_group(obj) for obj in obj.InList]):
+                objects_in_group.append(obj)
+
+        for obj in xo.Document.Objects:
+            if (not hasattr(obj, 'InList')) or (len(obj.InList) != 1):
+                continue
+            potential_self = obj.InList[0]
+            if ((obj is xo)
+                    or (potential_self is not xo)
+                    or (obj in xo.Group)
+                    or (not is_robot(obj))):
+                continue
+            print(f'Fixing lost child {obj.Label} of {xo.Label}') # DEBUG
+            xo.addObject(obj)
+
+        # Put back objects that were in a group by removing them from
+        # `xo.Group`.
+        for o in objects_in_group:
+            print(f'Removing {o.Label} from {xo.Label}') # DEBUG
+            xo.removeObject(o)
 
 
 class _ViewProviderXacroObject(ProxyBase):

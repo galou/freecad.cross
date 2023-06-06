@@ -1,0 +1,21 @@
+{
+  "configurations": {
+    "Python: Remote Debug": {
+      "adapter": "multi-session",
+      "configuration": {
+        "name": "Python: Remote Debug",
+        "request": "attach",
+        "connect": {
+          "host": "localhost",
+          "port": 5678
+        },
+        "pathMappings": [
+          {
+            "localRoot": "${workspaceFolder}",
+            "remoteRoot": "${workspaceFolder}"
+          }
+        ]
+      }
+    }
+  }
+}

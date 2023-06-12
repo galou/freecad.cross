@@ -140,6 +140,7 @@ def _add_ros_link(
     ros_link = make_link(name, doc)
     ros_link.Label2 = name
     ros_link.adjustRelativeLinks(robot)
+    _set_link_inertial(ros_link, urdf_link)
     robot.addObject(ros_link)
     link_to_visual_part = add_object(parts_group, 'App::Link',
                                      f'visual_{name}')
@@ -158,6 +159,33 @@ def _add_ros_link(
     link_to_collision_part.Visibility = False
     ros_link.Collision = [link_to_collision_part]
     return ros_link, visual_part, collision_part
+
+
+def _set_link_inertial(
+        ros_link: CrossLink,
+        urdf_link: UrdfLink,
+        ) -> None:
+    """Set the inertial properties of a Cross::Link.
+
+    Parameters
+    ----------
+    - ros_link: link from the CROSS::Robot.
+    - urdf_link: link from the URDF description.
+
+    """
+    if urdf_link.inertial is None:
+        return
+    if urdf_link.inertial.origin is not None:
+        ros_link.CenterOfMass = urdf_link.inertial.origin
+    if urdf_link.inertial.mass is not None:
+        ros_link.Mass = urdf_link.inertial.mass
+    if urdf_link.inertial.inertia is not None:
+        ros_link.Ixx = urdf_link.inertial.inertia.ixx
+        ros_link.Ixy = urdf_link.inertial.inertia.ixy
+        ros_link.Ixz = urdf_link.inertial.inertia.ixz
+        ros_link.Iyy = urdf_link.inertial.inertia.iyy
+        ros_link.Iyz = urdf_link.inertial.inertia.iyz
+        ros_link.Izz = urdf_link.inertial.inertia.izz
 
 
 def _add_ros_joint(

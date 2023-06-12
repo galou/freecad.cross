@@ -1,6 +1,4 @@
 - Use `Joint.onBeforeChange` to remember the parent and child CrossLinks, then restore `Parent` and `Child` with `obj.Parent = ros_name(saved_parent_link)
-- Avoid duplicating mesh objects when importing
-- Add support for inertia when importing URDF
 - URDF editor integrated in Robot
 - Avoid duplication of Label2
 - Validate Label2 (and Label if Label2 is not defined) against valid URDF names

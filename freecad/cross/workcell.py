@@ -113,7 +113,9 @@ class Workcell(ProxyBase):
         # We add the empty string to show that the child or parent
         # was not set yet.
         child_links: list[str] = ['']
-        parent_links: list[str] = ['', self.workcell.RootLink]
+        parent_links: list[str] = ['']
+        if self.workcell.RootLink:
+            parent_links.append(self.workcell.RootLink)
         for xacro_object in self.get_xacro_objects():
             child_links.append(xacro_object.Proxy.root_link)
             parent_links += xacro_object.Proxy.get_link_names()

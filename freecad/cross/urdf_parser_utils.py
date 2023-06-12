@@ -19,11 +19,13 @@ from urdf_parser_py.urdf import Sphere
 
 from .freecad_utils import add_object
 from .freecad_utils import is_group
+from .freecad_utils import is_mesh
 from .freecad_utils import warn
 from .mesh_utils import read_mesh_dae
 from .mesh_utils import scale_mesh_object
 from .ros_utils import abs_path_from_ros_path
 from .ros_utils import pkg_and_file_from_ros_path
+from .ros_utils import ros_path_from_abs_path
 from .urdf_utils import rotation_from_rpy
 
 # Typing hints.
@@ -111,6 +113,12 @@ def obj_from_box(
         geometry: Box,
         doc_or_group: [Doc | DO],
         ) -> tuple[Optional[DO], None]:
+    """Return a `Part::Box` object and None.
+
+    Return a `Part::Box` object for the URDF shape.
+    The second element of the tuple is None for API consistency.
+
+    """
     obj = add_object(doc_or_group, 'Part::Box', 'box')
     obj.Length = geometry.size[0] * 1000.0  # m to mm.
     obj.Width = geometry.size[1] * 1000.0
@@ -123,6 +131,12 @@ def obj_from_cylinder(
         geometry: Cylinder,
         doc_or_group: [Doc | DO],
         ) -> tuple[Optional[DO], None]:
+    """Return a `Part::Cylinder` object and None.
+
+    Return a `Part::Cylinder` object for the URDF shape.
+    The second element of the tuple is None for API consistency.
+
+    """
     obj = add_object(doc_or_group, 'Part::Cylinder', 'cylinder')
     obj.Radius = geometry.radius * 1000.0  # m to mm.
     obj.Height = geometry.length * 1000.0  # m to mm.
@@ -134,6 +148,14 @@ def obj_from_mesh(
         geometry: Mesh,
         doc_or_group: [Doc | DO],
         ) -> tuple[Optional[DO], Optional[Path]]:
+    """Return a `Mesh::Feature` object and the path to its file.
+
+    Return a `Mesh::Feature` object for the URDF shape and the path to its
+    file.
+    If the same file was already imported, return the corresponding existing
+    object.
+
+    """
     mesh_path = abs_path_from_ros_path(geometry.filename)
     if not mesh_path:
         pkg, rel_path = pkg_and_file_from_ros_path(mesh_path)
@@ -142,19 +164,29 @@ def obj_from_mesh(
         else:
             warn(f'Cannot parse mesh path {geometry.filename}')
         return None, None
-    if mesh_path.suffix.lower() == '.dae':
-        raw_mesh = read_mesh_dae(mesh_path)
-    else:
-        raw_mesh = fcmesh.read(str(mesh_path))
+
+    # We do not take `geometry.filename` directly because it may use a
+    # different format than `package://...`.
+    mesh_ros_path = ros_path_from_abs_path(mesh_path.expanduser())
+
+    # Look for an existing object with the same mesh.
     if is_group(doc_or_group):
         doc = doc_or_group.Document
         group = doc_or_group
     else:
         doc = doc_or_group
         group = None
+    for obj in doc.Objects:
+        if is_mesh(obj):
+            if obj.Label2 == mesh_ros_path:
+                return obj, mesh_path
+    if mesh_path.suffix.lower() == '.dae':
+        raw_mesh = read_mesh_dae(mesh_path)
+    else:
+        raw_mesh = fcmesh.read(str(mesh_path))
     mesh_obj = doc.addObject('Mesh::Feature', mesh_path.name)
     mesh_obj.Label = mesh_path.name
-    mesh_obj.Label2 = str(mesh_path.expanduser())
+    mesh_obj.Label2 = mesh_ros_path
     if group:
         group.addObject(mesh_obj)
     mesh_obj.Mesh = raw_mesh

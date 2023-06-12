@@ -340,13 +340,15 @@ def _add_geometries(
             continue
         geom_obj.Visibility = False
         geom_objs.append(geom_obj)
-        if hasattr(geometry, 'origin'):
-            geom_obj.Placement = (placement_from_origin(geometry.origin)
-                                  * geom_obj.Placement)
         # Add a reference to geom_obj to `ros_link.Visual` or
         # `ros_link.Collision`.
         link_to_geom = add_object(part, 'App::Link', name_linked_geom)
         link_to_geom.setLink(geom_obj)
-        link_to_geom.Placement = geom_obj.Placement
+        if hasattr(geometry, 'origin'):
+            placement = (placement_from_origin(geometry.origin)
+                                  * geom_obj.Placement)
+        else:
+            placement = geom_obj.Placement
+        link_to_geom.Placement = placement
         links.append(link_to_geom)
     return geom_objs, links

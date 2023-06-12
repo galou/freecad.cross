@@ -24,8 +24,8 @@ def read_mesh_dae(
         ) -> Mesh.MeshObject:
     current_doc = fc.activeDocument()
     path = Path(filename)
-    # `read_dae` does not export its object, so we need to let it create an object in a
-    # temporary document.
+    # `read_dae` does not export its object, so we need to let it create an
+    # object in a temporary document.
     tmp_doc = fc.newDocument(hidden=True, temp=True)
     fc.setActiveDocument(tmp_doc.Name)
     read_dae(str(path))

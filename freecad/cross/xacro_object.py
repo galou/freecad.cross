@@ -204,10 +204,13 @@ class XacroObject(ProxyBase):
 
     def onChanged(self, obj: CrossXacroObject, prop: str) -> None:
         if prop == 'InputFile':
-            rel_path = ros_path_from_abs_path(obj.InputFile)
-            if rel_path and (rel_path != obj.InputFile):
-                obj.InputFile = rel_path
-            elif (rel_path is None) and (obj.InputFile != ''):
+            if obj.InputFile.startswith('package://'):
+                # Already in the correct form.
+                return
+            ros_path = ros_path_from_abs_path(obj.InputFile)
+            if ros_path and (ros_path != obj.InputFile):
+                obj.InputFile = ros_path
+            elif (ros_path is None) and (obj.InputFile != ''):
                 obj.InputFile = ''
         if prop == 'Placement':
             robot = self._get_robot()
@@ -240,6 +243,9 @@ class XacroObject(ProxyBase):
         if not self.is_execute_ready():
             return
         if not self.xacro:
+            return
+        if obj.MainMacro is None:
+            # With pure URDF files.
             return
         macro: Macro = self.xacro.macros[obj.MainMacro]
         for name in macro.params:
@@ -335,7 +341,7 @@ class XacroObject(ProxyBase):
 
     def _generate_urdf(self,
                        robot_name: str,
-                       macro: str = '',
+                       macro: Optional[str] = '',
                        params: dict[str, str] = None,
                        ) -> UrdfRobot:
         params = {} if params is None else params

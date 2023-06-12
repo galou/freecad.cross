@@ -56,16 +56,10 @@ class Xacro:
 
     def to_xml(self,
                robot_name: str,
-               macro: str = '',
+               macro: Optional[str] = '',
                parameters: Optional[dict[str, Any]] = None) -> Document:
         """Return the minidom Document of the xacro."""
-        if not macro:
-            # As-is xacro or URDF, except the robot name.
-            out_xml = copy(self.input_xml_doc)
-            # Replace the robot name.
-            out_xml.firstChild.setAttribute('name', robot_name)
-            return out_xml
-        if macro not in self.macros:
+        if macro and (macro not in self.macros):
             raise RuntimeError(f'Macro "{macro}" not'
                                ' defined in the xacro file')
         parameters = {} if parameters is None else parameters
@@ -76,16 +70,18 @@ class Xacro:
         include = robot.appendChild(out_xml.createElement('xacro:include'))
         pkg, xacro_file = get_package_and_file(self.input_xacro_file)
         # Implementation note, xacro does not support the
-        # `package://{pkg}/{xacro_file}` syntax.
+        # `package://{pkg}/{xacro_file}` syntax as of 2023-06.
         include.setAttribute('filename', f'$(find {pkg})/{xacro_file}')
-        use = robot.appendChild(out_xml.createElement(f'xacro:{macro}'))
+        if macro:
+            # A xacro file, not a URDF.
+            use = robot.appendChild(out_xml.createElement(f'xacro:{macro}'))
         for k, v in parameters.items():
             use.setAttribute(k, str(v))
         return out_xml
 
     def to_string(self,
                   robot_name: str,
-                  macro: str = '',
+                  macro: Optional[str] = '',
                   parameters: Optional[dict[str, Any]] = None) -> str:
         """Return the string of the xacro."""
         doc = self.to_xml(robot_name, macro, parameters)
@@ -93,7 +89,7 @@ class Xacro:
 
     def to_pretty_xml(self,
                       robot_name: str,
-                      macro: str = '',
+                      macro: Optional[str] = '',
                       parameters: Optional[dict[str, Any]] = None,
                       indent='\t',
                       newl='\n') -> str:
@@ -103,7 +99,7 @@ class Xacro:
 
     def to_urdf_xml(self,
                     robot_name: str,
-                    macro: str = '',
+                    macro: Optional[str] = '',
                     parameters: Optional[dict[str, Any]] = None) -> Document:
         """Return the minidom Document of the generated URDF."""
         # Now a xacro, later a URDF.
@@ -113,7 +109,7 @@ class Xacro:
 
     def to_urdf_string(self,
                        robot_name: str,
-                       macro: str = '',
+                       macro: Optional[str] = '',
                        parameters: Optional[dict[str, Any]] = None) -> str:
         """Return the string of the generated URDF."""
         doc = self.to_urdf_xml(robot_name, macro, parameters)
@@ -121,7 +117,7 @@ class Xacro:
 
     def to_urdf_pretty_xml(self,
                            robot_name: str,
-                           macro: str = '',
+                           macro: Optional[str] = '',
                            parameters: Optional[dict[str, Any]] = None,
                            indent='\t',
                            newl='\n') -> str:

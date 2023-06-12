@@ -70,7 +70,8 @@ class Workcell(ProxyBase):
                      'The path to the ROS package to export files to')
 
         add_property(obj, 'App::PropertyString', 'RootLink', 'Elements',
-                     'The root link of the workcell', 'world')
+                     'The root link of the workcell, leave empty for'
+                     ' a single mobile robot', 'world')
 
     def execute(self, obj: CrossWorkcell) -> None:
         self.set_joint_enum()
@@ -170,14 +171,38 @@ class Workcell(ProxyBase):
                                    ' FreeCAD ('
                                    'https://github.com/galou/freecad.cross)'))
 
-        # Add the root link.
-        world_link_et = et.fromstring('<link/>')
-        world_link_et.attrib['name'] = obj.RootLink
-        robot_et.append(world_link_et)
-
         xacro_objects = self.get_xacro_objects()
         joints = self.get_joints()
         attachments = get_xacro_object_attachments(xacro_objects, joints)
+
+        # Check that no more than one XacroObject has no parent and whether
+        # root link is used in one of the XacroObject.
+        xacros_wo_parent: list[CrossXacroObject] = []
+        for attachment in attachments:
+            joint = attachment.attached_by
+            if joint is None:
+                xacros_wo_parent.append(attachment.xacro_object)
+
+        if obj.RootLink:
+            workcell_root_link = obj.RootLink
+        else:
+            workcell_root_link = 'NO_ROOT_LINK_SET'
+
+        add_root_link = (((len(xacros_wo_parent) == 1) and obj.RootLink)
+                         or (len(xacros_wo_parent) > 1))
+        # Warn the user about the added joints.
+        if len(xacros_wo_parent) > 1:
+            warn('More than one XacroObject has no parent'
+                 f', adding joints between link `{workcell_root_link}` and'
+                 f' `{"`, `".join([x.Label for x in xacros_wo_parent])}`',
+                 True)
+
+        # Add the root link.
+        if add_root_link:
+            world_link_et = et.fromstring('<link/>')
+            world_link_et.attrib['name'] = workcell_root_link
+            robot_et.append(world_link_et)
+
         includes: list[et.Element] = []
         for attachment in attachments:
             xacro_object = attachment.xacro_object
@@ -192,27 +217,28 @@ class Workcell(ProxyBase):
                 robot_et.append(child_et)
 
             # Add the joint attaching the xacro.
-            joint_et = et.fromstring('<joint/>')
-            if joint:
-                parent_link = f'{joint.Parent}'
-                child_link = f'{joint.Child}'
-                origin = joint.Origin
-            else:
-                parent_link = world_link_et.attrib['name']
-                root_link = xacro_object.Proxy.root_link
-                child_link = root_link
-                origin = xacro_object.Placement
-            joint_et.attrib['name'] = f'{parent_link}_to_{child_link}'
-            joint_et.attrib['type'] = 'fixed'
-            parent_et = et.fromstring('<parent/>')
-            parent_et.attrib['link'] = parent_link
-            joint_et.append(parent_et)
-            child_et = et.fromstring('<child/>')
-            child_et.attrib['link'] = child_link
-            joint_et.append(child_et)
-            origin_et = urdf_origin_from_placement(origin)
-            joint_et.append(origin_et)
-            robot_et.append(joint_et)
+            if joint or add_root_link:
+                joint_et = et.fromstring('<joint/>')
+                if joint:
+                    parent_link = f'{joint.Parent}'
+                    child_link = f'{joint.Child}'
+                    origin = joint.Origin
+                else:
+                    parent_link = workcell_root_link
+                    root_link = xacro_object.Proxy.root_link
+                    child_link = root_link
+                    origin = xacro_object.Placement
+                joint_et.attrib['name'] = f'{parent_link}_to_{child_link}'
+                joint_et.attrib['type'] = 'fixed'
+                parent_et = et.fromstring('<parent/>')
+                parent_et.attrib['link'] = parent_link
+                joint_et.append(parent_et)
+                child_et = et.fromstring('<child/>')
+                child_et.attrib['link'] = child_link
+                joint_et.append(child_et)
+                origin_et = urdf_origin_from_placement(origin)
+                joint_et.append(origin_et)
+                robot_et.append(joint_et)
 
         # Write out files.
         # TODO: also accept OutputPath as package name.

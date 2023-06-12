@@ -289,7 +289,10 @@ def get_rel_and_abs_path(path: str) -> tuple[str, Path]:
 def remove_ros_workspace(path) -> str:
     """Modify `path` to remove $ROS_WORKSPACE/src.
 
-    Modify `wb_globals.g_ros_workspace` if a workspace was found.
+    Return the path relative to `wb_globals.g_ros_workspace / 'src'`.
+    Doesn't use any ROS functionalities and, thus, doesn't support finding any
+    underlay workspace.
+    Modify `wb_globals.g_ros_workspace` if a workspace was guessed from `path`.
 
     """
     rel_path = without_ros_workspace(path)

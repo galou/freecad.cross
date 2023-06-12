@@ -22,7 +22,7 @@ from .freecad_utils import is_group
 from .freecad_utils import warn
 from .mesh_utils import read_mesh_dae
 from .mesh_utils import scale_mesh_object
-from .ros_utils import path_from_ros_path
+from .ros_utils import abs_path_from_ros_path
 from .ros_utils import pkg_and_file_from_ros_path
 from .urdf_utils import rotation_from_rpy
 
@@ -134,7 +134,7 @@ def obj_from_mesh(
         geometry: Mesh,
         doc_or_group: [Doc | DO],
         ) -> tuple[Optional[DO], Optional[Path]]:
-    mesh_path = path_from_ros_path(geometry.filename)
+    mesh_path = abs_path_from_ros_path(geometry.filename)
     if not mesh_path:
         pkg, rel_path = pkg_and_file_from_ros_path(mesh_path)
         if pkg:

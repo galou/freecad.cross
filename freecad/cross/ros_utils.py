@@ -173,8 +173,11 @@ def pkg_and_file_from_ros_path(
 
     """
     # Import here to be able to import the module without ROS.
-    from ament_index_python.packages import PackageNotFoundError
-    from ament_index_python.packages import get_package_share_directory
+    try:
+        from ament_index_python.packages import PackageNotFoundError
+        from ament_index_python.packages import get_package_share_directory
+    except ImportError:
+        return None, None
 
     if not path or not isinstance(path, str):
         return None, None
@@ -191,7 +194,7 @@ def pkg_and_file_from_ros_path(
     return pkg, rel_path
 
 
-def path_from_ros_path(
+def abs_path_from_ros_path(
         path: str,
         relative_to: Optional[Path | str] = None,
         ) -> Optional[Path]:
@@ -203,12 +206,17 @@ def path_from_ros_path(
     - `file://<absolute_file_path>`.
     - `file://<relative_file_path>` if `relative_to` is given.
 
+    This is the inverse function of `ros_path_from_abs_path`.
+
     With the `file://` format, if the input path is relative and `relative_to`
     is not given, the output path will also be relative. You've been warned.
 
     """
     # Import here to be able to import the module without ROS.
-    from ament_index_python.packages import get_package_share_directory
+    try:
+        from ament_index_python.packages import get_package_share_directory
+    except ImportError:
+        return None
 
     if not path:
         return
@@ -225,6 +233,22 @@ def path_from_ros_path(
         if relative_to is not None:
             return Path(relative_to) / path[len('file://'):]
         return Path(path[len('file://'):])
+
+
+def ros_path_from_abs_path(
+        path: [Path | str],
+        ) -> Optional[str]:
+    """Return the ROS path to the given file.
+
+    The ROS path has the following format
+    `package://<package_name>/<relative_file_path>`.
+    This is the inverse function of `abs_path_from_ros_path`.
+
+    """
+    pkg, rel_path = get_package_and_file(path)
+    if not pkg:
+        return
+    return f'package://{pkg}/{rel_path}'
 
 
 def split_package_path(package_path: [Path | str]) -> tuple[Path, str]:

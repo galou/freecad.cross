@@ -111,7 +111,8 @@ def get_parent_by_pattern(
     """Return the parent directory of the given file containing pattern.
 
     Return the directory that is parent (possibly indirect) of `filepath` and
-    that contains the directory or file `pattern`.
+    that contains the directory or file `pattern` as well as the file path
+    relative to this parent path.
 
     If the file path is relative, return `(Path(), file_path)`.
 

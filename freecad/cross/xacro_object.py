@@ -30,8 +30,9 @@ from .freecad_utils import ProxyBase
 from .freecad_utils import add_property
 from .freecad_utils import is_group
 from .freecad_utils import warn
+from .ros_utils import abs_path_from_ros_path
+from .ros_utils import ros_path_from_abs_path
 from .wb_utils import ICON_PATH
-from .wb_utils import get_rel_and_abs_path
 from .wb_utils import is_robot
 from .wb_utils import is_workcell
 from .wb_utils import remove_ros_workspace
@@ -128,7 +129,8 @@ class XacroObject(ProxyBase):
         obj._Type = self.Type
 
         add_property(obj, 'App::PropertyFile', 'InputFile', 'Input',
-                     'The source xacro or URDF file')
+                     'The source xacro or URDF file, in'
+                     ' `package://pkg/rel_path` format')
         add_property(obj, 'App::PropertyEnumeration', 'MainMacro', 'Input',
                      'The macro to use')
 
@@ -191,7 +193,7 @@ class XacroObject(ProxyBase):
         if not obj.InputFile:
             self._root_link = ''
             return
-        _, input_path = get_rel_and_abs_path(obj.InputFile)
+        input_path = abs_path_from_ros_path(obj.InputFile)
         self.xacro = XacroLoader.load_from_file(input_path)
         macro_names = self.xacro.get_macro_names()
         if obj.getEnumerationsOfProperty('MainMacro') != macro_names:
@@ -201,12 +203,12 @@ class XacroObject(ProxyBase):
         self.reset_group(obj)
 
     def onChanged(self, obj: CrossXacroObject, prop: str) -> None:
-        if prop in ['Label', 'Label2', 'MainMacro']:
-            self.execute(obj)
         if prop == 'InputFile':
-            rel_path = remove_ros_workspace(obj.InputFile)
-            if rel_path != obj.InputFile:
+            rel_path = ros_path_from_abs_path(obj.InputFile)
+            if rel_path and (rel_path != obj.InputFile):
                 obj.InputFile = rel_path
+            elif (rel_path is None) and (obj.InputFile != ''):
+                obj.InputFile = ''
         if prop == 'Placement':
             robot = self._get_robot()
             if robot and (robot.Placement != obj.Placement):
@@ -282,9 +284,10 @@ class XacroObject(ProxyBase):
             # them from the group.
             # TODO: not nice, try to solve out why this is necessary.
             obj.Group = [new_robot]
+        print('reset_group END') # DEBUG
 
     def export_urdf(self) -> Optional[et.Element]:
-        """Export the xacro object as URDF, writing files."""
+        """Export the xacro object as URDF."""
         if not hasattr(self, 'xacro_object'):
             return
         obj: CrossXacroObject = self.xacro_object

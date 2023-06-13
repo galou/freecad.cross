@@ -151,6 +151,9 @@ def without_ros_workspace(path: [Path | str]) -> str:
 def get_package_and_file(file_path: [Path | str]) -> tuple[str, str]:
     """Return the package name and relative file path.
 
+    For example, if the file path is `$HOME/ros2_ws/src/dir/my_package/file.py`,
+    return (`my_package`, `file.py`), supposing that `my_package` is a ROS package.
+
     If the file path is relative, return an empty package and `file_path`.
 
     """
@@ -177,19 +180,25 @@ def pkg_and_file_from_ros_path(
         from ament_index_python.packages import PackageNotFoundError
         from ament_index_python.packages import get_package_share_directory
     except ImportError:
+        warn('Cannot import ament_index_python.packages', False)
         return None, None
 
     if not path or not isinstance(path, str):
         return None, None
     if not path.startswith('package://'):
+        warn(f'Invalid ROS path `{path}`, only the'
+             ' `package://<package_name>/<relative_file_path>`'
+             ' format is supported', False)
         return None, None
     try:
         pkg, _, rel_path = path[len('package://'):].partition('/')
     except ValueError:
+        warn(f'Invalid ROS path `{path}`', False)
         return None, None
     try:
         get_package_share_directory(pkg)
-    except PackageNotFoundError:
+    except PackageNotFoundError as e:
+        warn(f'Package {pkg} not found: {e}', False)
         return None, None
     return pkg, rel_path
 
@@ -216,7 +225,8 @@ def abs_path_from_ros_path(
     try:
         from ament_index_python.packages import get_package_share_directory
     except ImportError:
-        return None
+        warn('Cannot import ament_index_python.packages', False)
+        return
 
     if not path:
         return

@@ -326,8 +326,7 @@ class XacroObject(ProxyBase):
             obj.setPropertyStatus('MainMacro', ['Hidden'])
 
     def _generate_robot(self, obj: CrossXacroObject) -> Optional[CrossRobot]:
-        if not hasattr(self, 'xacro_object'):
-            # Implementation note: xacro_object is defined with other required members.
+        if not self.is_execute_ready():
             return
         params = {name: obj.getPropertyByName(name) for name in self.param_properties}
         xacro_txt = self.xacro.to_string(ros_name(obj), obj.MainMacro, params)

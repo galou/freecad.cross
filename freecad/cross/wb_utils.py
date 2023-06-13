@@ -269,6 +269,11 @@ def get_rel_and_abs_path(path: str) -> tuple[str, Path]:
     path.
     If the input path is relative, it is returned as-is.
 
+    For example, if the file path is `my_package/file.py`, return
+    `('my_package/file.py', Path('/home/.../ros2_ws/src/my_package/file.py`)`,
+    supposing that `my_package` is a ROS package in the ROS workspace
+    `/home/.../ros2_ws`.
+
     The existence of the given path is not checked.
 
     If `wb_globals.g_ros_workspace` is not set, ask the user to configure it.

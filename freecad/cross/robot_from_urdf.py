@@ -176,10 +176,12 @@ def _set_link_inertial(
     if urdf_link.inertial is None:
         return
     if urdf_link.inertial.origin is not None:
-        ros_link.CenterOfMass = urdf_link.inertial.origin
+        ros_link.CenterOfMass = placement_from_origin(urdf_link.inertial.origin)
     if urdf_link.inertial.mass is not None:
+        # Both in kilogram.
         ros_link.Mass = urdf_link.inertial.mass
     if urdf_link.inertial.inertia is not None:
+        # All in kg.m^2.
         ros_link.Ixx = urdf_link.inertial.inertia.ixx
         ros_link.Ixy = urdf_link.inertial.inertia.ixy
         ros_link.Ixz = urdf_link.inertial.inertia.ixz

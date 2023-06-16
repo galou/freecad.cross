@@ -9,7 +9,6 @@ import FreeCAD as fc
 from .freecad_utils import ProxyBase
 from .freecad_utils import add_property
 from .freecad_utils import error
-from .freecad_utils import label_or
 from .freecad_utils import warn
 from .urdf_utils import urdf_origin_from_placement
 from .wb_utils import ICON_PATH
@@ -24,6 +23,7 @@ DO = fc.DocumentObject
 DOList = Iterable[DO]
 VPDO = 'FreeCADGui.ViewProviderDocumentObject'
 CrossJoint = DO  # A Cross::Joint, i.e. a DocumentObject with Proxy "Joint".
+CrossLink = DO  # A Cross::Link, i.e. a DocumentObject with Proxy "Link".
 CrossRobot = DO  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot".
 
 
@@ -59,6 +59,11 @@ class Joint(ProxyBase):
                 ])
         obj.Proxy = self
         self.joint = obj
+
+        # Updated in onChanged().
+        self.child_link: Optional[CrossLink] = None
+        self.parent_link: Optional[CrossLink] = None
+
         self.init_properties(obj)
 
     def init_properties(self, obj: CrossJoint):
@@ -105,22 +110,58 @@ class Joint(ProxyBase):
         self._toggle_editor_mode()
 
     def onChanged(self, obj: CrossJoint, prop: str) -> None:
+        """Called when a property has changed."""
+        print(f'{obj.Label}.onChanged({prop})') # DEBUG
         if prop == 'Mimic':
             self._toggle_editor_mode()
         if prop == 'MimickedJoint':
-            if obj.MimickedJoint is not None:
-                if obj.Type != obj.MimickedJoint.Type:
-                    warn('Mimicked joint must have the same type'
-                         f' but "{obj.Label}"\'s type is {obj.Type} and'
-                         f' "{obj.MimickedJoint}"\'s is {obj.MimickedJoint.Type}',
-                         True)
-                    obj.MimickedJoint = None
+            if ((obj.MimickedJoint is not None)
+                    and (obj.Type != obj.MimickedJoint.Type)):
+                warn('Mimicked joint must have the same type'
+                     f' but "{obj.Label}"\'s type is {obj.Type} and'
+                     f' "{obj.MimickedJoint}"\'s is {obj.MimickedJoint.Type}',
+                     True)
+                obj.MimickedJoint = None
         if prop in ('Label', 'Label2'):
             robot = self.get_robot()
             if robot and hasattr(robot, 'Proxy'):
                 robot.Proxy.add_joint_variables()
         if prop == 'Type':
             self._toggle_editor_mode()
+        if prop == 'Child':
+            if obj.Child:
+                # No need to update if the link name is still in the enum after
+                # the link name changed. However, we need to save it for when
+                # the child name will be changed, which provokes
+                # `obj.Child = ''`.
+                robot = self.get_robot()
+                if ((robot is None)
+                        or (not hasattr(robot, 'Proxy'))):
+                    self.child_link = None
+                    return
+                self.child_link = robot.Proxy.get_link(obj.Child)
+            new_link_name = ros_name(self.child_link) if self.child_link else obj.Child
+            if ((self.child_link
+                 and (new_link_name in obj.getEnumerationsOfProperty('Child')))
+                    and (obj.Child != new_link_name)):
+                obj.Child = new_link_name
+        if prop == 'Parent':
+            if obj.Parent:
+                # No need to update if the link name is still in the enum after
+                # the link name changed. However, we need to save it for when
+                # the parent name will be changed, which provokes
+                # `obj.Parent = ''`.
+                robot = self.get_robot()
+                if ((robot is None)
+                        or (not hasattr(robot, 'Proxy'))):
+                    self.parent_link = None
+                    return
+                self.parent_link = robot.Proxy.get_link(obj.Parent)
+            new_link_name = ros_name(self.parent_link) if self.parent_link else obj.Parent
+            if ((self.parent_link
+                 and (new_link_name in obj.getEnumerationsOfProperty('Parent')))
+                    and (obj.Parent != new_link_name)):
+                obj.Parent = new_link_name
 
     def onDocumentRestored(self, obj: CrossJoint):
         self.__init__(obj)
@@ -220,7 +261,7 @@ class Joint(ProxyBase):
             joint_xml.append(limit_xml)
         if joint.Mimic:
             mimic_xml = et.fromstring('<mimic/>')
-            mimic_joint = label_or(joint.MimickedJoint, 'NO_JOINT_DEFINED')
+            mimic_joint = ros_name(joint.MimickedJoint)
             mimic_xml.attrib['joint'] = get_valid_urdf_name(mimic_joint)
             mimic_xml.attrib['multiplier'] = str(joint.Multiplier)
             if joint.Type == 'prismatic':

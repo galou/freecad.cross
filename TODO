@@ -1,11 +1,12 @@
-- Use `Joint.onBeforeChange` to remember the parent and child CrossLinks, then restore `Parent` and `Child` with `obj.Parent = ros_name(saved_parent_link)
+- Avoid duplication of Label and Label2 ({Robot,Link,Joint}.onBeforeChange())
+- Validate Label2 (or Label if Label2 is not defined) against valid URDF names ({Robot,Link,Joint}.onBeforeChange())
 - Handle star-style macro parameters (e.g. `*origin` in `robotiq-3f-gripper_articulated.urdf.xacro`)
+- Set `JointAxisLength` to a value adapated to the robot size when importing URDF.
 - URDF editor integrated in Robot
-- Avoid duplication of Label2
-- Validate Label2 (and Label if Label2 is not defined) against valid URDF names
 - Clear necessary fields when `XacroObject.InputFile` is reset
 - Fix bug when setting a prefix in XacroObject, then setting it to ''. Some objects are deleted but not all and the Cross::Robot cannot be rebuilt.
 - Fix Attachment for the root link in `assembly_from_urdf`
+- Provide a tool to set the inertial parameters automatically.
 - Add two coordinate systems for each Cross::Joint in `assembly_from_urdf` (parent = urdf_joint.origin, child = parent * get_actuation_placement())
 - Do not create an extra FreeCAD link when importing a URDF since the part can be directly added to the ROS links (i.e. instead of creating a FreeCAD link and adding the FreeCAD link to the ROS link). FreeCAD links are only necessary if the parts are in a different file.
 - Support all joint types

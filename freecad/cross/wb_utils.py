@@ -12,7 +12,6 @@ from . import wb_globals
 from .freecad_utils import is_box
 from .freecad_utils import is_cylinder
 from .freecad_utils import is_sphere
-from .freecad_utils import label_or
 from .freecad_utils import message
 from .freecad_utils import warn
 from .ros_utils import get_ros_workspace_from_file
@@ -154,7 +153,7 @@ def get_chain(link: CrossLink) -> DOList:
         # A root link.
         return [link]
     if not ref_joint.Parent:
-        warn(f'{label_or(ref_joint)} has no parent', True)
+        warn(f'Joint `{ros_name(ref_joint)}` has no parent', True)
         # Return only ref_joint to indicate an error.
         return [ref_joint]
     robot = ref_joint.Proxy.get_robot()

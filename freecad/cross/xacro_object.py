@@ -33,9 +33,9 @@ from .freecad_utils import warn
 from .ros_utils import abs_path_from_ros_path
 from .ros_utils import ros_path_from_abs_path
 from .wb_utils import ICON_PATH
+from .wb_utils import is_name_used
 from .wb_utils import is_robot
 from .wb_utils import is_workcell
-from .wb_utils import remove_ros_workspace
 from .wb_utils import ros_name
 try:
     from .robot_from_urdf import robot_from_urdf
@@ -167,7 +167,7 @@ class XacroObject(ProxyBase):
              or (not hasattr(self.xacro_object, 'Group'))
              or (not self.xacro_object.Group))):
             return []
-        robot = self._get_robot()
+        robot = self.get_robot()
         if not robot:
             return []
         if not hasattr(robot, 'Proxy'):
@@ -213,7 +213,7 @@ class XacroObject(ProxyBase):
             elif (ros_path is None) and (obj.InputFile != ''):
                 obj.InputFile = ''
         if prop == 'Placement':
-            robot = self._get_robot()
+            robot = self.get_robot()
             if robot and (robot.Placement != obj.Placement):
                 # Avoid recursive recompute.
                 robot.Placement = obj.Placement
@@ -271,7 +271,7 @@ class XacroObject(ProxyBase):
             return
         new_robot = self._generate_robot(obj)
         if new_robot and obj.Group:
-            old_robot = self._get_robot()
+            old_robot = self.get_robot()
             if old_robot:
                 # Delete the old robot.
                 _clear_robot(old_robot)
@@ -348,7 +348,7 @@ class XacroObject(ProxyBase):
         urdf_robot = UrdfLoader.load_from_string(urdf_txt)
         return urdf_robot
 
-    def _get_robot(self) -> Optional[CrossRobot]:
+    def get_robot(self) -> Optional[CrossRobot]:
         if ((not hasattr(self, 'xacro_object'))
                 or (not hasattr(self.xacro_object, 'Group'))):
             return

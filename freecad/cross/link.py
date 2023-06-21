@@ -24,6 +24,7 @@ from .wb_utils import get_links
 from .wb_utils import get_valid_urdf_name
 from .wb_utils import is_joint
 from .wb_utils import is_link
+from .wb_utils import is_name_used
 from .wb_utils import is_primitive
 from .wb_utils import is_robot
 from .wb_utils import ros_name
@@ -153,6 +154,11 @@ class Link(ProxyBase):
         self._fc_links_visual: DOList = []
         self._fc_links_collision: DOList = []
 
+        # Used to recover a valid and unique name on change of `Label` or
+        # `Label2`.
+        # Updated in `onBeforeChange` and potentially used in `onChanged`.
+        self.old_ros_name: str = ''
+
     def init_extensions(self, obj: CrossLink) -> None:
         # Need a group to put the generated FreeCAD links in.
         obj.addExtension('App::GroupExtensionPython')
@@ -208,19 +214,29 @@ class Link(ProxyBase):
         pass
 
     def onBeforeChange(self, obj: CrossLink, prop: str) -> None:
+        """Called before a property of `obj` is changed."""
         # TODO: save the old ros_name and update all joints that used it.
-        pass
+        if prop in ['Label', 'Label2']:
+            robot = self.get_robot()
+            if (robot and is_name_used(obj, robot)):
+                self.old_ros_name = ''
+            else:
+                self.old_ros_name = ros_name(obj)
 
     def onChanged(self, obj: CrossLink, prop: str) -> None:
         if prop == 'Group':
             self.cleanup_children()
-        if prop in ['Real', 'Visual', 'Collision']:
+        if prop in ('Real', 'Visual', 'Collision'):
             self.cleanup_children()
             self.update_fc_links()
-        if prop in ['Label', 'Label2']:
+        if prop in ('Label', 'Label2'):
             robot = self.get_robot()
             if robot and hasattr(robot, 'Proxy'):
                 robot.Proxy.set_joint_enum()
+            if (robot
+                    and is_name_used(obj, robot)
+                    and getattr(obj, prop) != self.old_ros_name):
+                setattr(obj, prop, self.old_ros_name)
         if prop == 'Placement':
             if not self.is_execute_ready():
                 return

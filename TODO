@@ -1,7 +1,8 @@
-- Avoid duplication of Label and Label2 ({Robot,Link,Joint}.onBeforeChange())
-- Validate Label2 (or Label if Label2 is not defined) against valid URDF names ({Robot,Link,Joint}.onBeforeChange())
 - Handle star-style macro parameters (e.g. `*origin` in `robotiq-3f-gripper_articulated.urdf.xacro`)
 - Set `JointAxisLength` to a value adapated to the robot size when importing URDF.
+- Implement a tool to compute an approximate mesh
+- Validate Label2 (or Label if Label2 is not defined) against valid URDF names ({Robot,Link,Joint}.onBeforeChange()).
+  The behavior must be configurable: a) Do nothing (export valid names) b) Warn c) Reject.
 - URDF editor integrated in Robot
 - Clear necessary fields when `XacroObject.InputFile` is reset
 - Fix bug when setting a prefix in XacroObject, then setting it to ''. Some objects are deleted but not all and the Cross::Robot cannot be rebuilt.

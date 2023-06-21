@@ -14,6 +14,7 @@ from .urdf_utils import urdf_origin_from_placement
 from .wb_utils import ICON_PATH
 from .wb_utils import get_valid_urdf_name
 from .wb_utils import is_link
+from .wb_utils import is_name_used
 from .wb_utils import is_robot
 from .wb_utils import is_workcell
 from .wb_utils import ros_name
@@ -66,6 +67,11 @@ class Joint(ProxyBase):
 
         self.init_properties(obj)
 
+        # Used to recover a valid and unique name on change of `Label` or
+        # `Label2`.
+        # Updated in `onBeforeChange` and potentially used in `onChanged`.
+        self.old_ros_name: str = ''
+
     def init_properties(self, obj: CrossJoint):
         add_property(obj, 'App::PropertyString', '_Type', 'Internal',
                      'The type')
@@ -109,6 +115,16 @@ class Joint(ProxyBase):
 
         self._toggle_editor_mode()
 
+    def onBeforeChange(self, obj: CrossLink, prop: str) -> None:
+        """Called before a property of `obj` is changed."""
+        # TODO: save the old ros_name and update all joints that used it.
+        if prop in ['Label', 'Label2']:
+            robot = self.get_robot()
+            if (robot and is_name_used(obj, robot)):
+                self.old_ros_name = ''
+            else:
+                self.old_ros_name = ros_name(obj)
+
     def onChanged(self, obj: CrossJoint, prop: str) -> None:
         """Called when a property has changed."""
         print(f'{obj.Label}.onChanged({prop})') # DEBUG
@@ -126,6 +142,10 @@ class Joint(ProxyBase):
             robot = self.get_robot()
             if robot and hasattr(robot, 'Proxy'):
                 robot.Proxy.add_joint_variables()
+            if (robot
+                    and is_name_used(obj, robot)
+                    and getattr(obj, prop) != self.old_ros_name):
+                setattr(obj, prop, self.old_ros_name)
         if prop == 'Type':
             self._toggle_editor_mode()
         if prop == 'Child':

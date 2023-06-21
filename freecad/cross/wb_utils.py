@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Iterable, Optional
+from typing import Callable, Iterable, Optional, Union
 
 import FreeCAD as fc
 
@@ -24,6 +24,8 @@ CrossJoint = DO  # A Cross::Joint, i.e. a DocumentObject with Proxy "Joint".
 CrossLink = DO  # A Cross::Link, i.e. a DocumentObject with Proxy "Link".
 CrossRobot = DO  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot".
 CrossXacroObject = DO  # Cross::XacroObject, i.e. DocumentObject with Proxy "XacroObject".
+CrossWorkcell = DO  # Cross::Workcell, i.e. DocumentObject with Proxy "Workcell".
+CrossObject = Union[CrossJoint, CrossLink, CrossRobot, CrossXacroObject, CrossWorkcell]
 DOList = Iterable[DO]
 
 MOD_PATH = Path(fc.getUserAppDataDir()) / 'Mod/freecad.cross'
@@ -385,3 +387,36 @@ def is_selected_from_lambda(
     if not sel:
         return False
     return is_type_fun(sel[0])
+
+
+def is_name_used(
+        obj: CrossObject,
+        container_obj: [CrossRobot | CrossWorkcell],
+        ) -> bool:
+    if not is_robot(container_obj) or is_workcell(container_obj):
+        raise RuntimeError('Second argument must be a'
+                           ' CrossRobot or a CrossWorkbench')
+    obj_name = ros_name(obj)
+    if ((obj is not container_obj)
+            and (ros_name(container_obj) == obj_name)):
+        return True
+    if is_robot(container_obj) and hasattr(container_obj, 'Proxy'):
+        for link in container_obj.Proxy.get_links():
+            if ((obj is not link)
+                    and (ros_name(link) == obj_name)):
+                return True
+    elif is_workcell(container_obj) and hasattr(container_obj, 'Proxy'):
+        for xacro_object in container_obj.Proxy.get_xacro_objects():
+            if ((obj is not xacro_object)
+                    and (ros_name(xacro_object) == obj_name)):
+                return True
+            if hasattr(xacro_object, 'Proxy'):
+                robot = xacro_object.Proxy.get_robot()
+                if robot and is_name_used(obj, robot):
+                    return True
+    if hasattr(container_obj, 'Proxy'):
+        for joint in container_obj.Proxy.get_joints():
+            if ((obj is not joint)
+                    and (ros_name(joint) == obj_name)):
+                return True
+    return False

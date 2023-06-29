@@ -20,6 +20,10 @@ from __future__ import annotations
 
 from copy import copy
 from typing import Any, Iterable, Optional
+from xml.dom.minidom import Document
+from xml.dom.minidom import Element
+from xml.dom.minidom import parseString
+from xml.parsers.expat import ExpatError
 import xml.etree.ElementTree as et
 
 import FreeCAD as fc
@@ -30,10 +34,10 @@ from .freecad_utils import ProxyBase
 from .freecad_utils import add_property
 from .freecad_utils import is_group
 from .freecad_utils import warn
+from .freecad_utils import get_valid_property_name
 from .ros_utils import abs_path_from_ros_path
 from .ros_utils import ros_path_from_abs_path
 from .wb_utils import ICON_PATH
-from .wb_utils import is_name_used
 from .wb_utils import is_robot
 from .wb_utils import is_workcell
 from .wb_utils import ros_name
@@ -95,8 +99,10 @@ class XacroObject(ProxyBase):
         obj.Proxy = self
         self.xacro_object = obj
 
-        # List of macro parameters.
-        self.param_properties: list[str] = []
+        # List of macro parameters, dict[name: prop_name], where `name` is the
+        # parameter name as defined in the xacro file and `prop_name` is the
+        # name of the FreeCAD property.
+        self.param_properties: dict[str, str] = {}
 
         # Keep track of the old generated xacro, to avoid rebuilding the robot.
         if not hasattr(self, '_old_xacro_file_content'):
@@ -199,7 +205,7 @@ class XacroObject(ProxyBase):
         if obj.getEnumerationsOfProperty('MainMacro') != macro_names:
             obj.MainMacro = macro_names
         self._toggle_editor_mode(obj)
-        self.set_param_properties(obj)
+        self.add_param_properties(obj)
         self.reset_group(obj)
 
     def onChanged(self, obj: CrossXacroObject, prop: str) -> None:
@@ -230,14 +236,14 @@ class XacroObject(ProxyBase):
         if state:
             self.Type, = state
 
-    def set_param_properties(self, obj: CrossXacroObject) -> None:
+    def add_param_properties(self, obj: CrossXacroObject) -> None:
         if not hasattr(self, 'xacro_object'):
             # Implementation note: xacro_object is defined with other
             # required members.
             return
 
         # Get old parameters to clear old parameters later on.
-        old_param_properties: list[str] = copy(self.param_properties)
+        old_param_properties: dict[str, str] = copy(self.param_properties)
 
         self.param_properties.clear()
         if not self.is_execute_ready():
@@ -249,21 +255,26 @@ class XacroObject(ProxyBase):
             return
         macro: Macro = self.xacro.macros[obj.MainMacro]
         for name in macro.params:
-            self.param_properties.append(name)
+            prop_name = get_valid_property_name(name)
+            self.param_properties[name] = prop_name
+            if name.startswith('*'):
+                help = f'Macro parameter "{name}", must be a valid xml tag'
+            else:
+                help = f'Macro parameter "{name}"'
             if name in macro.defaultmap:
                 # Default given.
-                add_property(obj, 'App::PropertyString', name, 'Input',
-                             f'Macro parameter "{name}"',
+                add_property(obj, 'App::PropertyString', prop_name, 'Input',
+                             help,
                              macro.defaultmap[name][1])
             else:
                 # No default.
-                add_property(obj, 'App::PropertyString', name, 'Input',
-                             f'Macro parameter "{name}"')
+                add_property(obj, 'App::PropertyString', prop_name, 'Input',
+                             help)
 
         # Clear old parameters.
-        for name in old_param_properties:
-            if name not in self.param_properties:
-                obj.removeProperty(name)
+        for prop_name in old_param_properties.values():
+            if prop_name not in self.param_properties.values():
+                obj.removeProperty(prop_name)
 
     def reset_group(self, obj: CrossXacroObject):
         """Rebuild the CrossRobot object."""
@@ -300,7 +311,7 @@ class XacroObject(ProxyBase):
 
         # Generate the URDF to obtain the root link.
         robot_name = ros_name(obj)
-        params = {name: obj.getPropertyByName(name) for name in self.param_properties}
+        params = self._get_xacro_params()
 
         # Generate the xacro xml document.
         xacro_xml = self.xacro.to_xml(robot_name, obj.MainMacro, params)
@@ -328,7 +339,7 @@ class XacroObject(ProxyBase):
     def _generate_robot(self, obj: CrossXacroObject) -> Optional[CrossRobot]:
         if not self.is_execute_ready():
             return
-        params = {name: obj.getPropertyByName(name) for name in self.param_properties}
+        params = self._get_xacro_params()
         xacro_txt = self.xacro.to_string(ros_name(obj), obj.MainMacro, params)
         if xacro_txt == self._old_xacro_file_content:
             return
@@ -355,6 +366,28 @@ class XacroObject(ProxyBase):
         for obj in self.xacro_object.Group:
             if is_robot(obj):
                 return obj
+
+    def _get_xacro_params(self) -> dict[str, [Any | Element]]:
+        """Return the dictionnary of macro parameters for URDF generation."""
+        if not hasattr(self, 'xacro_object'):
+            return {}
+        obj: CrossXacroObject = self.xacro_object
+
+        params: dict[str, [Any | Element]] = {}
+        for xacro_param_name, prop_name in self.param_properties.items():
+            str_value = obj.getPropertyByName(prop_name)
+            if xacro_param_name.startswith('*'):
+                try:
+                    value = parseString(str_value).documentElement
+                except ExpatError as e:
+                    value = Document().createComment('PARSING_ERROR'
+                                        f' in xacro parameter"{xacro_param_name}"'
+                                        f' of macro "{obj.MainMacro}":'
+                                        f' "{e}"')
+            else:
+                value = str_value
+            params[xacro_param_name] = value
+        return params
 
     def _fix_lost_fc_links(self) -> None:
         """Fix children lost on restore."""

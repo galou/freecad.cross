@@ -58,7 +58,17 @@ class Xacro:
                robot_name: str,
                macro: Optional[str] = '',
                parameters: Optional[dict[str, Any]] = None) -> Document:
-        """Return the minidom Document of the xacro."""
+        """Return the minidom Document of the xacro.
+
+        Parameters
+        ----------
+        - robot_name: Robot name, attribute of the root `robot` tag in the xml.
+        - macro: Name of the xacro macro to use, tag `<xacro:{macro}>`.
+        - parameters: xacro macro parameters. The value of simple parameters
+          (without asterisk) will be used as `str(value)`. The value of block
+          parameters (starting with one or two asterisks) must be of type
+          `xml.dom.minidom.Element`.
+        """
         if macro and (macro not in self.macros):
             raise RuntimeError(f'Macro "{macro}" not'
                                ' defined in the xacro file')
@@ -75,8 +85,14 @@ class Xacro:
         if macro:
             # A xacro file, not a URDF.
             use = robot.appendChild(out_xml.createElement(f'xacro:{macro}'))
-        for k, v in parameters.items():
-            use.setAttribute(k, str(v))
+        for xacro_param_name, xacro_param_value in parameters.items():
+            if xacro_param_name.startswith('*'):
+                # Block parameter.
+                if not xacro_param_value.parentNode:
+                    xacro_param_value.parentNode = out_xml
+                use.appendChild(xacro_param_value)
+            else:
+                use.setAttribute(xacro_param_name, str(xacro_param_value))
         return out_xml
 
     def to_string(self,

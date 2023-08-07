@@ -21,7 +21,9 @@ from .freecad_utils import get_valid_property_name
 from .freecad_utils import is_origin
 from .freecad_utils import label_or
 from .freecad_utils import warn
+from .gui_utils import tr
 from .ros_utils import split_package_path
+from .ui.file_overwrite_confirmation_dialog import FileOverwriteConfirmationDialog
 from .utils import get_valid_filename
 from .utils import grouper
 from .utils import save_xml
@@ -423,7 +425,7 @@ class Robot(ProxyBase):
             self.robot.removeProperty(p)
         return variables
 
-    def export_urdf(self) -> Optional[et.Element]:
+    def export_urdf(self, interactive: bool = False) -> Optional[et.Element]:
         """Export the robot as URDF, writing files."""
         if not self.is_execute_ready():
             return
@@ -431,10 +433,34 @@ class Robot(ProxyBase):
             # TODO: ask the user for OutputPath.
             warn('Property `OutputPath` cannot be empty', True)
             return
-        # TODO: also accept OutputPath as package name.
+        # TODO: also accept OutputPath as package name in $ROS_WORKSPACE/src.
         p, output_path = get_rel_and_abs_path(self.robot.OutputPath)
         if p != self.robot.OutputPath:
             self.robot.OutputPath = p
+
+        template_files = [
+            'package.xml',
+            'CMakeLists.txt',
+            'launch/display.launch.py',
+            'rviz/robot_description.rviz',
+            ]
+
+        write_files = template_files + [
+                'meshes/',
+                'urdf/',
+                ]
+
+        if interactive and fc.GuiUp:
+            diag = FileOverwriteConfirmationDialog(
+                    output_path, write_files)
+            ignore, write, overwrite = diag.exec_()
+            diag.close()
+        if set(ignore) == set(write_files):
+            # No files to write.
+            return
+        elif set(write + overwrite) != set(write_files):
+            warn(tr('Partial selection of files not supported yet'), True)
+            return
         package_parent, package_name = split_package_path(output_path)
         # TODO: warn if package name doesn't end with `_description`.
         xml = et.fromstring('<robot/>')
@@ -466,12 +492,6 @@ class Robot(ProxyBase):
         urdf_file = f'{file_base}.urdf'
         urdf_path = output_path / f'urdf/{urdf_file}'
         save_xml(xml, urdf_path)
-        template_files = [
-            'package.xml',
-            'CMakeLists.txt',
-            'launch/display.launch.py',
-            'rviz/robot_description.rviz',
-            ]
         export_templates(template_files,
                          package_parent,
                          package_name=package_name,

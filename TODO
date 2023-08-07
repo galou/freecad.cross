@@ -1,10 +1,10 @@
-- Handle star-style macro parameters (e.g. `*origin` in `robotiq-3f-gripper_articulated.urdf.xacro`)
 - Set `JointAxisLength` to a value adapated to the robot size when importing URDF.
 - Implement a tool to compute an approximate mesh
 - Validate Label2 (or Label if Label2 is not defined) against valid URDF names ({Robot,Link,Joint}.onBeforeChange()).
   The behavior must be configurable: a) Do nothing (export valid names) b) Warn c) Reject.
 - URDF editor integrated in Robot
 - Clear necessary fields when `XacroObject.InputFile` is reset
+- Handle empty star-style macro parameters (e.g. `*origin` in `robotiq-3f-gripper_articulated.urdf.xacro`)
 - Fix bug when setting a prefix in XacroObject, then setting it to ''. Some objects are deleted but not all and the Cross::Robot cannot be rebuilt.
 - Fix Attachment for the root link in `assembly_from_urdf`
 - Provide a tool to set the inertial parameters automatically.

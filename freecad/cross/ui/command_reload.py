@@ -52,6 +52,7 @@ class _ReloadCommand:
         _reload_module('freecad.cross.ui.command_sphere_from_bounding_box')
         _reload_module('freecad.cross.ui.command_urdf_export')
         _reload_module('freecad.cross.ui.command_wb_settings')
+        _reload_module('freecad.cross.ui.file_overwrite_confirmation_dialog')
         _reload_module('freecad.cross.urdf_loader')
         _reload_module('freecad.cross.urdf_parser_utils')
         _reload_module('freecad.cross.urdf_utils')

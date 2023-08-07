@@ -17,9 +17,11 @@ import FreeCAD as fc
 
 from .freecad_utils import ProxyBase
 from .freecad_utils import add_property
-from .freecad_utils import warn
 from .freecad_utils import is_same_placement
+from .freecad_utils import warn
+from .gui_utils import tr
 from .ros_utils import split_package_path
+from .ui.file_overwrite_confirmation_dialog import FileOverwriteConfirmationDialog
 from .urdf_utils import urdf_origin_from_placement
 from .utils import get_valid_filename
 from .utils import save_xml
@@ -156,7 +158,7 @@ class Workcell(ProxyBase):
                 if not is_same_placement(xo.Placement, placement):
                     xo.Placement = placement
 
-    def export_urdf(self) -> Optional[et.Element]:
+    def export_urdf(self, interactive: bool = False) -> Optional[et.Element]:
         if not self.is_execute_ready():
             return
         obj: CrossWorkcell = self.workcell
@@ -240,11 +242,34 @@ class Workcell(ProxyBase):
                 joint_et.append(origin_et)
                 robot_et.append(joint_et)
 
+        template_files = [
+            'package.xml',
+            'CMakeLists.txt',
+            'launch/display.launch.py',
+            'rviz/robot_description.rviz',
+            ]
+
+        write_files = template_files + [
+                'meshes/',
+                'urdf/',
+                ]
+
         # Write out files.
-        # TODO: also accept OutputPath as package name.
+        # TODO: also accept OutputPath as package name in $ROS_WORKSPACE/src.
         p, output_path = get_rel_and_abs_path(obj.OutputPath)
         if p != obj.OutputPath:
             obj.OutputPath = p
+
+        if interactive and fc.GuiUp:
+            diag = FileOverwriteConfirmationDialog(
+                    output_path, write_files)
+            ignore, write, overwrite = diag.exec_()
+            diag.close()
+        if set(ignore) == set(write_files):
+            return
+        elif set(write + overwrite) != set(write_files):
+            warn(tr('Partial selection of files not supported yet'), True)
+            return
         package_parent, package_name = split_package_path(output_path)
         # TODO: warn if package name doesn't end with `_description`.
         robot_name = ros_name(self.workcell)
@@ -253,12 +278,6 @@ class Workcell(ProxyBase):
         output_path.mkdir(parents=True, exist_ok=True)
         urdf_path = output_path / f'urdf/{urdf_file}'
         save_xml(robot_et, urdf_path)
-        template_files = [
-            'package.xml',
-            'CMakeLists.txt',
-            'launch/display.launch.py',
-            'rviz/robot_description.rviz',
-            ]
         export_templates(template_files,
                          package_parent,
                          package_name=package_name,

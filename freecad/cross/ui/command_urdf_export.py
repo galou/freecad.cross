@@ -99,7 +99,7 @@ class _UrdfExportCommand:
             elif (is_robot(obj)
                   or is_workcell(obj)):
                 if hasattr(obj, 'Proxy'):
-                    xmls.append(obj.Proxy.export_urdf())
+                    xmls.append(obj.Proxy.export_urdf(interactive=True))
                     show_xml = False
             elif (is_xacro_object(obj)
                   or is_joint(obj)):

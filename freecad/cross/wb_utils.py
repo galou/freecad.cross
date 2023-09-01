@@ -4,11 +4,12 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Callable, Iterable, Optional, Union
+from typing import Any, Callable, Iterable, Optional, Union
 
 import FreeCAD as fc
 
 from . import wb_globals
+from .freecad_utils import get_param
 from .freecad_utils import is_box
 from .freecad_utils import is_cylinder
 from .freecad_utils import is_sphere
@@ -42,6 +43,12 @@ class XacroObjectAttachment:
     # ROS object `attached_to` belongs to.
     attachement_ros_object: Optional[CrossXacroObject | CrossRobot] = None
 
+
+def get_workbench_param(param_name: str, _type: type) -> Any:
+    """Return the value of a workbench parameter."""
+    param_getter = fc.ParamGet(
+            f'User parameter:BaseApp/Preferences/Mod/{wb_globals.PREFS_CATEGORY}')
+    return fc.ParamGet(wb_globals.PREFS_CATEGORY).GetString(param_name)
 
 def is_robot(obj: DO) -> bool:
     """Return True if the object is a Cross::Robot."""

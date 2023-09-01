@@ -30,6 +30,34 @@ def with_fc_gui() -> bool:
     return hasattr(fc, 'GuiUp') and fc.GuiUp
 
 
+def get_param(group, param, default=None, _type=None):
+    """Return a parameter with type checking and default."""
+    type_map = {
+        'Integer': int,
+        'Float': float,
+        'Boolean': bool,
+        'Unsigned Long': int,
+        'String': str,
+        int: int,
+        float: float,
+        bool: bool,
+        str: str,
+    }
+
+    if (_type is not None) and (_type not in type_map):
+        raise ValueError('Unkown type')
+    for typ_, name, val in group.GetContents():
+        if name != param:
+            continue
+        if (_type is not None) and (type_map[_type] is not type_map[typ_]):
+            raise RuntimeError('Parameter found with wrong type: {}'.format(
+                typ_))
+        return val
+    if default is None:
+        raise RuntimeError('Parameter {} not found'.format(param))
+    return default
+
+
 # Adapted from https://github.com/FreeCAD/FreeCAD/blob
 #   /fe9ebfc4c5ea5cd26786627434b4158171a80a29/src/Base/Tools.cpp#L155
 # Function getIdentifier in Tools.cpp.

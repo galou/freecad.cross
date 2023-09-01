@@ -301,7 +301,6 @@ class XacroObject(ProxyBase):
             # them from the group.
             # TODO: not nice, try to solve out why this is necessary.
             obj.Group = [new_robot]
-        print('reset_group END') # DEBUG
 
     def export_urdf(self) -> Optional[et.Element]:
         """Export the xacro object as URDF."""
@@ -414,13 +413,11 @@ class XacroObject(ProxyBase):
                     or (obj in xo.Group)
                     or (not is_robot(obj))):
                 continue
-            print(f'Fixing lost child {obj.Label} of {xo.Label}') # DEBUG
             xo.addObject(obj)
 
         # Put back objects that were in a group by removing them from
         # `xo.Group`.
         for o in objects_in_group:
-            print(f'Removing {o.Label} from {xo.Label}') # DEBUG
             xo.removeObject(o)
 
 

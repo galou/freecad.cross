@@ -15,6 +15,7 @@ from PySide import QtCore  # FreeCAD's PySide!
 
 from ..freecad_utils import is_box
 from ..freecad_utils import is_cylinder
+from ..freecad_utils import is_link as is_fclink
 from ..freecad_utils import is_sphere
 from ..freecadgui_utils import get_subobjects_and_placements
 from ..gui_utils import tr
@@ -79,6 +80,10 @@ class _UrdfExportCommand:
         show_xml = True
         exported_objects: list[fc.DocumentObject] = []
         for obj, placement in get_subobjects_and_placements(selection):
+            if is_fclink(obj):
+                linked_obj = obj.LinkedObject
+            else:
+                linked_obj = obj
             if not hasattr(obj, 'TypeId'):
                 # For now, only objects with 'TypeId' are supported.
                 continue
@@ -87,15 +92,18 @@ class _UrdfExportCommand:
                 continue
             exported_objects.append(obj)
             xmls: list[Optional[et.ElementTree]] = []
-            if is_box(obj):
+            if is_box(linked_obj):
                 xmls.append(urdf_collision_from_box(
-                    obj, placement, ignore_obj_placement=True))
-            elif is_sphere(obj):
+                    linked_obj, obj.Label, placement,
+                    ignore_obj_placement=True))
+            elif is_sphere(linked_obj):
                 xmls.append(urdf_collision_from_sphere(
-                    obj, placement, ignore_obj_placement=True))
-            elif is_cylinder(obj):
+                    linked_obj, obj.Label, placement,
+                    ignore_obj_placement=True))
+            elif is_cylinder(linked_obj):
                 xmls.append(urdf_collision_from_cylinder(
-                    obj, placement, ignore_obj_placement=True))
+                    linked_obj, obj.Label, placement,
+                    ignore_obj_placement=True))
             elif (is_robot(obj)
                   or is_workcell(obj)):
                 if hasattr(obj, 'Proxy'):

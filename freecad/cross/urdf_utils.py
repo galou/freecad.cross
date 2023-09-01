@@ -13,7 +13,6 @@ import FreeCAD as fc
 import numpy as np
 
 from .freecad_utils import get_leafs_and_subnames
-from .freecad_utils import has_placement
 from .freecad_utils import is_box
 from .freecad_utils import is_cylinder
 from .freecad_utils import is_group
@@ -25,6 +24,7 @@ from .freecad_utils import label_or
 from .freecad_utils import warn
 from .utils import get_valid_filename
 from .utils import xml_comment
+from .wb_utils import is_primitive
 
 
 # Typing hints.
@@ -121,6 +121,12 @@ def rotation_from_rpy(rpy: Rpy) -> fc.Rotation:
             fc.Rotation(fc.Vector(0.0, 0.0, 1.0), np.degrees(rpy[2]))
             * fc.Rotation(fc.Vector(0.0, 1.0, 0.0), np.degrees(rpy[1]))
             * fc.Rotation(fc.Vector(1.0, 0.0, 0.0), np.degrees(rpy[0])))
+
+
+def _xml_comment_element(obj_label: str) -> et.Element:
+    # Workaround et.Comment() not being correctly serialized in Python3.8.
+    # return et.fromstring(f'<cad_name value="{obj_label}"/>')
+    return et.Comment(xml_comment(obj_label))
 
 
 def urdf_origin_from_placement(p: fc.Placement) -> et.Element:
@@ -221,14 +227,18 @@ def urdf_cylinder_placement_from_object(
 def _urdf_generic_from_box(
         box: PartBox,
         generic: str,
+        obj_label: str = '',
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False) -> et.Element:
     """Return the xml element for visual or collision for a FreeCAD's box.
 
     Parameters
     ----------
+
     - cyl: the FreeCAD cylinder Part object
     - generic: {'visual', 'collision'}.
+    - obj_label: Label of the FreeCAD object. To comment the output xml.
+      Defaults to box.Label.
     - placement:
       - additional displacement of the box, the box' original
         placement is added to this if ``ignore_obj_placement`` is False.
@@ -239,10 +249,16 @@ def _urdf_generic_from_box(
     if not is_box(box):
         raise RuntimeError("Argument must be a 'Part::Box'")
     parent = et.fromstring(f'<{generic}/>')
+
+    if not obj_label:
+        obj_label = box.Label
+    parent.append(_xml_comment_element(obj_label))
+
     if not ignore_obj_placement:
         placement = placement * box.Placement
     center_placement = urdf_box_placement_from_object(box, placement)
     parent.append(urdf_origin_from_placement(center_placement))
+
     parent.append(urdf_geometry_box(
         box.Length.getValueAs('m'),
         box.Width.getValueAs('m'),
@@ -253,13 +269,17 @@ def _urdf_generic_from_box(
 
 def urdf_visual_from_box(
         box: PartBox,
+        obj_label: str = '',
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False) -> et.Element:
     """Return the xml element for visual for a FreeCAD's box.
 
     Parameters
     ----------
+
     - cyl: the FreeCAD cylinder Part object
+    - obj_label: Label of the FreeCAD object. To comment the output xml.
+        Defaults to box.Label.
     - placement:
       - additional displacement of the box, the box' original
         placement is added to this if ``ignore_obj_placement`` is False.
@@ -267,19 +287,23 @@ def urdf_visual_from_box(
     - ignore_obj_placement: cf. ``placement``.
 
     """
-    return _urdf_generic_from_box(box, 'visual',
+    return _urdf_generic_from_box(box, 'visual', obj_label,
                                   placement, ignore_obj_placement)
 
 
 def urdf_collision_from_box(
         box: PartBox,
+        obj_label: str = '',
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False) -> et.Element:
     """Return the xml element for collision for a FreeCAD's box.
 
     Parameters
     ----------
+
     - cyl: the FreeCAD cylinder Part object
+    - obj_label: Label of the FreeCAD object. To comment the output xml.
+        Defaults to box.Label.
     - placement:
       - additional displacement of the box, the box' original
         placement is added to this if ``ignore_obj_placement`` is False.
@@ -287,21 +311,25 @@ def urdf_collision_from_box(
     - ignore_obj_placement: cf. ``placement``.
 
     """
-    return _urdf_generic_from_box(box, 'collision',
+    return _urdf_generic_from_box(box, 'collision', obj_label,
                                   placement, ignore_obj_placement)
 
 
 def _urdf_generic_from_sphere(
         sphere: PartSphere,
         generic: str,
+        obj_label: str = '',
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False) -> et.Element:
     """Return the xml element for visual or collision for a FreeCAD's sphere.
 
     Parameters
     ----------
+
     - sphere: the FreeCAD sphere Part object
     - generic: {'visual', 'collision'}.
+    - obj_label: Label of the FreeCAD object. To comment the output xml.
+        Defaults to sphere.Label.
     - placement:
       - additional displacement of the sphere, the sphere's original
         placement is added to this if ``ignore_obj_placement`` is False.
@@ -311,9 +339,16 @@ def _urdf_generic_from_sphere(
     """
     if not is_sphere(sphere):
         raise RuntimeError("Argument must be a 'Part::Sphere'")
+
     parent = et.fromstring(f'<{generic}/>')
+
+    if not obj_label:
+        obj_label = sphere.Label
+    parent.append(_xml_comment_element(obj_label))
+
     if not ignore_obj_placement:
         placement = placement * sphere.Placement
+
     parent.append(urdf_geometry_sphere(
         sphere.Radius.getValueAs('m'),
         ))
@@ -322,13 +357,17 @@ def _urdf_generic_from_sphere(
 
 def urdf_visual_from_sphere(
         sphere: PartSphere,
+        obj_label: str = '',
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False) -> et.Element:
     """Return the xml element for visual for a FreeCAD's sphere.
 
     Parameters
     ----------
+
     - sphere: the FreeCAD sphere Part object
+    - obj_label: Label of the FreeCAD object. To comment the output xml.
+        Defaults to sphere.Label.
     - placement:
       - additional displacement of the sphere, the sphere's original
         placement is added to this if ``ignore_obj_placement`` is False.
@@ -336,19 +375,23 @@ def urdf_visual_from_sphere(
     - ignore_obj_placement: cf. ``placement``.
 
     """
-    return _urdf_generic_from_sphere(sphere, 'visual',
+    return _urdf_generic_from_sphere(sphere, 'visual', obj_label,
                                      placement, ignore_obj_placement)
 
 
 def urdf_collision_from_sphere(
         sphere: PartSphere,
+        obj_label: str = '',
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False) -> et.Element:
     """Return the xml element for collision for a FreeCAD's sphere.
 
     Parameters
     ----------
+
     - sphere: the FreeCAD sphere Part object
+    - obj_label: Label of the FreeCAD object. To comment the output xml.
+        Defaults to sphere.Label.
     - placement:
       - additional displacement of the sphere, the sphere's original
         placement is added to this if ``ignore_obj_placement`` is False.
@@ -356,21 +399,25 @@ def urdf_collision_from_sphere(
     - ignore_obj_placement: cf. ``placement``.
 
     """
-    return _urdf_generic_from_sphere(sphere, 'collision',
+    return _urdf_generic_from_sphere(sphere, 'collision', obj_label,
                                      placement, ignore_obj_placement)
 
 
 def _urdf_generic_from_cylinder(
         cyl: PartCyl,
         generic: str,
+        obj_label: str = '',
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False) -> et.Element:
     """Return the xml element for visual or collision for a FreeCAD's cylinder.
 
     Parameters
     ----------
+
     - cyl: the FreeCAD cylinder Part object
     - generic: {'visual', 'collision'}.
+    - obj_label: Label of the FreeCAD object. To comment the output xml.
+        Defaults to cyl.Label.
     - placement:
       - additional displacement of the cylinder, the cylinder's original
         placement is added to this if ``ignore_obj_placement`` is False.
@@ -380,11 +427,18 @@ def _urdf_generic_from_cylinder(
     """
     if not is_cylinder(cyl):
         raise RuntimeError("Argument must be a 'Part::Cylinder'")
+
     parent = et.fromstring(f'<{generic}/>')
+
+    if not obj_label:
+        obj_label = cyl.Label
+    parent.append(_xml_comment_element(obj_label))
+
     if not ignore_obj_placement:
         placement = placement * cyl.Placement
     center_placement = urdf_cylinder_placement_from_object(cyl, placement)
     parent.append(urdf_origin_from_placement(center_placement))
+
     parent.append(urdf_geometry_cylinder(
         cyl.Radius.getValueAs('m'),
         cyl.Height.getValueAs('m'),
@@ -394,13 +448,17 @@ def _urdf_generic_from_cylinder(
 
 def urdf_visual_from_cylinder(
         cyl: PartCyl,
+        obj_label: str = '',
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False) -> et.Element:
     """Return the xml element for visual for a FreeCAD's cylinder.
 
     Parameters
     ----------
+
     - cyl: the FreeCAD cylinder Part object
+    - obj_label: Label of the FreeCAD object. To comment the output xml.
+        Defaults to cyl.Label.
     - placement:
       - additional displacement of the cylinder, the cylinder's original
         placement is added to this if ``ignore_obj_placement`` is False.
@@ -408,11 +466,12 @@ def urdf_visual_from_cylinder(
     - ignore_obj_placement: cf. ``placement``.
 
     """
-    return _urdf_generic_from_cylinder(cyl, 'visual',
+    return _urdf_generic_from_cylinder(cyl, 'visual', obj_label,
                                        placement, ignore_obj_placement)
 
 
 def urdf_collision_from_cylinder(
+        obj_label: str,
         cyl: PartCyl,
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False) -> et.Element:
@@ -420,7 +479,10 @@ def urdf_collision_from_cylinder(
 
     Parameters
     ----------
+
     - cyl: the FreeCAD cylinder Part object
+    - obj_label: Label of the FreeCAD object. To comment the output xml.
+        Defaults to cyl.Label.
     - placement:
       - additional displacement of the cylinder, the cylinder's original
         placement is added to this if ``ignore_obj_placement`` is False.
@@ -428,7 +490,7 @@ def urdf_collision_from_cylinder(
     - ignore_obj_placement: cf. ``placement``.
 
     """
-    return _urdf_generic_from_cylinder(cyl, 'collision',
+    return _urdf_generic_from_cylinder(cyl, 'collision', obj_label,
                                        placement, ignore_obj_placement)
 
 
@@ -449,7 +511,7 @@ def urdf_geometry_mesh(mesh_name: str, package_name: str) -> et.Element:
 
 
 def _urdf_generic_mesh(
-        obj: fc.DocumentObject,
+        obj_label: str,
         mesh_name: str,
         package_name: str,
         generic: str,
@@ -461,7 +523,8 @@ def _urdf_generic_mesh(
 
     Parameters
     ----------
-    - obj: the FreeCAD object.
+
+    - obj_label: Label of the FreeCAD object. To comment the output xml.
     - mesh_name: name of the mesh file without directory, so that the final
         mesh reference is `package://{package_name}/meshes/{mesh_name}`.
     - package_name: name of the ROS package.
@@ -470,19 +533,15 @@ def _urdf_generic_mesh(
         original placement is added to this.
 
     """
-    if (not placement) and (not has_placement(obj)):
-        raise RuntimeError("Argument must be a FreeCAD object"
-                           " with a 'Placement' attribute")
     parent = et.fromstring(f'<{generic}/>')
-    # TODO: handle links
-    parent.append(et.Comment(xml_comment(obj.Label)))
-    parent.append(urdf_origin_from_placement(placement))  # TODO: handle links
+    parent.append(_xml_comment_element(obj_label))
+    parent.append(urdf_origin_from_placement(placement))
     parent.append(urdf_geometry_mesh(mesh_name, package_name))
     return parent
 
 
 def urdf_visual_mesh(
-        obj: fc.DocumentObject,
+        obj_label: str,
         mesh_name: str,
         package_name: str,
         placement: fc.Placement = fc.Placement()) -> et.Element:
@@ -493,7 +552,8 @@ def urdf_visual_mesh(
 
     Parameters
     ----------
-    - obj: the FreeCAD object.
+
+    - obj_label: Label of the FreeCAD object. To comment the output xml.
     - mesh_name: name of the mesh file without directory, so that the final
         mesh reference is `package://{package_name}/meshes/{mesh_name}`.
     - package_name: name of the ROS package.
@@ -501,11 +561,11 @@ def urdf_visual_mesh(
         original placement is added to this.
 
     """
-    return _urdf_generic_mesh(obj, mesh_name, package_name, 'visual', placement)
+    return _urdf_generic_mesh(obj_label, mesh_name, package_name, 'visual', placement)
 
 
 def urdf_collision_mesh(
-        obj: fc.DocumentObject,
+        obj_label: str,
         mesh_name: str,
         package_name: str,
         placement: fc.Placement = fc.Placement()) -> et.Element:
@@ -516,7 +576,8 @@ def urdf_collision_mesh(
 
     Parameters
     ----------
-    - obj: the FreeCAD object.
+
+    - obj_label: Label of the FreeCAD object. To comment the output xml.
     - mesh_name: name of the mesh file without directory, so that the final
         mesh reference is `package://{package_name}/meshes/{mesh_name}`.
     - package_name: name of the ROS package.
@@ -524,7 +585,21 @@ def urdf_collision_mesh(
         original placement is added to this.
 
     """
-    return _urdf_generic_mesh(obj, mesh_name, package_name, 'collision', placement)
+    return _urdf_generic_mesh(obj_label, mesh_name, package_name, 'collision', placement)
+
+
+def _get_mesh_filename(obj: DO) -> str:
+    """Return the mesh filename for a FreeCAD object."""
+    if hasattr(obj, 'LinkedObject'):
+        linked_obj = obj.LinkedObject
+    else:
+        linked_obj = obj
+    label = label_or(linked_obj, 'mesh')
+    if hasattr(linked_obj, 'Document'):
+        doc_name = linked_obj.Document.Name
+    else:
+        doc_name = 'unsaved_doc'
+    return get_valid_filename(f'{doc_name}_{label}.dae')
 
 
 def _urdf_generic_from_object(
@@ -557,40 +632,53 @@ def _urdf_generic_from_object(
     """
     out_data: list[XmlForExport] = []
     for subobj, subname in get_leafs_and_subnames(obj):
-        linked_object, linked_matrix = subobj.getLinkedObject(
+        # Implementation note: linked_object is subobj if subobj is not a link.
+        linked_object, link_matrix = subobj.getLinkedObject(
             recursive=True,
             transform=True,
             matrix=fc.Matrix())
-        if not placement:
-            this_placement = fc.Placement(linked_matrix)
+        if is_primitive(linked_object):
+            placement_for_dae_export = fc.Placement(link_matrix)
         else:
-            this_placement = placement * fc.Placement(linked_matrix)
+            # Implementation note: the DAE export of FreeCAD integrates the
+            # placement of the linked object into the mesh, as of 2023-09.
+            # We thus need to remove it from the placement of the object.
+            placement_for_dae_export = (fc.Placement(link_matrix)
+                                        * linked_object.Placement.inverse())
+        if not placement:
+            this_placement = placement_for_dae_export
+        else:
+            this_placement = placement * placement_for_dae_export
         filename = ''
+        if subobj is obj:
+            # No FreeCAD link.
+            name_for_comment = xml_comment(subobj.Label)
+        else:
+            name_for_comment = xml_comment(obj.Label + '/' + subname)
         if is_box(linked_object):
-            # We ignore the object placement because it's given by linked_matrix.
-            xml = _urdf_generic_from_box(linked_object, generic,
+            # We ignore the object placement because it's given by link_matrix.
+            xml = _urdf_generic_from_box(linked_object, generic, name_for_comment,
                                          this_placement, ignore_obj_placement=True)
         elif is_sphere(linked_object):
-            # We ignore the object placement because it's given by linked_matrix.
-            xml = _urdf_generic_from_sphere(linked_object, generic,
+            # We ignore the object placement because it's given by link_matrix.
+            xml = _urdf_generic_from_sphere(linked_object, generic, name_for_comment,
                                             this_placement, ignore_obj_placement=True)
         elif is_cylinder(linked_object):
-            # We ignore the object placement because it's given by linked_matrix.
-            xml = _urdf_generic_from_cylinder(linked_object, generic,
+            # We ignore the object placement because it's given by link_matrix.
+            xml = _urdf_generic_from_cylinder(linked_object, generic, name_for_comment,
                                               this_placement, ignore_obj_placement=True)
         elif is_lcs(linked_object):
             # LCS have a shape and would thus be exported.
             continue
         else:
-            # TODO: manage duplicate labels.
-            label = label_or(linked_object, 'mesh')
-            filename = get_valid_filename(label) + '.dae'
+            # TODO: handle duplicated labels.
+            filename = _get_mesh_filename(subobj)
             if not package_name:
                 warn('Internal error, `package_name` empty'
                      ' but mesh found, using "package" as package name')
                 package_name = 'package'
-            xml = _urdf_generic_mesh(linked_object, filename, package_name, generic,
-                                     this_placement)
+            xml = _urdf_generic_mesh(name_for_comment, filename,
+                                     package_name, generic, this_placement)
         out_data.append(XmlForExport(xml, linked_object, this_placement, filename))
     return out_data
 

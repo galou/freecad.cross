@@ -1,7 +1,10 @@
 - Set `JointAxisLength` to a value adapated to the robot size when importing URDF.
-- Implement a tool to compute an approximate mesh
+- Use unit (2,1,0,0,0,0,0,0) for moments of inertia.
+- Implement a tool to compute an approximate mesh (for example with V-HACD).
 - Validate Label2 (or Label if Label2 is not defined) against valid URDF names ({Robot,Link,Joint}.onBeforeChange()).
   The behavior must be configurable: a) Do nothing (export valid names) b) Warn c) Reject.
+- Replace values such as 1.57 with ${pi / 2} in xacro exports
+- Add a xacro export with `robot_macro.xacro` and `robot.urdf.xacro`. For Workcell, use the current URDF export and replace the current URDF export with pure URDF export.
 - URDF editor integrated in Robot
 - Clear necessary fields when `XacroObject.InputFile` is reset
 - Handle empty star-style macro parameters (e.g. `*origin` in `robotiq-3f-gripper_articulated.urdf.xacro`)
@@ -9,5 +12,7 @@
 - Fix Attachment for the root link in `assembly_from_urdf`
 - Provide a tool to set the inertial parameters automatically.
 - Add two coordinate systems for each Cross::Joint in `assembly_from_urdf` (parent = urdf_joint.origin, child = parent * get_actuation_placement())
+- Do not export twice the same mesh (only to gain time when exporting).
 - Do not create an extra FreeCAD link when importing a URDF since the part can be directly added to the ROS links (i.e. instead of creating a FreeCAD link and adding the FreeCAD link to the ROS link). FreeCAD links are only necessary if the parts are in a different file.
 - Support all joint types
+- Generate a robot from an Assembly4 assembly.

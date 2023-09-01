@@ -106,7 +106,8 @@ def _get_xmls_and_export_meshes(
     ----------
     - obj: object to create the URDF for
     - urdf_function: {urdf_visual_from_object, urdf_collision_from_object}
-    - placement: placement of the object
+    - placement: placement of the object relative to the joint
+                 (MountedPlacement)
     - package_parent: where to find the ROS package
     - package_name: name of the ROS package, also name of the directory where
                     to save the package.

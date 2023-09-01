@@ -349,6 +349,7 @@ def get_leafs_and_subnames(obj: DO) -> list[tuple[DO, str]]:
 
     Parameters
     ----------
+
     - obj: a FreeCAD object that has the attribute `getSubObjects()`.
            If the object doesn't have `getSubObjects()`, it's considered a leaf
            and (obj, '') is returned.
@@ -444,6 +445,30 @@ def validate_types(
         else:
             outlist.append(objects_of_precise_type.pop(0))
     return outlist
+
+
+def get_included_files(obj: DO) -> list[fc.Document]:
+    """Return the list of files included in the object.
+
+    Return the list of files included in the object, possibly including
+    `obj.Document`.
+
+    """
+    docs: list[fc.Document] = []
+    for subobj, subname in get_leafs_and_subnames(obj):
+        if not hasattr(subobj, 'Document'):
+            continue
+        if not is_link(subobj):
+            continue
+        if subobj.Document not in docs:
+            docs.append(subobj.Document)
+    return docs
+
+
+def includes_external_files(obj: DO) -> bool:
+    """Return True if the object includes external files."""
+    included_files = get_included_files(obj)
+    return (len(included_files) > 0) and (obj.Document not in included_files)
 
 
 class ProxyBase(ABC):

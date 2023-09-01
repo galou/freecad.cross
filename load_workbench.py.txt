@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import sys
 sys.path.append('/usr/lib/freecad-daily-python3/lib')
 sys.path.append('/usr/share/freecad-daily/Ext')

@@ -127,7 +127,7 @@ class Joint(ProxyBase):
 
     def onChanged(self, obj: CrossJoint, prop: str) -> None:
         """Called when a property has changed."""
-        print(f'{obj.Label}.onChanged({prop})') # DEBUG
+        # print(f'{obj.Label}.onChanged({prop})') # DEBUG
         if prop == 'Mimic':
             self._toggle_editor_mode()
         if prop == 'MimickedJoint':

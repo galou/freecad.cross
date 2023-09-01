@@ -34,7 +34,7 @@ def get_valid_filename(text: str) -> str:
 
 def xml_comment(comment: str) -> str:
     """Returns the string without '--'."""
-    return f'{comment.replace("--", "⸗⸗")}'
+    return comment.replace('--', '⸗⸗')
 
 
 def warn_unsupported(objects: [DO, DOList],
@@ -85,12 +85,16 @@ def hasallattr(obj: Any, attrs: list[str]):
 
 
 def save_xml(
-        xml: et.ElementTree,
+        xml: et.Element,
         filename: [Path | str],
         ) -> None:
     """Save the xml element into a file."""
     file_path = Path(filename)
     file_path.parent.mkdir(parents=True, exist_ok=True)
+    # Implementation note: we use minidom rather than
+    # `et.ElementTree(xml).write(file_path, encoding='utf-8',
+    # xml_declaration=True)` because the latter does not support pretty
+    # printing.
     txt = minidom.parseString(et.tostring(xml)).toprettyxml(indent='  ')
     file_path.write_text(txt)
 

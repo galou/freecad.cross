@@ -41,6 +41,7 @@ class _ReloadCommand:
         _reload_module('freecad.cross.ros_utils')
         _reload_module('freecad.cross.ui.command_assembly_from_urdf')
         _reload_module('freecad.cross.ui.command_box_from_bounding_box')
+        _reload_module('freecad.cross.ui.command_kk_edit')
         _reload_module('freecad.cross.ui.command_new_joint')
         _reload_module('freecad.cross.ui.command_new_link')
         _reload_module('freecad.cross.ui.command_new_robot')

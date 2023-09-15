@@ -288,7 +288,7 @@ def is_same_placement(
         trans_tol: float = 1e-6,
         rot_tol: float = 1e-7) -> bool:
     """Return True if both placements represent the same transform."""
-    return (((p2.Base - p1.Base).Length < trans_tol)
+    return (p2.Base.isEqual(p1.Base, trans_tol)
             and p2.Rotation.isSame(p1.Rotation, rot_tol))
 
 

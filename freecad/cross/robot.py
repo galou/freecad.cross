@@ -253,11 +253,13 @@ class Robot(ProxyBase):
                                  * joint.Proxy.get_actuation_placement())
 
     def get_links(self) -> list[CrossLink]:
+        """Return the list of CROSS links in the order of creation."""
         if not self.is_execute_ready():
             return []
         return get_links(self.robot.Group)
 
     def get_joints(self) -> list[CrossJoint]:
+        """Return the list of CROSS joints in the order of creation."""
         if not self.is_execute_ready():
             return []
         return get_joints(self.robot.Group)

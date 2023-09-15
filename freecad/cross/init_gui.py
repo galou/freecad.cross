@@ -3,6 +3,7 @@ import FreeCADGui as fcgui
 
 from .ui import command_assembly_from_urdf
 from .ui import command_box_from_bounding_box
+from .ui import command_kk_edit
 from .ui import command_new_joint
 from .ui import command_new_link
 from .ui import command_new_robot
@@ -44,6 +45,7 @@ class CrossWorkbench(fcgui.Workbench):
             'SphereFromBoundingBox',  # Defined in ./ui/command_sphere_from_bounding_box.py.
             'UrdfImport',  # Defined in ./ui/command_robot_from_urdf.py.
             'AssemblyFromUrdf',  # Defined in ./ui/command_assembly_from_urdf.py.
+            'KKEdit',  # Defined in ./ui/command_kk_edit.py.
             'UrdfExport',  # Defined in ./ui/command_urdf_export.py.
             'SetCROSSPlacement',  # Defined in ./ui/command_set_placement.py.
             'WbSettings',  # Defined in ./ui/command_wb_settings.py.

@@ -25,9 +25,11 @@ from freecad.cross.coin_utils import *
 from freecad.cross.deep_copy import *
 from freecad.cross.freecad_utils import *
 from freecad.cross.freecadgui_utils import *
+from freecad.cross.geometry_helpers import *
 from freecad.cross.gui_utils import *
 from freecad.cross.import_dae import *
 from freecad.cross.joint import *
+from freecad.cross.kk_robot import *
 from freecad.cross.link import *
 from freecad.cross.mesh_utils import *
 from freecad.cross.placement_utils import *

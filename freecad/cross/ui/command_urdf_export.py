@@ -1,3 +1,5 @@
+"""Command to export the selected objects to URDF."""
+
 from __future__ import annotations
 
 import copy

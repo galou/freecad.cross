@@ -19,6 +19,7 @@ from ..freecad_utils import is_box
 from ..freecad_utils import is_cylinder
 from ..freecad_utils import is_link as is_fclink
 from ..freecad_utils import is_sphere
+from ..freecad_utils import warn
 from ..freecadgui_utils import get_subobjects_and_placements
 from ..gui_utils import tr
 from ..urdf_utils import urdf_collision_from_box
@@ -75,7 +76,7 @@ class _UrdfExportCommand:
 
         selection = fcgui.Selection.getSelectionEx('', 0)
         if not selection:
-            fc.Console.PrintWarning('Nothing selected, nothing to do\n')
+            warn(tr('Nothing selected, nothing to do'), True)
             return
         txt = ''
         has_mesh = False

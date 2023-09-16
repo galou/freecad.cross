@@ -7,6 +7,7 @@ import FreeCADGui as fcgui
 from ..freecad_utils import warn
 from ..gui_utils import tr
 from ..wb_gui_utils import WbSettingsGetter
+from ..wb_utils import set_workbench_param
 from .. import wb_globals
 
 
@@ -31,7 +32,7 @@ class _WbSettingsCommand:
         settings_getter = WbSettingsGetter(wb_globals.g_ros_workspace)
         if settings_getter.get_settings():
             wb_globals.g_ros_workspace = settings_getter.ros_workspace
-            wb_globals.g_vhacd_path = settings_getter.vhacd_path
+            set_workbench_param(wb_globals.PREF_VHACD_PATH, str(settings_getter.vhacd_path))
 
 
 fcgui.addCommand('WbSettings', _WbSettingsCommand())

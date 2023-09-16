@@ -30,7 +30,10 @@ def with_fc_gui() -> bool:
     return hasattr(fc, 'GuiUp') and fc.GuiUp
 
 
-def get_param(group, param, default=None, _type=None):
+def get_param(group: 'ParamGrp',
+              param: str,
+              default=None,
+              _type=None) -> Any:
     """Return a parameter with type checking and default."""
     type_map = {
         'Integer': int,
@@ -44,8 +47,18 @@ def get_param(group, param, default=None, _type=None):
         str: str,
     }
 
+    if group.IsEmpty() and (default is None):
+        raise RuntimeError('Parameter {} not found'.format(param))
+
+    if group.IsEmpty():
+        return default
+
     if (_type is not None) and (_type not in type_map):
         raise ValueError('Unkown type')
+
+    # group.GetBool() and similars return a default value of the given type
+    # when the parameter is not found, so that we need to go through all
+    # parameters to check if the parameter exists.
     for typ_, name, val in group.GetContents():
         if name != param:
             continue
@@ -56,6 +69,23 @@ def get_param(group, param, default=None, _type=None):
     if default is None:
         raise RuntimeError('Parameter {} not found'.format(param))
     return default
+
+
+def set_param(group: 'ParamGrp',
+              param: str,
+              value: Any,
+              ) -> None:
+    """Return a parameter with type checking and default."""
+    fun_map = {
+            int: 'SetInt',
+            float: 'SetFloat',
+            bool: 'SetBool',
+            str: 'SetString',
+            }
+
+    if type(value) not in fun_map:
+        raise ValueError('Unkown type')
+    getattr(group, fun_map[type(value)])(param, value)
 
 
 # Adapted from https://github.com/FreeCAD/FreeCAD/blob

@@ -1,6 +1,6 @@
 - Set `JointAxisLength` to a value adapated to the robot size when importing URDF.
 - Use unit (2,1,0,0,0,0,0,0) for moments of inertia.
-- Implement a tool to compute an approximate mesh (for example with V-HACD).
+- Fix the placement of simplified mesh when selecting the visual- or collision part inside a Cross::Link.
 - Validate Label2 (or Label if Label2 is not defined) against valid URDF names ({Robot,Link,Joint}.onBeforeChange()).
   The behavior must be configurable: a) Do nothing (export valid names) b) Warn c) Reject.
 - Replace values such as 1.57 with ${pi / 2} in xacro exports

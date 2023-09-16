@@ -14,6 +14,7 @@ from .freecad_utils import is_box
 from .freecad_utils import is_cylinder
 from .freecad_utils import is_sphere
 from .freecad_utils import message
+from .freecad_utils import set_param
 from .freecad_utils import warn
 from .ros_utils import get_ros_workspace_from_file
 from .ros_utils import without_ros_workspace
@@ -24,8 +25,8 @@ DO = fc.DocumentObject
 CrossJoint = DO  # A Cross::Joint, i.e. a DocumentObject with Proxy "Joint".
 CrossLink = DO  # A Cross::Link, i.e. a DocumentObject with Proxy "Link".
 CrossRobot = DO  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot".
-CrossXacroObject = DO  # Cross::XacroObject, i.e. DocumentObject with Proxy "XacroObject".
-CrossWorkcell = DO  # Cross::Workcell, i.e. DocumentObject with Proxy "Workcell".
+CrossXacroObject = DO  # Cross::XacroObject, i.e. DO with Proxy "XacroObject".
+CrossWorkcell = DO  # Cross::Workcell, i.e. DO with Proxy "Workcell".
 CrossObject = Union[CrossJoint, CrossLink, CrossRobot, CrossXacroObject, CrossWorkcell]
 DOList = Iterable[DO]
 
@@ -44,11 +45,21 @@ class XacroObjectAttachment:
     attachement_ros_object: Optional[CrossXacroObject | CrossRobot] = None
 
 
-def get_workbench_param(param_name: str, _type: type) -> Any:
+def get_workbench_param(param_name: str,
+                        default: Any) -> Any:
     """Return the value of a workbench parameter."""
-    param_getter = fc.ParamGet(
+    param_grp = fc.ParamGet(
             f'User parameter:BaseApp/Preferences/Mod/{wb_globals.PREFS_CATEGORY}')
-    return fc.ParamGet(wb_globals.PREFS_CATEGORY).GetString(param_name)
+    return get_param(param_grp, param_name, default)
+
+
+def set_workbench_param(param_name: str,
+                        value: Any) -> None:
+    """Set the value of a workbench parameter."""
+    param_grp = fc.ParamGet(
+            f'User parameter:BaseApp/Preferences/Mod/{wb_globals.PREFS_CATEGORY}')
+    set_param(param_grp, param_name, value)
+
 
 def is_robot(obj: DO) -> bool:
     """Return True if the object is a Cross::Robot."""

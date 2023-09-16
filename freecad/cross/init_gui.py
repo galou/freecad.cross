@@ -12,6 +12,7 @@ from .ui import command_new_xacro_object
 from .ui import command_reload # Developer tool.
 from .ui import command_robot_from_urdf
 from .ui import command_set_placement
+from .ui import command_simplify_mesh
 from .ui import command_sphere_from_bounding_box
 from .ui import command_urdf_export
 from .ui import command_wb_settings
@@ -43,6 +44,7 @@ class CrossWorkbench(fcgui.Workbench):
             'NewXacroObject',  # Defined in ./ui/command_new_xacro_object.py.
             'BoxFromBoundingBox',  # Defined in ./ui/command_box_from_bounding_box.py.
             'SphereFromBoundingBox',  # Defined in ./ui/command_sphere_from_bounding_box.py.
+            'SimplifyMesh',  # Defined in ./ui/command_simplify_mesh.py.
             'UrdfImport',  # Defined in ./ui/command_robot_from_urdf.py.
             'AssemblyFromUrdf',  # Defined in ./ui/command_assembly_from_urdf.py.
             'KKEdit',  # Defined in ./ui/command_kk_edit.py.

@@ -1,4 +1,7 @@
+- Fix the placement of some parts in assembly_from_urdf.py (issue with `forearm_visual` when loading `robot_5r.urdf.xacro`).
+- Implement toggling the visibility of a link.
 - Set `JointAxisLength` to a value adapated to the robot size when importing URDF.
+- Compute the `Origin` of a joint even if it doesn't have any `Child`.
 - Use unit (2,1,0,0,0,0,0,0) for moments of inertia.
 - Fix the placement of simplified mesh when selecting the visual- or collision part inside a Cross::Link.
 - Validate Label2 (or Label if Label2 is not defined) against valid URDF names ({Robot,Link,Joint}.onBeforeChange()).

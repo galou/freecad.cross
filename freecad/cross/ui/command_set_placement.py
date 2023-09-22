@@ -46,10 +46,10 @@ class _SetCROSSPlacementCommand:
                 'Accel': 'N, L',
                 'ToolTip': tr('Set the mounted placement'
                               ' of a link or the origin of a joint.'
-                              'Select either'
-                              '  a) a CROSS::Link, a LCS, and something or'
+                              'Select either\n'
+                              '  a) a CROSS::Link, a LCS, and something or\n'
                               '  b) a CROSS::Joint, the child LCS, and the'
-                              ' parent LCS on the same link.'
+                              ' parent LCS on the same link.\n'
                               '  c) a CROSS::Joint, the LCS on the parent link,'
                               ' and the LCS on the child link.',
                               )}

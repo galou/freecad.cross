@@ -71,11 +71,14 @@ def _clear_robot(obj: CrossRobot) -> None:
         obj.ViewObject.ShowCollision = False
     # Joints first.
     for joint in obj.Proxy.get_joints():
+        joint.Label = 'to_be_removed'
         doc.removeObject(joint.Name)
     for link in obj.Proxy.get_links():
         # If without GUI. Group should be empty with GUI.
         for fc_link in link.Group:
+            fc_link.Label = 'to_be_removed'
             doc.removeObject(fc_link.Name)
+        link.Label = 'to_be_removed'
         doc.removeObject(link.Name)
     # Created objects.
     obj.Proxy.delete_created_objects()
@@ -146,7 +149,7 @@ class XacroObject(ProxyBase):
         add_property(obj, 'App::PropertyPlacement', 'Placement',
                      'Base', 'Placement')
 
-        self._toggle_editor_mode(obj)
+        self._toggle_editor_mode()
 
     def has_link(self, link_name: str) -> bool:
         """Return True if the link belongs to the xacro object.
@@ -169,9 +172,7 @@ class XacroObject(ProxyBase):
                 return link
 
     def get_links(self) -> list[CrossLink]:
-        if ((not hasattr(self, 'xacro_object')
-             or (not hasattr(self.xacro_object, 'Group'))
-             or (not self.xacro_object.Group))):
+        if not self.is_execute_ready():
             return []
         robot = self.get_robot()
         if not robot:
@@ -196,17 +197,21 @@ class XacroObject(ProxyBase):
         """
         if not self.is_execute_ready():
             return
-        if not obj.InputFile:
+        if obj is not self.xacro_object:
+            raise ValueError('Proxied object was changed')
+            return
+        xo: CrossXacroObject = self.xacro_object
+        if not xo.InputFile:
             self._root_link = ''
             return
-        input_path = abs_path_from_ros_path(obj.InputFile)
+        input_path = abs_path_from_ros_path(xo.InputFile)
         self.xacro = XacroLoader.load_from_file(input_path)
         macro_names = self.xacro.get_macro_names()
-        if obj.getEnumerationsOfProperty('MainMacro') != macro_names:
-            obj.MainMacro = macro_names
-        self._toggle_editor_mode(obj)
-        self.add_param_properties(obj)
-        self.reset_group(obj)
+        if xo.getEnumerationsOfProperty('MainMacro') != macro_names:
+            xo.MainMacro = macro_names
+        self._toggle_editor_mode()
+        self._add_param_properties()
+        self.reset_group()
 
     def onChanged(self, obj: CrossXacroObject, prop: str) -> None:
         if prop == 'InputFile':
@@ -225,7 +230,12 @@ class XacroObject(ProxyBase):
                 robot.Placement = obj.Placement
 
     def onDocumentRestored(self, obj: CrossXacroObject):
-        """Restore attributes because __init__ is not called on restore."""
+        """Restore attributes because __init__ is not called on restore.
+
+        This method is called on document restore, i.e. when the document is
+        opened.
+
+        """
         self.__init__(obj)
         self._fix_lost_fc_links()
         self.execute(obj)
@@ -237,24 +247,87 @@ class XacroObject(ProxyBase):
         if state:
             self.Type, = state
 
-    def add_param_properties(self, obj: CrossXacroObject) -> None:
-        if not hasattr(self, 'xacro_object'):
-            # Implementation note: xacro_object is defined with other
-            # required members.
+    def reset_group(self):
+        """Rebuild the CrossRobot object."""
+        if not self.is_execute_ready():
             return
+        xo: CrossXacroObject = self.xacro_object
+        new_robot = self._generate_robot()
+        if new_robot and xo.Group:
+            old_robot = self.get_robot()
+            if old_robot:
+                # Delete the old robot.
+                _clear_robot(old_robot)
+                # Necessary to free the label for the new object object because
+                # the object is removed later.
+                old_robot.Label = 'to_be_removed'
+                xo.Document.removeObject(old_robot.Name)
+        if new_robot:
+            new_robot.Label = f'Robot_of_{xo.Label}'
+            # Add the new robot.
+            # We add the robot by setting `Group` because of the bug described
+            # below. When solved, use next line instead.
+            # xo.addObject(new_robot)
+            # Clean-up other objects.
+            # The xacro objects contains other objects for some reason, remove
+            # them from the group.
+            # TODO: not nice, try to solve out why this is necessary.
+            xo.Group = [new_robot]
 
+    def export_urdf(self) -> Optional[et.Element]:
+        """Export the xacro object as URDF."""
+        if not self.is_execute_ready():
+            return
+        xo: CrossXacroObject = self.xacro_object
+
+        # Generate the URDF to obtain the root link.
+        robot_name = ros_name(xo)
+        params = self._get_xacro_params()
+
+        # Generate the xacro xml document.
+        xacro_xml = self.xacro.to_xml(robot_name, xo.MainMacro, params)
+
+        return et.fromstring(xacro_xml.toxml())
+
+    def get_link_names(self) -> list[str]:
+        if not self._urdf_robot:
+            return []
+        return [link.name for link in self._urdf_robot.links]
+
+    def get_robot(self) -> Optional[CrossRobot]:
+        if ((not hasattr(self, 'xacro_object'))
+                or (not hasattr(self.xacro_object, 'Group'))):
+            return
+        for obj in self.xacro_object.Group:
+            if is_robot(obj):
+                return obj
+
+    def _toggle_editor_mode(self) -> None:
+        """Show/hide properties."""
+        # Hide until an input file is given and macros are defined.
+        xo: CrossXacroObject = self.xacro_object
+        if (hasattr(xo, 'InputFile')
+                and xo.InputFile
+                and hasattr(self, 'xacro')
+                and self.xacro
+                and self.xacro.get_macro_names()):
+            # Show property `MainMacro`.
+            xo.setEditorMode('MainMacro', [])
+        else:
+            xo.setPropertyStatus('MainMacro', ['Hidden'])
+
+    def _add_param_properties(self) -> None:
+        if not self.is_execute_ready():
+            return
         # Get old parameters to clear old parameters later on.
         old_param_properties: dict[str, str] = copy(self.param_properties)
 
         self.param_properties.clear()
-        if not self.is_execute_ready():
-            return
-        if not self.xacro:
-            return
-        if obj.MainMacro is None:
+        xo: CrossXacroObject = self.xacro_object
+        if xo.MainMacro is None:
             # With pure URDF files.
             return
-        macro: Macro = self.xacro.macros[obj.MainMacro]
+        macro: Macro = self.xacro.macros[xo.MainMacro]
         for name in macro.params:
             prop_name = get_valid_property_name(name)
             self.param_properties[name] = prop_name
@@ -264,89 +337,31 @@ class XacroObject(ProxyBase):
                 help = f'Macro parameter "{name}"'
             if name in macro.defaultmap:
                 # Default given.
-                add_property(obj, 'App::PropertyString', prop_name, 'Input',
+                add_property(xo, 'App::PropertyString', prop_name, 'Input',
                              help,
                              macro.defaultmap[name][1])
             else:
                 # No default.
-                add_property(obj, 'App::PropertyString', prop_name, 'Input',
+                add_property(xo, 'App::PropertyString', prop_name, 'Input',
                              help)
 
         # Clear old parameters.
         for prop_name in old_param_properties.values():
             if prop_name not in self.param_properties.values():
-                obj.removeProperty(prop_name)
+                xo.removeProperty(prop_name)
 
-    def reset_group(self, obj: CrossXacroObject):
-        """Rebuild the CrossRobot object."""
-        if not self.is_execute_ready():
-            return
-        new_robot = self._generate_robot(obj)
-        if new_robot and obj.Group:
-            old_robot = self.get_robot()
-            if old_robot:
-                # Delete the old robot.
-                _clear_robot(old_robot)
-                # Necessary to free the label for the new object object because
-                # the object is removed later.
-                old_robot.Label = 'will_be_removed'
-                obj.Document.removeObject(old_robot.Name)
-        if new_robot:
-            new_robot.Label = f'Robot_of_{obj.Label}'
-            # Add the new robot.
-            # We add the robot by setting `Group` because of the bug described
-            # below. When solved, use next line instead.
-            # obj.addObject(new_robot)
-            # Clean-up other objects.
-            # The xacro objects contains other objects for some reason, remove
-            # them from the group.
-            # TODO: not nice, try to solve out why this is necessary.
-            obj.Group = [new_robot]
-
-    def export_urdf(self) -> Optional[et.Element]:
-        """Export the xacro object as URDF."""
-        if not self.is_execute_ready():
-            return
-        obj: CrossXacroObject = self.xacro_object
-
-        # Generate the URDF to obtain the root link.
-        robot_name = ros_name(obj)
-        params = self._get_xacro_params()
-
-        # Generate the xacro xml document.
-        xacro_xml = self.xacro.to_xml(robot_name, obj.MainMacro, params)
-
-        return et.fromstring(xacro_xml.toxml())
-
-    def get_link_names(self) -> list[str]:
-        if not self._urdf_robot:
-            return []
-        return [link.name for link in self._urdf_robot.links]
-
-    def _toggle_editor_mode(self, obj: CrossXacroObject) -> None:
-        """Show/hide properties."""
-        # Hide until an input file is given and macros are defined.
-        if (hasattr(obj, 'InputFile')
-                and obj.InputFile
-                and hasattr(self, 'xacro')
-                and self.xacro
-                and self.xacro.get_macro_names()):
-            # Show property `MainMacro`.
-            obj.setEditorMode('MainMacro', [])
-        else:
-            obj.setPropertyStatus('MainMacro', ['Hidden'])
-
-    def _generate_robot(self, obj: CrossXacroObject) -> Optional[CrossRobot]:
+    def _generate_robot(self) -> Optional[CrossRobot]:
         if not self.is_execute_ready():
             return
         params = self._get_xacro_params()
-        xacro_txt = self.xacro.to_string(ros_name(obj), obj.MainMacro, params)
+        xo: CrossXacroObject = self.xacro_object
+        xacro_txt = self.xacro.to_string(ros_name(xo), xo.MainMacro, params)
         if xacro_txt == self._old_xacro_file_content:
             return
         self._old_xacro_file_content = xacro_txt
-        self._urdf_robot = self._generate_urdf(f'{ros_name(obj)}_robot', obj.MainMacro, params)
+        self._urdf_robot = self._generate_urdf(f'{ros_name(xo)}_robot', xo.MainMacro, params)
         self._root_link = self._urdf_robot.get_root()
-        robot = robot_from_urdf(obj.Document, self._urdf_robot)
+        robot = robot_from_urdf(xo.Document, self._urdf_robot)
         robot.Placement = self.xacro_object.Placement
         return robot
 
@@ -360,30 +375,22 @@ class XacroObject(ProxyBase):
         urdf_robot = UrdfLoader.load_from_string(urdf_txt)
         return urdf_robot
 
-    def get_robot(self) -> Optional[CrossRobot]:
-        if ((not hasattr(self, 'xacro_object'))
-                or (not hasattr(self.xacro_object, 'Group'))):
-            return
-        for obj in self.xacro_object.Group:
-            if is_robot(obj):
-                return obj
-
     def _get_xacro_params(self) -> dict[str, [Any | Element]]:
         """Return the dictionnary of macro parameters for URDF generation."""
         if not hasattr(self, 'xacro_object'):
             return {}
-        obj: CrossXacroObject = self.xacro_object
+        xo: CrossXacroObject = self.xacro_object
 
         params: dict[str, [Any | Element]] = {}
         for xacro_param_name, prop_name in self.param_properties.items():
-            str_value = obj.getPropertyByName(prop_name)
+            str_value = xo.getPropertyByName(prop_name)
             if xacro_param_name.startswith('*'):
                 try:
                     value = parseString(str_value).documentElement
                 except ExpatError as e:
                     value = Document().createComment('PARSING_ERROR'
                                         f' in xacro parameter"{xacro_param_name}"'
-                                        f' of macro "{obj.MainMacro}":'
+                                        f' of macro "{xo.MainMacro}":'
                                         f' "{e}"')
             else:
                 value = str_value

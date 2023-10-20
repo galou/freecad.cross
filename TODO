@@ -1,7 +1,6 @@
 Bugs
 ----
 
-- Fix computation of poses in Workcell. Issue with `panda_arm.xacro` not at 0, 0, 0 and `hand.xacro`.
 - Fix CROSS complaining about non-existing directory when exporting to URDF into a non-existing directory (the directory is created but CROSS complains though)
 - Fix the placement of some parts in assembly_from_urdf.py (issue with `forearm_visual` when loading `robot_5r.urdf.xacro`).
 - Compute the `Origin` of a joint even if it doesn't have any `Child`.
@@ -34,10 +33,13 @@ Nice to have
 - Show a warning when the root link is not base_link and the end-effector is not tool0. Implies detecting single-chain robots. (EASY)
 - Disable OutputPath for robots inside XacroObject. (EASY)
 - Support Robot inside Workcell. (MEDIUM)
+- Reflect parameters from Robot's joint values in XacroObject. (EASY)
+- Reflect parameters from all XacroObjects' joint values in Workcell. (EASY)
 
 Lower priority
 --------------
 
+- Fix unremoved objects and dandling links with a workcell with `panda_arm.xacro` and `hand.xacro` when setting `ns` xacro parameter in `hand.xacro`.
 - Fix Attachment for the root link in `assembly_from_urdf`
 - URDF editor integrated in Robot
 - Fix CROSS complaining that V-HACD is not found on the first time it is set.

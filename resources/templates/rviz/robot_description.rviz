@@ -23,7 +23,7 @@ Visualization Manager:
       Value: true
       Enabled: false
   Global Options:
-    Fixed Frame: base_link
+    Fixed Frame: {fixed_frame}
     Frame Rate: 30
   Name: root
   Tools:

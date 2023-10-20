@@ -282,6 +282,15 @@ class Robot(ProxyBase):
             if ros_name(joint) == name:
                 return joint
 
+    def get_root_link(self) -> Optional[CrossLink]:
+        """Return the root link of the robot."""
+        chains = self.get_chains()
+        if not chains:
+            return
+        if not chains[0]:
+            return
+        return chains[0][0]
+
     def get_chains(self) -> list[DOList]:
         """Return the list of chains.
 
@@ -508,7 +517,9 @@ class Robot(ProxyBase):
         export_templates(template_files,
                          package_parent,
                          package_name=package_name,
-                         urdf_file=urdf_file)
+                         urdf_file=urdf_file,
+                         fixed_frame=self.get_root_link().Name,
+                         )
         return xml
 
 

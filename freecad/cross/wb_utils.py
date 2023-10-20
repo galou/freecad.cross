@@ -360,6 +360,7 @@ def export_templates(
                                          directory.
             - urdf_file: name of the URDF/xacro file without directory.
                          Used in `launch/display.launch.py`.
+            - fixed_frame: parameter "Global Options / Fixed Frame" in RViz.
 
     """
     try:

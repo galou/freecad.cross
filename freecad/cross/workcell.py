@@ -281,7 +281,9 @@ class Workcell(ProxyBase):
         export_templates(template_files,
                          package_parent,
                          package_name=package_name,
-                         urdf_file=urdf_file)
+                         urdf_file=urdf_file,
+                         fixed_frame=workcell_root_link,
+                         )
         return robot_et
 
 

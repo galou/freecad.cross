@@ -85,7 +85,7 @@ def _skim_links_joints_from(group) -> tuple[DOList, DOList]:
     # Implementation note: reverse order required.
     for i, o in reversed(list(enumerate(kept_objects))):
         if is_link(o) or is_joint(o):
-            warn_unsupported(o, by='ROS::Link', gui=True)
+            warn_unsupported(o, by='CROSS::Link', gui=True)
             # Implementation note: cannot use `kept_objects.remove`, this would
             # lose the object.
             removed_objects.append(kept_objects.pop(i))
@@ -129,7 +129,7 @@ def _get_xmls_and_export_meshes(
 
 
 class Link(ProxyBase):
-    """Proxy for ROS links."""
+    """Proxy for CROSS links."""
 
     # The member is often used in workbenches, particularly in the Draft
     # workbench, to identify the object type.
@@ -259,7 +259,7 @@ class Link(ProxyBase):
             self.Type, = state
 
     def cleanup_children(self) -> DOList:
-        """Remove and return all objects not supported by ROS::Link."""
+        """Remove and return all objects not supported by CROSS::Link."""
         if not self.is_execute_ready():
             return
         removed_objects: set[DO] = set()
@@ -268,7 +268,7 @@ class Link(ProxyBase):
             if is_freecad_link(o):
                 # Supported, and managed by us.
                 continue
-            warn_unsupported(o, by='ROS::Link', gui=True)
+            warn_unsupported(o, by='CROSS::Link', gui=True)
             # implementation note: removeobject doesn't raise any exception
             # and `o` exists even if already removed from the group.
             removed_objects.update(self.link.removeObject(o))
@@ -277,21 +277,21 @@ class Link(ProxyBase):
         kept, removed = _skim_links_joints_from(self.link.Real)
         if self.link.Real != kept:
             self.link.Real = kept
-        warn_unsupported(removed, by='ROS::Link', gui=True)
+        warn_unsupported(removed, by='CROSS::Link', gui=True)
         removed_objects.update(removed)
 
         # Clean-up `Visual.
         kept, removed = _skim_links_joints_from(self.link.Visual)
         if self.link.Visual != kept:
             self.link.Visual = kept
-        warn_unsupported(removed, by='ROS::Link', gui=True)
+        warn_unsupported(removed, by='CROSS::Link', gui=True)
         removed_objects.update(removed)
 
         # Clean-up `Collision`.
         kept, removed = _skim_links_joints_from(self.link.Collision)
         if self.link.Collision != kept:
             self.link.Collision = kept
-        warn_unsupported(removed, by='ROS::Link', gui=True)
+        warn_unsupported(removed, by='CROSS::Link', gui=True)
         removed_objects.update(removed)
 
         return list(removed_objects)

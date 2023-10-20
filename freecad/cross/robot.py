@@ -281,10 +281,19 @@ class Robot(ProxyBase):
                 return joint
 
     def get_chains(self) -> list[DOList]:
+        """Return the list of chains.
+
+        A chain starts at the root link, alternates links and joints, and ends
+        at the last joint of the chain.
+
+        If the last element of a chain would be a joint, that chain is not
+        considered.
+
+        """
         if not self.is_execute_ready():
             return []
         if not is_robot(self.robot):
-            warn(f'{label_or(self.robot)} is not a ROS::Robot', True)
+            warn(f'{label_or(self.robot)} is not a CROSS::Robot', True)
             return []
         links = self.get_links()
         joints = self.get_joints()
@@ -302,7 +311,7 @@ class Robot(ProxyBase):
             link.Proxy.update_fc_links()
 
     def cleanup_group(self) -> DO:
-        """Remove the objects not supported by ROS::Robot.
+        """Remove the objects not supported by CROSS::Robot.
 
         Recursion provoked by modifying `Group` will take care of removing
         the remaining unsupported objects.
@@ -314,7 +323,7 @@ class Robot(ProxyBase):
             if is_link(o) or is_joint(o):
                 # Supported.
                 continue
-            warn_unsupported(o, by='ROS::Robot', gui=True)
+            warn_unsupported(o, by='CROSS::Robot', gui=True)
             return self.robot.removeObject(o)
 
     def is_exclusive_to_robot(self, obj: DO) -> bool:

@@ -1,5 +1,5 @@
-# Generates an Assembly4 assembly and a classical "App::Part" from a URDF
-# robot.
+# Generates an Assembly4 assembly and a classical "App::Part" for the collision
+# from a URDF robot.
 # An Assembly4 assembly is an "App::Part" with some special features but there
 # can be only one such assembly per FreeCAD document.
 #
@@ -58,8 +58,8 @@ def assembly_from_urdf(
 
     Creates an "App::Part" object that mimics an Assembly4 assembly for the
     visual part of a URDF robot and an "App::Part" that doesn't mimic an
-    Assembly4 assembly. Assembly4 allows only one assembly per FreeCAD
-    document.
+    Assembly4 assembly for the collision. Assembly4 allows only one assembly
+    per FreeCAD document.
 
     """
     assembly, parts_group, var_container = _make_assembly_container(doc,
@@ -225,7 +225,7 @@ def _add_link(
     part, lcs = _make_part(assembly.Document, name + '_')
     parts_group.addObject(part)
     part.Visibility = False
-    # Make a link
+    # Make a link to this part.
     link = assembly.newObject('App::Link', name)
     link.setLink(part)
     add_asm4_properties(link)

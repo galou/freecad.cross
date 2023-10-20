@@ -141,6 +141,9 @@ def get_chains(
     A chain starts at the root link, alternates links and joints, and ends
     at the last joint of the chain.
 
+    If the last element of a chain would be a joint, that chain is not
+    considered.
+
     """
     base_links: list[CrossLink] = []
     tip_links: list[CrossLink] = []

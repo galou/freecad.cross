@@ -422,7 +422,7 @@ class XacroObject(ProxyBase):
 
 
 class _ViewProviderXacroObject(ProxyBase):
-    """A view provider for the ROS XacroObject object."""
+    """A view provider for the CROSS XacroObject object."""
 
     def __init__(self, vobj: VPDO):
         super().__init__('view_object', [

@@ -1,4 +1,4 @@
-# Generates a ROS::Robot from a URDF robot.
+# Generates a CROSS::Robot from a URDF robot.
 
 from __future__ import annotations
 
@@ -51,7 +51,7 @@ def robot_from_urdf(
         doc: fc.Document,
         urdf_robot: UrdfRobot,
         ) -> CrossRobot:
-    """Creates a ROS::Robot from URDF."""
+    """Creates a CROSS::Robot from URDF."""
 
     robot, parts_group = _make_robot(doc, urdf_robot.name)
     # visual_map: dict[str, AppPart] = {}
@@ -92,7 +92,7 @@ def _make_robot(
         doc: fc.Document,
         name: str = 'robot',
         ) -> tuple[CrossRobot, DOG]:
-    """Create a ROS::Robot
+    """Create a CROSS::Robot
 
     Return (robot object, parts group).
 

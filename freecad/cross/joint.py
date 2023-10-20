@@ -193,13 +193,16 @@ class Joint(ProxyBase):
         if state:
             self.Type, = state
 
-    def get_actuation_placement(self, joint_value=None) -> fc.Placement:
+    def get_actuation_placement(self,
+                                joint_value: Optional[float] = None,
+                                ) -> fc.Placement:
         """Return the transform due to actuation.
 
         Parameters
         ----------
 
-        - joint_value: joint value in mm or deg.
+        - joint_value: joint value in mm or deg. If `joint_value` is `None`,
+                       the current value of the joint is used.
 
         """
         if not self.is_execute_ready():

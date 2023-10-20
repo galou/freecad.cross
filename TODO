@@ -1,21 +1,45 @@
+Bugs
+----
+
+- Fix computation of poses in Workcell. Issue with `panda_arm.xacro` not at 0, 0, 0 and `hand.xacro`.
+- Fix CROSS complaining about non-existing directory when exporting to URDF into a non-existing directory (the directory is created but CROSS complains though)
 - Fix the placement of some parts in assembly_from_urdf.py (issue with `forearm_visual` when loading `robot_5r.urdf.xacro`).
-- Implement toggling the visibility of a link.
-- Set `JointAxisLength` to a value adapated to the robot size when importing URDF.
 - Compute the `Origin` of a joint even if it doesn't have any `Child`.
-- Use unit (2,1,0,0,0,0,0,0) for moments of inertia.
 - Fix the placement of simplified mesh when selecting the visual- or collision part inside a Cross::Link.
-- Validate Label2 (or Label if Label2 is not defined) against valid URDF names ({Robot,Link,Joint}.onBeforeChange()).
-  The behavior must be configurable: a) Do nothing (export valid names) b) Warn c) Reject.
-- Replace values such as 1.57 with ${pi / 2} in xacro exports
-- Add a xacro export with `robot_macro.xacro` and `robot.urdf.xacro`. For Workcell, use the current URDF export and replace the current URDF export with pure URDF export.
-- URDF editor integrated in Robot
 - Clear necessary fields when `XacroObject.InputFile` is reset
 - Handle empty star-style macro parameters (e.g. `*origin` in `robotiq-3f-gripper_articulated.urdf.xacro`)
 - Fix bug when setting a prefix in XacroObject, then setting it to ''. Some objects are deleted but not all and the Cross::Robot cannot be rebuilt.
+
+Missing features
+----------------
+
+- Implement toggling the visibility of a link. (EASY)
+- Implement toggling the visibility of joints when the visibility of the robot is toggled. (EASY)
+- Use unit (2,1,0,0,0,0,0,0) for moments of inertia. (EASY)
+- Validate Label2 (or Label if Label2 is not defined) against valid URDF names ({Robot,Link,Joint}.onBeforeChange()).
+  The behavior must be configurable: a) Do nothing (export valid names) b) Warn c) Reject. (MEDIUM)
+- Add a xacro export with `robot_macro.xacro` and `robot.urdf.xacro`. For Workcell, use the current URDF export and replace the current URDF export with pure URDF export. (EASY)
+- Provide a tool to set the inertial parameters automatically. (DIFFICULT)
+- Add two coordinate systems for each Cross::Joint in `assembly_from_urdf` (parent = urdf_joint.origin, child = parent * get_actuation_placement()). (EASY)
+- Support all joint types. (MEDIUM)
+- Generate a robot from an Assembly4 assembly. (DIFFICULT)
+
+Nice to have
+------------
+
+- Set `JointAxisLength` to a value adapated to the robot size when importing URDF. (EASY)
+- Replace values such as 1.57 with ${pi / 2} in xacro exports. (EASY)
+- Visualize inertia. (MEDIUM)
+- Do not export twice the same mesh (only to gain time when exporting). (EASY)
+- Show a warning when the root link is not base_link and the end-effector is not tool0. Implies detecting single-chain robots. (EASY)
+- Disable OutputPath for robots inside XacroObject. (EASY)
+- Support Robot inside Workcell. (MEDIUM)
+
+Lower priority
+--------------
+
 - Fix Attachment for the root link in `assembly_from_urdf`
-- Provide a tool to set the inertial parameters automatically.
-- Add two coordinate systems for each Cross::Joint in `assembly_from_urdf` (parent = urdf_joint.origin, child = parent * get_actuation_placement())
-- Do not export twice the same mesh (only to gain time when exporting).
+- URDF editor integrated in Robot
+- Fix CROSS complaining that V-HACD is not found on the first time it is set.
 - Do not create an extra FreeCAD link when importing a URDF since the part can be directly added to the ROS links (i.e. instead of creating a FreeCAD link and adding the FreeCAD link to the ROS link). FreeCAD links are only necessary if the parts are in a different file.
-- Support all joint types
-- Generate a robot from an Assembly4 assembly.
+

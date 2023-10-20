@@ -228,6 +228,7 @@ class XacroObject(ProxyBase):
         """Restore attributes because __init__ is not called on restore."""
         self.__init__(obj)
         self._fix_lost_fc_links()
+        self.execute(obj)
 
     def __getstate__(self):
         return self.Type,
@@ -304,7 +305,7 @@ class XacroObject(ProxyBase):
 
     def export_urdf(self) -> Optional[et.Element]:
         """Export the xacro object as URDF."""
-        if not hasattr(self, 'xacro_object'):
+        if not self.is_execute_ready():
             return
         obj: CrossXacroObject = self.xacro_object
 
@@ -346,6 +347,7 @@ class XacroObject(ProxyBase):
         self._urdf_robot = self._generate_urdf(f'{ros_name(obj)}_robot', obj.MainMacro, params)
         self._root_link = self._urdf_robot.get_root()
         robot = robot_from_urdf(obj.Document, self._urdf_robot)
+        robot.Placement = self.xacro_object.Placement
         return robot
 
     def _generate_urdf(self,

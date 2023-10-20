@@ -211,6 +211,8 @@ class Robot(ProxyBase):
             rel_path = remove_ros_workspace(obj.OutputPath)
             if rel_path != obj.OutputPath:
                 obj.OutputPath = rel_path
+        if prop == 'Placement':
+            self.compute_poses()
 
     def onDocumentRestored(self, obj):
         """Restore attributes because __init__ is not called on restore."""

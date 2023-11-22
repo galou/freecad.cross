@@ -2,12 +2,16 @@ from __future__ import annotations
 
 from typing import Optional
 
+import FreeCAD as fc
 import FreeCADGui as fcgui
 
 from ..kk_robot import KKRobot
 from ..wb_utils import UI_PATH
 from .dh_model import DHModel
 from .kk_model import KKModel
+
+DO = fc.DocumentObject  # A FreeCAD DocumentObject.
+CrossRobot = DO  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot".
 
 
 class KKDialog:
@@ -18,8 +22,8 @@ class KKDialog:
 
     """
 
-    def __init__(self, robot):
-        """Constructor with a path and relative file names."""
+    def __init__(self, robot: CrossRobot):
+        """Constructor with a CROSS::Robot."""
         self.robot = robot
         self.kk_robot = KKRobot()
         self.kk_robot.set_from_robot(robot)

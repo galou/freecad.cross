@@ -10,11 +10,11 @@ from __future__ import annotations
 import FreeCAD as fc
 import FreeCADGui as fcgui
 
+from ..freecad_utils import warn
 from ..gui_utils import tr
 from ..robot import make_robot
-from ..ui.kk_dialog import KKDialog
 from ..wb_utils import is_robot
-from ..freecad_utils import warn
+from .kk_dialog import KKDialog
 
 
 def _supported_object_selected():
@@ -52,7 +52,9 @@ class _KKEditCommand:
         diag.close()
         if not kk_robot:
             return
+        doc.openTransaction(tr('Change robot from DH or KK'))
         kk_robot.transfer_to_robot(robot)
+        doc.commitTransaction()
 
     def IsActive(self):
         return _supported_object_selected()

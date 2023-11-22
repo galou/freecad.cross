@@ -11,6 +11,7 @@ from .ui import command_new_workcell
 from .ui import command_new_xacro_object
 from .ui import command_reload # Developer tool.
 from .ui import command_robot_from_urdf
+from .ui import command_set_joints
 from .ui import command_set_placement
 from .ui import command_simplify_mesh
 from .ui import command_sphere_from_bounding_box
@@ -50,6 +51,7 @@ class CrossWorkbench(fcgui.Workbench):
             'KKEdit',  # Defined in ./ui/command_kk_edit.py.
             'UrdfExport',  # Defined in ./ui/command_urdf_export.py.
             'SetCROSSPlacement',  # Defined in ./ui/command_set_placement.py.
+            'SetJoints',  # Defined in ./ui/command_set_joints.py.
             'WbSettings',  # Defined in ./ui/command_wb_settings.py.
             'Reload',  # Comment out to disable this developer tool.
             ]

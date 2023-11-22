@@ -50,13 +50,12 @@ You need a recent version of FreeCAD v0.21 with the ability to configure custom 
 - Back to FreeCAD's main window, menu "Tools / Addon manager"
 - Search and install the workbench via the [Addon Manager](https://wiki.freecad.org/Std_AddonMgr)
 
-
 ## Testing/developing the workbench
 
 If you want to work on this workbench you have the following options:
 
 - Clone the repository directory in FreeCAD's `Mod` directory: `cd ~/.local/share/FreeCAD/Mod && git clone https://github.com/galou/freecad.cross.git` on Linux
-- Start FreeCAD from the root-directory of this repository in (by default `freecad.cross`)
+- Start FreeCAD from the root-directory of this repository in a terminal (by default `freecad.cross`)
 - Clone this repository and create a symbolic link to the directory `freecad.cross` (or the directory containing this repository if you changed the name) to FreeCAD's `Mod` directory (`~/.local/share/FreeCAD/Mod` on Linux).
 - `pip install -e .` adds the root-directory to `easy_install.path`.
 

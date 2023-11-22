@@ -398,8 +398,13 @@ def _has_meshes_directory(
 
 
 def is_selected_from_lambda(
-        is_type_fun: Callable[[DO], bool],
+        is_type_fun: Callable[DO, bool],
         ) -> bool:
+    """Return True if the first selected object meets the given criteria.
+
+    Return `is_type_fun("first_selected_object")`.
+
+    """
     if not fc.GuiUp:
         return False
     if fc.activeDocument() is None:

@@ -22,6 +22,8 @@ Missing features
 - Add two coordinate systems for each Cross::Joint in `assembly_from_urdf` (parent = urdf_joint.origin, child = parent * get_actuation_placement()). (EASY)
 - Support all joint types. (MEDIUM)
 - Generate a robot from an Assembly4 assembly. (DIFFICULT)
+- Ask for the main macro and parameter values in XacroObject before generating the first robot. (EASY)
+- Ask for the parameter values in XacroObject when changing the main macro to avoid error on robot generation. (EASY)
 
 Nice to have
 ------------

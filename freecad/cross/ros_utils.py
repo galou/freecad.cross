@@ -8,14 +8,15 @@ import sys
 
 import FreeCAD as fc
 
-from PySide import QtCore  # FreeCAD's PySide!
-from PySide import QtGui  # FreeCAD's PySide!
-
 from .utils import get_parent_by_pattern
 
 
 def warn(text: str, gui: bool = False) -> None:
     """Warn the user."""
+    # Import here to be able to import the module without GUI.
+    from PySide import QtCore  # FreeCAD's PySide!
+    from PySide import QtGui  # FreeCAD's PySide!
+
     # This is a copy of .utils.warn but the utils module should not be imported
     # without GUI.
     fc.Console.PrintWarning(text + '\n')

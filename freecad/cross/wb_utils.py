@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, Iterable, Optional, Union
+from typing import Any, Callable, List, Optional, Union
 
 import FreeCAD as fc
 
@@ -20,15 +20,20 @@ from .ros_utils import get_ros_workspace_from_file
 from .ros_utils import without_ros_workspace
 from .utils import attr_equals
 
-# Typing hints.
+# Stubs and typing hints.
+from .joint import Joint
+from .link import Link
+from .robot import Robot
+from .workcell import Workcell
+from .xacro_object import XacroObject
 DO = fc.DocumentObject
-CrossJoint = DO  # A Cross::Joint, i.e. a DocumentObject with Proxy "Joint".
-CrossLink = DO  # A Cross::Link, i.e. a DocumentObject with Proxy "Link".
-CrossRobot = DO  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot".
-CrossXacroObject = DO  # Cross::XacroObject, i.e. DO with Proxy "XacroObject".
-CrossWorkcell = DO  # Cross::Workcell, i.e. DO with Proxy "Workcell".
+CrossJoint = Joint
+CrossLink = Link
+CrossRobot = Robot
+CrossWorkcell = Workcell
+CrossXacroObject = XacroObject
 CrossObject = Union[CrossJoint, CrossLink, CrossRobot, CrossXacroObject, CrossWorkcell]
-DOList = Iterable[DO]
+DOList = List[DO]
 
 MOD_PATH = Path(fc.getUserAppDataDir()) / 'Mod/freecad.cross'
 RESOURCES_PATH = MOD_PATH / 'resources'

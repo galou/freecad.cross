@@ -12,16 +12,18 @@ from ..freecad_utils import convert_units
 from ..freecad_utils import unit_type
 from ..wb_utils import ros_name
 
-DO = fc.DocumentObject  # A FreeCAD DocumentObject.
-CrossRobot = DO  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot".
-CrossJoint = DO  # A Cross::Joint, i.e. a DocumentObject with Proxy "Joint".
+# Stubs and type hints.
+from ..joint import Joint
+from ..robot import Robot
+CrossJoint = Joint
+CrossRobot = Robot
 
 
 class SetJointsManualInputTable(QtWidgets.QTableWidget):
 
     # Cache the joint order and units, so that we can restore them when
     # called a second time.
-    _cache: OrderedDict[CrossJoint, float] = OrderedDict()
+    _cache: OrderedDict[CrossJoint, str] = OrderedDict()
 
     def __init__(self, robot: CrossRobot, *args):
         super().__init__(*args)

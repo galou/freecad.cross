@@ -28,12 +28,12 @@ from freecad.cross.freecadgui_utils import *
 from freecad.cross.geometry_helpers import *
 from freecad.cross.gui_utils import *
 from freecad.cross.import_dae import *
-from freecad.cross.joint import *
+from freecad.cross.joint_proxy import *
 from freecad.cross.kk_robot import *
-from freecad.cross.link import *
+from freecad.cross.link_proxy import *
 from freecad.cross.mesh_utils import *
 from freecad.cross.placement_utils import *
-from freecad.cross.robot import *
+from freecad.cross.robot_proxy import *
 from freecad.cross.robot_from_urdf import *
 from freecad.cross.ros_utils import *
 from freecad.cross.urdf_loader import *
@@ -43,7 +43,7 @@ from freecad.cross.utils import *
 from freecad.cross.version import *
 from freecad.cross.wb_globals import *
 from freecad.cross.wb_utils import *
-from freecad.cross.workcell import *
+from freecad.cross.workcell_proxy import *
 from freecad.cross.xacro_loader import *
-from freecad.cross.xacro_object import *
+from freecad.cross.xacro_object_proxy import *
 

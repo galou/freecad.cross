@@ -10,8 +10,10 @@ from ..wb_utils import UI_PATH
 from .dh_model import DHModel
 from .kk_model import KKModel
 
+# Stubs and type hints.
+from ..robot import Robot
 DO = fc.DocumentObject  # A FreeCAD DocumentObject.
-CrossRobot = DO  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot".
+CrossRobot = Robot
 
 
 class KKDialog:

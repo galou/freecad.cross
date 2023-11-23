@@ -37,6 +37,8 @@ class Xacro:
 
         # Initialize xacro, required when using `eval_all()` directly (as
         # opposed to through calling `process_doc()`).
+        # set substitution args
+        xacro.substitution_args_context['arg'] = {}
         if not xacro.filestack:
             if hasattr(xacro, 'init_stacks'):
                 # Humble and newer.

@@ -88,7 +88,7 @@ class FileOverwriteConfirmationDialog:
 
         self._set_select_all_state()
 
-    def exec_(self) -> tuple[bool, list[str]]:
+    def exec_(self) -> tuple[list[str], list[str], list[str]]:
         self.form.exec_()
         return (
                 list(self.files_to_ignore),

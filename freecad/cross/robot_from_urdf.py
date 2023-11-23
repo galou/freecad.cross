@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from math import degrees
-from typing import Any, Iterable, Tuple
+from typing import Any, List, Tuple
 
 import FreeCAD as fc
 
@@ -28,23 +28,26 @@ except ModuleNotFoundError:
 from .freecad_utils import add_object
 from .freecad_utils import make_group
 from .freecad_utils import warn
-from .joint import make_joint
-from .link import make_link
-from .robot import make_robot
+from .joint_proxy import make_joint
+from .link_proxy import make_link
+from .robot_proxy import make_robot
 from .wb_utils import get_joints
 
-# Typing hints.
+# Stubs and typing hints.
+from .joint import Joint
+from .link import Link
+from .robot import Robot
 DO = fc.DocumentObject
-DOList = Iterable[DO]
+DOList = List[DO]
 DOG = fc.DocumentObjectGroup
 AppLink = DO  # TypeId == 'App::Link'
 AppPart = DO  # TypeId == 'App::Part'
-CrossLink = DO  # A Cross::Link, i.e. a DocumentObject with Proxy "Link".
-CrossJoint = DO  # A Cross::Joint, i.e. a DocumentObject with Proxy "Joint".
-CrossRobot = DO  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot".
+CrossLink = Link
+CrossJoint = Joint
+CrossRobot = Robot
 # List of UrdfVisual or List of UrdfCollision.
-VisualList = Iterable[UrdfVisual]
-CollisionList = Iterable[UrdfCollision]
+VisualList = List[UrdfVisual]
+CollisionList = List[UrdfCollision]
 
 
 def robot_from_urdf(
@@ -101,7 +104,7 @@ def _make_robot(
 
     """
 
-    robot = make_robot(name, doc)
+    robot: CrossRobot = make_robot(name, doc)
     # Create a group 'Parts' to hold all parts in the assembly document.
     parts_group = make_group(doc, 'URDF Parts', visible=False)
     robot.Proxy.created_objects.append(parts_group)

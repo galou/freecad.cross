@@ -10,9 +10,11 @@ from ..gui_utils import tr
 from ..wb_utils import is_robot_selected
 from .set_joints_dialog import SetJointsDialog
 
-DO = fc.DocumentObject  # A FreeCAD DocumentObject.
-CrossRobot = DO  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot".
-CrossJoint = DO  # A Cross::Joint, i.e. a DocumentObject with Proxy "Joint".
+# Stubs and type hints.
+from ..joint import Joint
+from ..robot import Robot
+CrossJoint = Joint
+CrossRobot = Robot
 
 
 class _SetJointsCommand:

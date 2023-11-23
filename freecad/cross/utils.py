@@ -14,13 +14,9 @@ from xml.dom import minidom
 
 import FreeCAD as fc
 
-# Typing hints.
+# Stubs and type hints.
 DO = fc.DocumentObject
 DOList = Iterable[DO]
-CrossLink = DO  # A Cross::Link, i.e. a DocumentObject with Proxy "Link".
-CrossJoint = DO  # A Cross::Joint, i.e. a DocumentObject with Proxy "Joint".
-CrossRobot = DO  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot".
-CrossXacroObject = DO  # Cross::XacroObject, i.e. DocumentObject with Proxy "XacroObject".
 
 # Otherwise et.tostring uses xlmns:ns0 as xacro namespace.
 et.register_namespace('xacro', 'http://ros.org/wiki/xacro')
@@ -148,7 +144,7 @@ def get_parent_by_pattern(
             return Path(), relative_file_path
 
 
-def true_then_false(list: Iterable[bool]) -> None:
+def true_then_false(list: Iterable[bool]) -> bool:
     """Return True if no False is found after a True.
 
     >>> true_then_false([True])
@@ -175,7 +171,7 @@ def true_then_false(list: Iterable[bool]) -> None:
 
 
 def values_from_string(values_str: str,
-                       delimiters: list[str] = (' ', ',', ';'),
+                       delimiters: Iterable[str] = (' ', ',', ';'),
                        ) -> list[float]:
     """Return a list of floats from a string."""
     # Try a single value.

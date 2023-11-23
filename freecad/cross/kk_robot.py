@@ -18,9 +18,8 @@ import FreeCAD as fc
 
 from .freecad_utils import is_same_placement
 from .freecad_utils import warn
-from .joint import make_joint
-from .link import make_link
-from .robot import Robot
+from .joint_proxy import make_joint
+from .link_proxy import make_link
 from .wb_utils import is_joint
 from .wb_utils import is_link
 from .wb_utils import ros_name
@@ -32,6 +31,10 @@ try:
     ndarray = np.ndarray
 except ImportError:
     ndarray = Any
+
+# Stubs and type hints.
+from .robot import Robot
+CrossRobot = Robot
 
 
 @dataclass
@@ -330,7 +333,7 @@ class KKRobot:
         return all(j.is_dh_compatible for j in self.joints)
 
     def set_from_robot(self,
-                       robot: Robot,
+                       robot: CrossRobot,
                        ) -> bool:
         """Set all parameters from a CROSS::Robot."""
         self.joints.clear()
@@ -350,9 +353,10 @@ class KKRobot:
             kk_joint.set_dh_from_placement(joint.Origin)
             kk_joint.prismatic = prismatic
             self.joints.append(kk_joint)
+        return True
 
     def transfer_to_robot(self,
-                          robot: Robot,
+                          robot: CrossRobot,
                           ) -> bool:
         """Set all parameters to a CROSS::Robot.
 
@@ -419,10 +423,11 @@ class KKRobot:
             if cross_joint.Mimic:
                 # Implementation note: avoid recursion.
                 cross_joint.Mimic = False
+        return True
 
     def _add_missing_to_robot(self,
-                              robot: Robot,
-                              ):
+                              robot: CrossRobot,
+                              ) -> None:
         """Add the missing joints and links to the robot.
 
         Only DH parameters supported for now.

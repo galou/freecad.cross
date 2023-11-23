@@ -13,9 +13,12 @@ from ..wb_utils import UI_PATH
 from ..wb_utils import ros_name
 from .set_joints_manual_input_table import SetJointsManualInputTable
 
+# Stubs and type hints.
+from ..joint import Joint
+from ..robot import Robot
 DO = fc.DocumentObject  # A FreeCAD DocumentObject.
-CrossRobot = DO  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot".
-CrossJoint = DO  # A Cross::Joint, i.e. a DocumentObject with Proxy "Joint".
+CrossJoint = Joint
+CrossRobot = Robot
 
 
 class SetJointsDialog:

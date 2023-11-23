@@ -12,7 +12,7 @@ import FreeCADGui as fcgui
 
 from ..freecad_utils import warn
 from ..gui_utils import tr
-from ..robot import make_robot
+from ..robot_proxy import make_robot
 from ..wb_utils import is_robot
 from .kk_dialog import KKDialog
 

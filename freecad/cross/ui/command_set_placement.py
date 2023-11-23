@@ -10,10 +10,12 @@ from ..freecadgui_utils import get_subobjects_and_placements
 from ..gui_utils import tr
 
 
-# Typing hints.
+# Stubs and type hints.
+from ..joint import Joint
+from ..link import Link
 DO = fc.DocumentObject
-CrossLink = DO  # A Cross::Link, i.e. a DocumentObject with Proxy "Link".
-CrossJoint = DO  # A Cross::Joint, i.e. a DocumentObject with Proxy "Joint".
+CrossLink = Link
+CrossJoint = Joint
 LCS = DO  # Local coordinate systen, TypeId == "PartDesign::CoordinateSystem"
 
 

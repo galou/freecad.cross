@@ -417,6 +417,12 @@ class Robot(ProxyBase):
         return [j for j in self.get_joints() if j.Type != 'fixed']
 
     def get_link(self, name: str) -> Optional[CrossLink]:
+        """Return the link with ROS name `name`.
+
+        The ROS name is the object's description, or its label if the
+        description is empty.
+
+        """
         if not name:
             # Shortcut.
             return
@@ -425,6 +431,12 @@ class Robot(ProxyBase):
                 return link
 
     def get_joint(self, name: str) -> Optional[CrossJoint]:
+        """Return the joint with ROS name `name`.
+
+        The ROS name is the object's description, or its label if the
+        description is empty.
+
+        """
         if not name:
             # Shortcut.
             return

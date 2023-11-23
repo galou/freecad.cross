@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>Dialog</class>
- <widget class="QDialog" name="Dialog">
+ <class>set_joint_values_ui</class>
+ <widget class="QDialog" name="set_joint_values_ui">
   <property name="geometry">
    <rect>
     <x>0</x>
     <y>0</y>
     <width>462</width>
-    <height>300</height>
+    <height>600</height>
    </rect>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>FreeCAD - CROSS - Set Joint Values</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout">
    <item>
@@ -158,7 +158,7 @@
   <connection>
    <sender>button_box</sender>
    <signal>accepted()</signal>
-   <receiver>Dialog</receiver>
+   <receiver>set_joint_values_ui</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -174,7 +174,7 @@
   <connection>
    <sender>button_box</sender>
    <signal>rejected()</signal>
-   <receiver>Dialog</receiver>
+   <receiver>set_joint_values_ui</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">

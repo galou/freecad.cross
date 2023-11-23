@@ -551,3 +551,40 @@ class ProxyBase(ABC):
             if not hasattr(obj, p):
                 return False
         return True
+
+
+def convert_units(
+        value: float,
+        from_: str,
+        to_: str,
+        ) -> float:
+    """Convert a value from one unit to another.
+
+    >>> convert_units(1, 'm', 'mm')
+    1000.0
+    >>> convert_units(90, 'deg', 'rad')
+    1.5707963267948966
+    """
+    # As of 2023-08-31 (0.21.1.33694) `Value` must be used as workaround
+    # Cf. https://forum.freecad.org/viewtopic.php?t=82905.
+    return fc.Units.Quantity(value, from_).getValueAs(to_).Value
+
+
+def unit_type(
+        v: [str | fc.Units.Quantity],
+        ) -> str:
+    """Return the unit type of a value.
+
+    return fc.Units.Quantity(v).Unit.Type, e.g. Length, Angle, etc.
+
+    >>> unit_type('1 mm')
+    Length
+    >>> unit_type('m')
+    Length
+    >>> unit_type('deg')
+    Angle
+    >>> unit_type(fc.Units.Quantity('mm*mm'))
+    Area
+
+    """
+    return fc.Units.Quantity(v).Unit.Type

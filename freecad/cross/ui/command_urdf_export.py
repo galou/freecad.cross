@@ -130,11 +130,15 @@ class _UrdfExportCommand:
             elif hasattr(obj, 'Placement'):
                 has_mesh = True
                 package_name = '$package_name$'  # Will be replaced later by the GUI.
-                xmls += urdf_collision_from_object(
+                xml_for_exports = urdf_collision_from_object(
                         obj,
                         package_name=package_name,
                         placement=placement,
                         )
+                for xml_for_export in xml_for_exports:
+                    xmls.append(et.Comment('Export the mesh manually to '
+                                           f'{xml_for_export.mesh_filename}'))
+                    xmls.append(xml_for_export.xml)
             if xmls:
                 txt += f'  <!-- {obj.Label} -->\n'
                 for xml in xmls:

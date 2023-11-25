@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from math import degrees
+
 import FreeCAD as fc
 
 import FreeCADGui as fcgui
@@ -8,6 +10,7 @@ from PySide import QtWidgets  # FreeCAD's PySide!
 from PySide import QtCore  # FreeCAD's PySide!
 
 from ..gui_utils import tr
+from ..freecad_utils import quantity_as
 from ..utils import values_from_string
 from ..wb_utils import UI_PATH
 from ..wb_utils import ros_name
@@ -21,7 +24,7 @@ CrossJoint = Joint
 CrossRobot = Robot
 
 
-class SetJointsDialog:
+class SetJointsDialog(QtWidgets.QDialog):
     """A dialog to input DH and KK parameters.
 
     A dialog to set some of the joint values of the robot passed to the
@@ -29,8 +32,9 @@ class SetJointsDialog:
 
     """
 
-    def __init__(self, robot: CrossRobot):
+    def __init__(self, robot: CrossRobot, *args):
         """Constructor with a CROSS::Robot."""
+        super().__init__(args[0] if args else None)
         self.robot = robot
 
         self.form = fcgui.PySideUic.loadUi(str(UI_PATH / 'set_joints.ui'))
@@ -38,9 +42,14 @@ class SetJointsDialog:
         self.table_manual_input = SetJointsManualInputTable(self.robot, self.form)
         self._set_up_gui()
         self._set_up_callback()
+        # Set the conversion buttons after filling up the table (in its constructor).
+        self._set_conversion_buttons()
 
         # Joint values for the changed joints in meters and radians.
-        self._joint_values: dict[CrossJoint, float] = {}
+        self._joint_values: dict[CrossJoint, fc.Units.Quantity] = {}
+
+        self.table_manual_input.reorder_values = (
+                self.form.check_box_reorder_values.checkState() == QtCore.Qt.Checked)
 
         # Deactivate the `tab_input_topic` tab until supported.
         # TODO: implement the `tab_input_topic` tab.
@@ -71,14 +80,14 @@ class SetJointsDialog:
                 self._on_line_edited)
 
         # TODO: Use only two dynamic buttons depending on the table content.
-        self.form.push_button_xmm_to_xm.clicked.connect(
-                lambda: self.table_manual_input.to_m_rad(False))
-        self.form.push_button_xm_to_xmm.clicked.connect(
-                lambda: self.table_manual_input.to_mm_deg(False))
-        self.form.push_button_xmm_to_ym.clicked.connect(
-                lambda: self.table_manual_input.to_m_rad(True))
-        self.form.push_button_xm_to_ymm.clicked.connect(
-                lambda: self.table_manual_input.to_mm_deg(True))
+        # `pushbutton_unit_x_to_x` and `pushbutton_unit_x_to_y` are connected
+        # dynamically in `_set_conversion_buttons()`.
+
+        def _on_check_box_reorder_values_state_changed(state: int) -> None:
+            """Set the reorder values flag."""
+            self.table_manual_input.reorder_values = (state == QtCore.Qt.Checked)
+        self.form.check_box_reorder_values.stateChanged.connect(
+                _on_check_box_reorder_values_state_changed)
 
     def exec_(self) -> dict[CrossJoint, float]:
         self.form.exec_()
@@ -135,31 +144,44 @@ class SetJointsDialog:
         value_column = 1
         unit_column = 2
         table = self.table_manual_input
-        joint_names = [item.text() for item in column_items(table, joint_name_column)]
+        joint_names = [item.text() for item in column_items(table, joint_name_column) if hasattr(item, 'text')]
         joints: list[CrossJoint] = self.robot.Proxy.joint_variables.keys()
         for i, joint in enumerate(joints):
             joint_row = joint_names.index(ros_name(joint))
             unit = table.item(joint_row, unit_column).text()
             value = table.item(joint_row, value_column).text()
             quantity = fc.Units.Quantity(f'{value} {unit}')
-            if joint.Type == 'prismatic':
-                # As of 2023-08-31 (0.21.1.33694) `Value` must be used as workaround
-                # Cf. https://forum.freecad.org/viewtopic.php?t=82905.
-                value = quantity.getValueAs('m').Value
-            else:
-                # joint.Type in ['revolute', 'continuous']
-                # As of 2023-08-31 (0.21.1.33694) `Value` must be used as workaround
-                # Cf. https://forum.freecad.org/viewtopic.php?t=82905.
-                value = quantity.getValueAs('rad').Value
-            # We set the joint value directly, without going through the
-            # robot in order to avoid recomputing the robot at each joint value
-            # change.
-            print(f'{ros_name(joint)}.Position = {value}')
-            joint.Position = value
-            self._joint_values.update({joint: value})
-        # TODO: recompute has no effect.
+            self._joint_values.update({joint: quantity})
+        self.robot.Proxy.set_joint_values(self._joint_values)
         self.robot.Proxy.compute_poses()
         self.robot.Document.recompute()
+        self._set_conversion_buttons()
+
+    def _set_conversion_buttons(self) -> None:
+        """Set the conversion buttons."""
+        row_count = self.table_manual_input.rowCount()
+        if row_count == 0:
+            return
+        unit_column = 2
+        unit = self.table_manual_input.item(0, unit_column).text()
+        if unit in ['mm', 'deg']:
+            self.form.push_button_unit_x_to_x.setText(tr(f'1° → 1 rad'))
+            self.form.push_button_unit_x_to_y.setText(tr(f'180° → π rad'))
+            # self.form.push_button_unit_x_to_x.clicked.disconnect()
+            # self.form.push_button_unit_x_to_y.clicked.disconnect()
+            self.form.push_button_unit_x_to_x.clicked.connect(
+                    lambda: self.table_manual_input.to_m_rad(False))
+            self.form.push_button_unit_x_to_y.clicked.connect(
+                    lambda: self.table_manual_input.to_m_rad(True))
+        elif unit in ['m', 'rad']:
+            self.form.push_button_unit_x_to_x.setText(tr(f'1 rad → 1°'))
+            self.form.push_button_unit_x_to_y.setText(tr(f'π rad → 180°'))
+            # self.form.push_button_unit_x_to_x.clicked.disconnect()
+            # self.form.push_button_unit_x_to_y.clicked.disconnect()
+            self.form.push_button_unit_x_to_x.clicked.connect(
+                    lambda: self.table_manual_input.to_mm_deg(False))
+            self.form.push_button_unit_x_to_y.clicked.connect(
+                    lambda: self.table_manual_input.to_mm_deg(True))
 
 
 def column_items(table: QtWidgets.QTableWidget,

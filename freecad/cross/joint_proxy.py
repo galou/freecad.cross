@@ -257,6 +257,16 @@ class JointProxy(ProxyBase):
             if child_of_candidate is parent_of_self:
                 return candidate_joint
 
+    def get_unit_type(self) -> str:
+        """Return `Length` or `Angle`."""
+        if not self.is_execute_ready():
+            return ''
+        if self.joint.Type == 'prismatic':
+            return 'Length'
+        if self.joint.Type in ['revolute', 'continuous']:
+            return 'Angle'
+        return ''
+
     def export_urdf(self) -> et.ElementTree:
         joint = self.joint
         joint_xml = et.fromstring('<joint/>')

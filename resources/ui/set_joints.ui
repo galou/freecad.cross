@@ -31,45 +31,47 @@
        </item>
        <item>
         <widget class="QWidget" name="widget_3" native="true">
-         <layout class="QHBoxLayout" name="horizontalLayout_3">
+         <layout class="QVBoxLayout" name="verticalLayout_5">
           <item>
-           <widget class="QPushButton" name="push_button_xmm_to_xm">
-            <property name="toolTip">
-             <string>Change units without changing values (to meters and radians)</string>
-            </property>
-            <property name="text">
-             <string>1 mm → 1 m</string>
-            </property>
+           <widget class="QWidget" name="widget_5" native="true">
+            <layout class="QHBoxLayout" name="horizontalLayout_4">
+             <item>
+              <widget class="QCheckBox" name="check_box_reorder_values">
+               <property name="toolTip">
+                <string>Activate to reorder values on drag-and-drop</string>
+               </property>
+               <property name="text">
+                <string>Reorder values</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </widget>
           </item>
           <item>
-           <widget class="QPushButton" name="push_button_xm_to_xmm">
-            <property name="toolTip">
-             <string>Change units without changing values (to millimeters and degrees)</string>
-            </property>
-            <property name="text">
-             <string>1 m → 1 mm</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="push_button_xmm_to_ym">
-            <property name="toolTip">
-             <string>Change units and change values (to meters and radians)</string>
-            </property>
-            <property name="text">
-             <string>1 mm → 0.001 m</string>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPushButton" name="push_button_xm_to_ymm">
-            <property name="toolTip">
-             <string>Change units and change values (to millimeters and degrees)</string>
-            </property>
-            <property name="text">
-             <string>1 m → 1000 mm</string>
-            </property>
+           <widget class="QWidget" name="widget_4" native="true">
+            <layout class="QHBoxLayout" name="horizontalLayout_3">
+             <item>
+              <widget class="QPushButton" name="push_button_unit_x_to_x">
+               <property name="toolTip">
+                <string>Change units without changing values (to meters and radians)</string>
+               </property>
+               <property name="text">
+                <string>1 mm → 1 m</string>
+               </property>
+              </widget>
+             </item>
+             <item>
+              <widget class="QPushButton" name="push_button_unit_x_to_y">
+               <property name="toolTip">
+                <string>Change units and change values (to meters and radians)</string>
+               </property>
+               <property name="text">
+                <string>1 mm → 0.001 m</string>
+               </property>
+              </widget>
+             </item>
+            </layout>
            </widget>
           </item>
          </layout>

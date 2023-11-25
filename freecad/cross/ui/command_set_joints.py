@@ -37,27 +37,14 @@ class _SetJointsCommand:
             doc = fc.activeDocument()
         else:
             robot = objs[0]
-        diag = SetJointsDialog(robot)
+        diag = SetJointsDialog(robot, fcgui.getMainWindow())
         joint_values = diag.exec_()
         diag.close()
         if joint_values:
             print(f'Activated(), {joint_values=}')
-            self._set_robot_joint_values(robot, joint_values)
+            robot.Proxy.set_joint_values(joint_values)
         doc.recompute()
         doc.commitTransaction()
-
-    def _set_robot_joint_values(self,
-                                robot: CrossRobot,
-                                joint_values: dict[CrossJoint, float]) -> None:
-        """Set the joint values of the robot from values in meters and radians."""
-        joint_variables: dict[CrossJoint, str] = robot.Proxy.joint_variables
-        for joint, value in joint_values.items():
-            var = joint_variables[joint]
-            if joint.Type == 'prismatic':
-                setattr(robot, var, value * 1000)
-            else:
-                # joint.Type in ['revolute', 'continuous']
-                setattr(robot, var, degrees(value))
 
 
 fcgui.addCommand('SetJoints', _SetJointsCommand())

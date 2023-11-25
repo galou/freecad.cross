@@ -20,6 +20,7 @@ from .freecad_utils import get_properties_of_category
 from .freecad_utils import get_valid_property_name
 from .freecad_utils import is_origin
 from .freecad_utils import label_or
+from .freecad_utils import quantity_as
 from .freecad_utils import warn
 from .gui_utils import tr
 from .ros_utils import split_package_path
@@ -354,6 +355,31 @@ class RobotProxy(ProxyBase):
                 # Avoid recursive recompute.
                 # Doesn't change the value if in the new enum.
                 joint.Child = child_links
+
+    def set_joint_values(self,
+                         joint_values: dict[CrossJoint, [float | fc.Units.Quantity]]) -> None:
+        """Set the joint values from values in meters and radians.
+
+        Set the joint values of the robot from values in meters and radians or
+        from FreeCAD's `Quantity` objects.
+
+        """
+        joint_variables: dict[CrossJoint, str] = self.joint_variables
+        source_units = {
+                'Length': 'm',
+                'Angle': 'rad',
+                }
+        target_units = {
+                'Length': 'mm',
+                'Angle': 'deg',
+                }
+        for joint, value in joint_values.items():
+            var_name = joint_variables[joint]
+            unit_type = joint.Proxy.get_unit_type()
+            if isinstance(var_name, float):
+                value = fc.Units.Quantity(f'{value} {source_units[unit_type]}')
+            value = quantity_as(value, target_units[unit_type])
+            setattr(self.robot, var_name, value)
 
     def add_joint_variables(self) -> None:
         """Add a property for each actuated joint."""

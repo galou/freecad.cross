@@ -29,6 +29,9 @@ class SetJointsManualInputTable(QtWidgets.QTableWidget):
         super().__init__(*args)
         self.robot = robot
 
+        # If True, the values are reorder together with the rows.
+        self.reorder_values = False
+
         self._activate_dnd()
         self._initialize_table()
 
@@ -39,6 +42,7 @@ class SetJointsManualInputTable(QtWidgets.QTableWidget):
         self.setDragDropMode(QtWidgets.QTableWidget.InternalMove)
 
     def dropEvent(self, event: QtGui.QDropEvent):
+        """Reorder the rows after a drop event."""
         joint_name_column = 0
         unit_column = 2
         dropped_item = self.selectedItems()[0]
@@ -60,6 +64,16 @@ class SetJointsManualInputTable(QtWidgets.QTableWidget):
             self.setItem(row, joint_name_column, name_item)
             unit_item = QtWidgets.QTableWidgetItem(unit)
             self.setItem(row, unit_column, unit_item)
+
+        # Reorder the values if necessary.
+        if self.reorder_values:
+            value_column = 1
+            values = [self.item(row, value_column).text() for row in range(row_count)]
+            new_values = dnd(values, old_index, drop_row)
+            for row, value in enumerate(new_values):
+                value_item = QtWidgets.QTableWidgetItem(value)
+                self.setItem(row, value_column, value_item)
+
         self._update_cache()
 
     def _initialize_table(self) -> None:
@@ -120,11 +134,11 @@ class SetJointsManualInputTable(QtWidgets.QTableWidget):
             value_item = self.item(i, value_column)
             source_unit = unit_item.text()
             target_unit = target_units[unit_type(source_unit)]
-            value = value_item.text()
             if change_values:
+                value = float(value_item.text())
                 value = convert_units(value, source_unit, target_unit)
+                value_item.setText(str(value))
             unit_item.setText(target_unit)
-            value_item.setText(value)
         self._update_cache()
 
     def _update_cache(self) -> None:

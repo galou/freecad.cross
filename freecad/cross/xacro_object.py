@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import ForwardRef
+from typing import ForwardRef, List
 
 import FreeCAD as fc
 
@@ -13,7 +13,7 @@ RobotRef = ForwardRef('Robot')
 
 # Typing hints
 DO = fc.DocumentObject
-DOList = list[DO]
+DOList = List[DO]
 
 
 class XacroObject(fc.DocumentObject):

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import ForwardRef, Union
+from typing import ForwardRef, List, Union
 
 import FreeCAD as fc
 
@@ -14,7 +14,7 @@ LinkRef = ForwardRef('Link')
 # Typing hints
 BasicElement = Union[LinkRef, JointRef]
 DO = fc.DocumentObject
-DOList = list[DO]
+DOList = List[DO]
 
 
 class Robot(fc.DocumentObject):

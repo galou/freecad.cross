@@ -50,7 +50,7 @@ class FileOverwriteConfirmationDialog:
         self.files_to_overwrite: set[str] = set()  # Existing, checked.
 
         self.form = fcgui.PySideUic.loadUi(
-                str(UI_PATH / 'file_overwrite_confirmation_dialog.ui'))
+                str(UI_PATH / 'file_overwrite_confirmation_dialog.ui'), self)
 
         self.form.line_edit_save_path.setText(str(self.path))
 

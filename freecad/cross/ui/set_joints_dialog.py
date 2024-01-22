@@ -32,7 +32,7 @@ class SetJointsDialog(QtGui.QDialog):
         super().__init__(args[0] if args else None)
         self.robot = robot
 
-        self.form = fcgui.PySideUic.loadUi(str(UI_PATH / 'set_joints.ui'))
+        self.form = fcgui.PySideUic.loadUi(str(UI_PATH / 'set_joints.ui'), self)
         self.dialog_confirmed = False
         self.table_manual_input = SetJointsManualInputTable(self.robot, self.form)
         self._set_up_gui()

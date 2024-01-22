@@ -95,7 +95,8 @@ class WbSettingsGetter:
         Return True if the settings' dialog was confirmed.
 
         """
-        self.form = fcgui.PySideUic.loadUi(str(UI_PATH / 'wb_settings.ui'))
+        self.form = fcgui.PySideUic.loadUi(str(UI_PATH / 'wb_settings.ui'),
+                                           self)
 
         if not get_ros_workspace:
             self.form.widget_ros_workspace.hide()

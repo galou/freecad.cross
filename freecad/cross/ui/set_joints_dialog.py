@@ -1,30 +1,25 @@
 from __future__ import annotations
 
-from math import degrees
-
 import FreeCAD as fc
 
 import FreeCADGui as fcgui
 
-from PySide import QtWidgets  # FreeCAD's PySide!
+from PySide import QtGui  # FreeCAD's PySide!
 from PySide import QtCore  # FreeCAD's PySide!
 
 from ..gui_utils import tr
-from ..freecad_utils import quantity_as
 from ..utils import values_from_string
 from ..wb_utils import UI_PATH
 from ..wb_utils import ros_name
 from .set_joints_manual_input_table import SetJointsManualInputTable
 
 # Stubs and type hints.
-from ..joint import Joint
-from ..robot import Robot
+from ..joint import Joint as CrossJoint  # A Cross::Joint, i.e. a DocumentObject with Proxy "Joint". # noqa: E501
+from ..robot import Robot as CrossRobot  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot". # noqa: E501
 DO = fc.DocumentObject  # A FreeCAD DocumentObject.
-CrossJoint = Joint
-CrossRobot = Robot
 
 
-class SetJointsDialog(QtWidgets.QDialog):
+class SetJointsDialog(QtGui.QDialog):
     """A dialog to input DH and KK parameters.
 
     A dialog to set some of the joint values of the robot passed to the
@@ -122,20 +117,20 @@ class SetJointsDialog(QtWidgets.QDialog):
             unit = table.item(joint_row, unit_column).text()
             quantity = fc.Units.Quantity(f'{value} {unit}')
             if joint.Type == 'prismatic':
-                # As of 2023-08-31 (0.21.1.33694) `Value` must be used as workaround
+                # As of 2023-08-31 (0.21.1.33694) `float` must be used as workaround
                 # Cf. https://forum.freecad.org/viewtopic.php?t=82905.
-                value = quantity.getValueAs('m').Value
+                value = float(quantity.getValueAs('m'))
             else:
                 # joint.Type in ['revolute', 'continuous']
-                # As of 2023-08-31 (0.21.1.33694) `Value` must be used as workaround
+                # As of 2023-08-31 (0.21.1.33694) `float` must be used as workaround
                 # Cf. https://forum.freecad.org/viewtopic.php?t=82905.
-                value = quantity.getValueAs('rad').Value
+                value = float(quantity.getValueAs('rad'))
             # We set the joint value directly, without going through the
             # robot in order to avoid recomputing the robot at each joint value
             # change.
-            # As of 2023-08-31 (0.21.1.33694) `Value` must be used as workaround
+            # As of 2023-08-31 (0.21.1.33694) `float` must be used as workaround
             # Cf. https://forum.freecad.org/viewtopic.php?t=82905.
-            item = QtWidgets.QTableWidgetItem(f'{quantity.getValueAs(unit).Value}')
+            item = QtGui.QTableWidgetItem(f'{float(quantity.getValueAs(unit))}')
             table.setItem(i, value_column, item)
 
     def _on_table_edited(self) -> None:
@@ -184,9 +179,9 @@ class SetJointsDialog(QtWidgets.QDialog):
                     lambda: self.table_manual_input.to_mm_deg(True))
 
 
-def column_items(table: QtWidgets.QTableWidget,
+def column_items(table: QtGui.QTableWidget,
                  column: int,
-                 ) -> list[QtWidgets.QTableWidgetItem]:
+                 ) -> list[QtGui.QTableWidgetItem]:
     """Return the items in a column of a table."""
     row_count = table.rowCount()
     return [table.item(row, column) for row in range(row_count)]

@@ -35,8 +35,8 @@ from .freecad_utils import add_property
 from .freecad_utils import is_group
 from .freecad_utils import warn
 from .freecad_utils import get_valid_property_name
-from .ros_utils import abs_path_from_ros_path
-from .ros_utils import ros_path_from_abs_path
+from .ros.utils import abs_path_from_ros_path
+from .ros.utils import ros_path_from_abs_path
 from .wb_utils import ICON_PATH
 from .wb_utils import is_robot
 from .wb_utils import is_workcell
@@ -53,15 +53,12 @@ except ImportError as e:
     UrdfRobot = Any
 
 # Stubs and typing hints.
-from .link import Link
-from .robot import Robot
-from .xacro_object import XacroObject
+from .link import Link as CrossLink  # A Cross::Link, i.e. a DocumentObject with Proxy "Link". # noqa: E501
+from .robot import Robot as CrossRobot  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot". # noqa: E501
+from .xacro_object import XacroObject as CrossXacroObject  # A Cross::XacroObject, i.e. a DocumentObject with Proxy "XacroObject". # noqa: E501
 DO = fc.DocumentObject
 DOList = List[DO]
-VPDO = ForwardRef('FreeCADGui.ViewProviderDocumentObject')  # Don't want to import FreeCADGui here.
-CrossXacroObject = XacroObject
-CrossLink = Link
-CrossRobot = Robot
+VPDO = ForwardRef('FreeCADGui.ViewProviderDocumentObject')  # Don't want to import FreeCADGui here. # noqa: E501
 
 
 def _clear_robot(obj: CrossRobot) -> None:

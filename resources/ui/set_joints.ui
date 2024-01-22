@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>set_joint_values_ui</class>
- <widget class="QDialog" name="set_joint_values_ui">
+ <class>SetJointValuesDialog</class>
+ <widget class="QDialog" name="SetJointValuesDialog">
   <property name="geometry">
    <rect>
     <x>0</x>
@@ -160,7 +160,7 @@
   <connection>
    <sender>button_box</sender>
    <signal>accepted()</signal>
-   <receiver>set_joint_values_ui</receiver>
+   <receiver>SetJointValuesDialog</receiver>
    <slot>accept()</slot>
    <hints>
     <hint type="sourcelabel">
@@ -176,7 +176,7 @@
   <connection>
    <sender>button_box</sender>
    <signal>rejected()</signal>
-   <receiver>set_joint_values_ui</receiver>
+   <receiver>SetJointValuesDialog</receiver>
    <slot>reject()</slot>
    <hints>
     <hint type="sourcelabel">

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Callable, List, Optional, Union
+from typing import Any, Callable, List, Optional, Protocol, Union
 
 import FreeCAD as fc
 
@@ -16,22 +16,18 @@ from .freecad_utils import is_sphere
 from .freecad_utils import message
 from .freecad_utils import set_param
 from .freecad_utils import warn
-from .ros_utils import get_ros_workspace_from_file
-from .ros_utils import without_ros_workspace
+from .ros.utils import get_ros_workspace_from_file
+from .ros.utils import without_ros_workspace
 from .utils import attr_equals
 
 # Stubs and typing hints.
-from .joint import Joint
-from .link import Link
-from .robot import Robot
-from .workcell import Workcell
-from .xacro_object import XacroObject
+from .joint import Joint as CrossJoint  # A Cross::Joint, i.e. a DocumentObject with Proxy "Joint". # noqa: E501
+from .link import Link as CrossLink  # A Cross::Link, i.e. a DocumentObject with Proxy "Link". # noqa: E501
+from .robot import Robot as CrossRobot  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot". # noqa: E501
+from .workcell import Workcell as CrossWorkcell  # A Cross::Workcell, i.e. a DocumentObject with Proxy "Workcell". # noqa: E501
+from .xacro_object import XacroObject as CrossXacroObject  # A Cross::XacroObject, i.e. a DocumentObject with Proxy "XacroObject". # noqa: E501
 DO = fc.DocumentObject
-CrossJoint = Joint
-CrossLink = Link
-CrossRobot = Robot
-CrossWorkcell = Workcell
-CrossXacroObject = XacroObject
+CrossBasicElement = Union[CrossJoint, CrossLink]
 CrossObject = Union[CrossJoint, CrossLink, CrossRobot, CrossXacroObject, CrossWorkcell]
 DOList = List[DO]
 
@@ -39,6 +35,11 @@ MOD_PATH = Path(fc.getUserAppDataDir()) / 'Mod/freecad.cross'
 RESOURCES_PATH = MOD_PATH / 'resources'
 UI_PATH = RESOURCES_PATH / 'ui'
 ICON_PATH = RESOURCES_PATH / 'icons'
+
+
+class SupportsStr(Protocol):
+    def __str__(self) -> str:
+        ...
 
 
 @dataclass
@@ -140,7 +141,7 @@ def get_xacro_objects(objs: DOList) -> list[CrossXacroObject]:
 def get_chains(
         links: list[CrossLink],
         joints: list[CrossJoint],
-        ) -> list[DOList]:
+        ) -> list[list[CrossBasicElement]]:
     """Return the list of chains.
 
     A chain starts at the root link, alternates links and joints, and ends
@@ -160,7 +161,7 @@ def get_chains(
     if len(base_links) > 1:
         # At least two root links found, not supported.
         return []
-    chains: list[DOList] = []
+    chains: list[list[CrossBasicElement]] = []
     for link in tip_links:
         chain = get_chain(link)
         if chain:
@@ -348,7 +349,7 @@ def remove_ros_workspace(path) -> str:
 def export_templates(
         template_files: list[str],
         package_parent: [Path | str],
-        **keys: dict[str, str],
+        **keys: SupportsStr,
         ) -> None:
     """Export generated files.
 

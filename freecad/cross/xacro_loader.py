@@ -22,7 +22,7 @@ from xacro import Table
 from xacro import eval_all
 from xacro import process_doc
 
-from .ros_utils import get_package_and_file
+from .ros.utils import get_package_and_file
 
 
 class Xacro:

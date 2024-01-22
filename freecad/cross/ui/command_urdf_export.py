@@ -5,7 +5,7 @@ from __future__ import annotations
 import copy
 from pathlib import Path
 import tempfile
-from typing import Optional
+from typing import ForwardRef, Optional
 import xml.etree.ElementTree as et
 from xml.dom import minidom
 
@@ -35,7 +35,7 @@ from ..wb_utils import is_xacro_object
 
 # Typing hints.
 DO = fc.DocumentObject
-SO = 'FreeCADGui.SelectionObject'  # Could not get the class from Python.
+SO = ForwardRef('FreeCADGui.SelectionObject')  # Could not get the class from Python.
 
 # Otherwise et.tostring uses xlmns:ns0 as xacro namespace.
 et.register_namespace('xacro', 'http://ros.org/wiki/xacro')

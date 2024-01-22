@@ -30,15 +30,12 @@ from .wb_utils import is_robot
 from .wb_utils import ros_name
 
 # Stubs and typing hints.
-from .joint import Joint
-from .link import Link
-from .robot import Robot
+from .joint import Joint as CrossJoint  # A Cross::Joint, i.e. a DocumentObject with Proxy "Joint". # noqa: E501
+from .link import Link as CrossLink  # A Cross::Link, i.e. a DocumentObject with Proxy "Link". # noqa: E501
+from .robot import Robot as CrossRobot  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot". # noqa: E501
 DO = fc.DocumentObject
 DOList = List[DO]
-VPDO = ForwardRef('FreeCADGui.ViewProviderDocumentObject')
-CrossLink = Link
-CrossJoint = Joint
-CrossRobot = Robot
+VPDO = ForwardRef('FreeCADGui.ViewProviderDocumentObject')  # Don't want to import FreeCADGui here. # noqa: E501
 AppLink = DO  # TypeId == 'App::Link'.
 
 

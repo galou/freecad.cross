@@ -17,6 +17,7 @@ from .ui import command_simplify_mesh
 from .ui import command_sphere_from_bounding_box
 from .ui import command_urdf_export
 from .ui import command_wb_settings
+from .ui import command_get_planning_scene
 from .wb_utils import ICON_PATH
 
 
@@ -48,6 +49,7 @@ class CrossWorkbench(fcgui.Workbench):
             'SimplifyMesh',  # Defined in ./ui/command_simplify_mesh.py.
             'UrdfImport',  # Defined in ./ui/command_robot_from_urdf.py.
             'AssemblyFromUrdf',  # Defined in ./ui/command_assembly_from_urdf.py.
+            'GetPlanningScene',  # Defined in ./ui/command_get_planning_scene.py.
             'KKEdit',  # Defined in ./ui/command_kk_edit.py.
             'UrdfExport',  # Defined in ./ui/command_urdf_export.py.
             'SetCROSSPlacement',  # Defined in ./ui/command_set_placement.py.

@@ -565,9 +565,9 @@ def convert_units(
     >>> convert_units(90, 'deg', 'rad')
     1.5707963267948966
     """
-    # As of 2023-08-31 (0.21.1.33694) `Value` must be used as workaround
+    # As of 2023-08-31 (0.21.1.33694) `float` must be used as workaround
     # Cf. https://forum.freecad.org/viewtopic.php?t=82905.
-    return fc.Units.Quantity(value, from_).getValueAs(to_).Value
+    return float(fc.Units.Quantity(value, from_).getValueAs(to_))
 
 
 def quantity_as(
@@ -582,9 +582,9 @@ def quantity_as(
     1.5707963267948966
 
     """
-    # As of 2023-08-31 (0.21.1.33694) `Value` must be used as workaround
+    # As of 2023-08-31 (0.21.1.33694) `float` must be used as workaround
     # Cf. https://forum.freecad.org/viewtopic.php?t=82905.
-    return q.getValueAs(to_).Value
+    return float(q.getValueAs(to_))
 
 
 def unit_type(

@@ -28,12 +28,7 @@ def get_valid_filename(text: str) -> str:
     return ''.join(c if c in valids else '_' for c in text)
 
 
-def xml_comment(comment: str) -> str:
-    """Returns the string without '--'."""
-    return comment.replace('--', '⸗⸗')
-
-
-def warn_unsupported(objects: [DO, DOList],
+def warn_unsupported(objects: [DO | DOList],
                      by: str = '',
                      gui: bool = False,
                      ) -> None:

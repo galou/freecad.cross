@@ -17,7 +17,7 @@ DO = fc.DocumentObject
 DOList = List[DO]
 
 
-class Robot(fc.DocumentObject):
+class Robot(DO):
     Group: list[BasicElement]
     OutputPath: str
     Placement: fc.Placement

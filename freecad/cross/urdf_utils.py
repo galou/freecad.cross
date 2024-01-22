@@ -23,7 +23,6 @@ from .freecad_utils import is_sphere
 from .freecad_utils import label_or
 from .freecad_utils import warn
 from .utils import get_valid_filename
-from .utils import xml_comment
 from .wb_utils import is_primitive
 
 
@@ -123,10 +122,15 @@ def rotation_from_rpy(rpy: Rpy) -> fc.Rotation:
             * fc.Rotation(fc.Vector(1.0, 0.0, 0.0), np.degrees(rpy[0])))
 
 
-def _xml_comment_element(obj_label: str) -> et.Element:
-    # Workaround et.Comment() not being correctly serialized in Python3.8.
+def sanitize_for_xml_comment(comment: str) -> str:
+    """Returns the string without '--'."""
+    return comment.replace('--', '⸗⸗')
+
+
+def xml_comment_element(obj_label: str) -> et.Element:
+    # Workaround et.Comment() not being correctly serialized in FreeCAD 0.21.
     # return et.fromstring(f'<cad_name value="{obj_label}"/>')
-    return et.Comment(xml_comment(obj_label))
+    return et.Comment(sanitize_for_xml_comment(obj_label))
 
 
 def urdf_origin_from_placement(p: fc.Placement) -> et.Element:
@@ -252,7 +256,7 @@ def _urdf_generic_from_box(
 
     if not obj_label:
         obj_label = box.Label
-    parent.append(_xml_comment_element(obj_label))
+    parent.append(xml_comment_element(obj_label))
 
     if not ignore_obj_placement:
         placement = placement * box.Placement
@@ -344,7 +348,7 @@ def _urdf_generic_from_sphere(
 
     if not obj_label:
         obj_label = sphere.Label
-    parent.append(_xml_comment_element(obj_label))
+    parent.append(xml_comment_element(obj_label))
 
     if not ignore_obj_placement:
         placement = placement * sphere.Placement
@@ -432,7 +436,7 @@ def _urdf_generic_from_cylinder(
 
     if not obj_label:
         obj_label = cyl.Label
-    parent.append(_xml_comment_element(obj_label))
+    parent.append(xml_comment_element(obj_label))
 
     if not ignore_obj_placement:
         placement = placement * cyl.Placement
@@ -534,7 +538,7 @@ def _urdf_generic_mesh(
 
     """
     parent = et.fromstring(f'<{generic}/>')
-    parent.append(_xml_comment_element(obj_label))
+    parent.append(xml_comment_element(obj_label))
     parent.append(urdf_origin_from_placement(placement))
     parent.append(urdf_geometry_mesh(mesh_name, package_name))
     return parent
@@ -652,9 +656,9 @@ def _urdf_generic_from_object(
         filename = ''
         if subobj is obj:
             # No FreeCAD link.
-            name_for_comment = xml_comment(subobj.Label)
+            name_for_comment = sanitize_for_xml_comment(subobj.Label)
         else:
-            name_for_comment = xml_comment(obj.Label + '/' + subname)
+            name_for_comment = sanitize_for_xml_comment(obj.Label + '/' + subname)
         if is_box(linked_object):
             # We ignore the object placement because it's given by link_matrix.
             xml = _urdf_generic_from_box(linked_object, generic, name_for_comment,

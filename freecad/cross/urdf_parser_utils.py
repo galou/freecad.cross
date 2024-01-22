@@ -23,9 +23,9 @@ from .freecad_utils import is_mesh
 from .freecad_utils import warn
 from .mesh_utils import read_mesh_dae
 from .mesh_utils import scale_mesh_object
-from .ros_utils import abs_path_from_ros_path
-from .ros_utils import pkg_and_file_from_ros_path
-from .ros_utils import ros_path_from_abs_path
+from .ros.utils import abs_path_from_ros_path
+from .ros.utils import pkg_and_file_from_ros_path
+from .ros.utils import ros_path_from_abs_path
 from .urdf_utils import rotation_from_rpy
 
 # Typing hints.

@@ -11,9 +11,8 @@ from .dh_model import DHModel
 from .kk_model import KKModel
 
 # Stubs and type hints.
-from ..robot import Robot
+from ..robot import Robot as CrossRobot  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot". # noqa: E501
 DO = fc.DocumentObject  # A FreeCAD DocumentObject.
-CrossRobot = Robot
 
 
 class KKDialog:

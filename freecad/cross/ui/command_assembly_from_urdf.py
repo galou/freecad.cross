@@ -7,7 +7,7 @@ from PySide import QtGui  # FreeCAD's PySide!
 from ..assembly_from_urdf import assembly_from_urdf
 from ..freecad_utils import warn
 from ..gui_utils import tr
-from ..ros_utils import is_ros_found
+from ..ros.utils import is_ros_found
 try:
     from ..urdf_loader import UrdfLoader
 except ImportError as e:

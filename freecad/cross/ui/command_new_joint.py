@@ -25,7 +25,7 @@ class _NewJointCommand:
         doc = fc.activeDocument()
         doc.openTransaction('Create Joint')
         fcgui.doCommand('')
-        fcgui.addModule('freecad.cross.joint')
+        fcgui.addModule('freecad.cross.joint_proxy')
         fcgui.doCommand("_joint = freecad.cross.joint_proxy.make_joint('Joint')")
         fcgui.doCommand('FreeCADGui.ActiveDocument.setEdit(_joint.Name)')
         doc.commitTransaction()

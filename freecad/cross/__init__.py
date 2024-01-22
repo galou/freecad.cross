@@ -1,14 +1,16 @@
 """Entry point of the CROSS workbench."""
 
-# import FreeCAD as fc
+import FreeCAD as fc
 
-from .ros_utils import add_ros_python_library
-from .ros_utils import get_ros_distro_from_env
-from .ros_utils import get_ros_workspace_from_env
+from .ros.utils import add_ros_python_library
 from .version import __version__
 from .wb_globals import g_ros_distro
-from .wb_globals import g_ros_workspace
 
 add_ros_python_library(g_ros_distro)
 
-# fc.addImportType('URDF files (*.urdf)', 'import_urdf')
+# Must be imported after the call to `add_ros_python_library`.
+from .ros.utils import is_ros_found  # noqa: E402.
+
+
+if is_ros_found():
+    fc.addImportType('URDF files (*.urdf *.xacro)', 'import_urdf')

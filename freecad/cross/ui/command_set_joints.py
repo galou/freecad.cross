@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from math import degrees
-
 import FreeCAD as fc
 
 import FreeCADGui as fcgui
@@ -9,12 +7,6 @@ import FreeCADGui as fcgui
 from ..gui_utils import tr
 from ..wb_utils import is_robot_selected
 from .set_joints_dialog import SetJointsDialog
-
-# Stubs and type hints.
-from ..joint import Joint
-from ..robot import Robot
-CrossJoint = Joint
-CrossRobot = Robot
 
 
 class _SetJointsCommand:

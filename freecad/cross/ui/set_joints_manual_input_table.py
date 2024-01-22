@@ -6,20 +6,18 @@ import FreeCAD as fc
 
 from PySide import QtCore  # FreeCAD's PySide!
 from PySide import QtGui  # FreeCAD's PySide!
-from PySide import QtWidgets  # FreeCAD's PySide!
 
 from ..freecad_utils import convert_units
+from ..freecad_utils import quantity_as
 from ..freecad_utils import unit_type
 from ..wb_utils import ros_name
 
 # Stubs and type hints.
-from ..joint import Joint
-from ..robot import Robot
-CrossJoint = Joint
-CrossRobot = Robot
+from ..joint import Joint as CrossJoint  # A Cross::Joint, i.e. a DocumentObject with Proxy "Joint". # noqa: E501
+from ..robot import Robot as CrossRobot  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot". # noqa: E501
 
 
-class SetJointsManualInputTable(QtWidgets.QTableWidget):
+class SetJointsManualInputTable(QtGui.QTableWidget):
 
     # Cache the joint order and units, so that we can restore them when
     # called a second time.
@@ -39,7 +37,7 @@ class SetJointsManualInputTable(QtWidgets.QTableWidget):
         """Activate drag and drop for the table."""
         self.setDragEnabled(True)
         self.setAcceptDrops(True)
-        self.setDragDropMode(QtWidgets.QTableWidget.InternalMove)
+        self.setDragDropMode(QtGui.QTableWidget.InternalMove)
 
     def dropEvent(self, event: QtGui.QDropEvent):
         """Reorder the rows after a drop event."""
@@ -59,10 +57,10 @@ class SetJointsManualInputTable(QtWidgets.QTableWidget):
 
         # Update the table with the new order, after super().dropEvent().
         for row, (text, unit) in enumerate(zip(new_texts, new_units)):
-            name_item = QtWidgets.QTableWidgetItem(text)
+            name_item = QtGui.QTableWidgetItem(text)
             name_item.setFlags(name_item.flags() & ~QtCore.Qt.ItemIsEditable)
             self.setItem(row, joint_name_column, name_item)
-            unit_item = QtWidgets.QTableWidgetItem(unit)
+            unit_item = QtGui.QTableWidgetItem(unit)
             self.setItem(row, unit_column, unit_item)
 
         # Reorder the values if necessary.
@@ -71,7 +69,7 @@ class SetJointsManualInputTable(QtWidgets.QTableWidget):
             values = [self.item(row, value_column).text() for row in range(row_count)]
             new_values = dnd(values, old_index, drop_row)
             for row, value in enumerate(new_values):
-                value_item = QtWidgets.QTableWidgetItem(value)
+                value_item = QtGui.QTableWidgetItem(value)
                 self.setItem(row, value_column, value_item)
 
         self._update_cache()
@@ -92,16 +90,16 @@ class SetJointsManualInputTable(QtWidgets.QTableWidget):
         # second column with the joint values and the third column with the
         # joint units (mm and deg).
         for i, joint in enumerate(self._cache.keys()):
-            name_item = QtWidgets.QTableWidgetItem(ros_name(joint))
+            name_item = QtGui.QTableWidgetItem(ros_name(joint))
             name_item.setFlags(name_item.flags() & ~QtCore.Qt.ItemIsEditable)
             self.setItem(i, 0, name_item)
             unit = self._cache[joint]
             value = _get_joint_value(joint, unit)
             # TODO: Show a rounded value but use the exact value as output and
             # propose the original value when starting to edit.
-            value_item = QtWidgets.QTableWidgetItem(f'{value}')
+            value_item = QtGui.QTableWidgetItem(f'{value}')
             self.setItem(i, 1, value_item)
-            unit_item = QtWidgets.QTableWidgetItem(unit)
+            unit_item = QtGui.QTableWidgetItem(unit)
             self.setItem(i, 2, unit_item)
 
     def to_m_rad(self, change_values: bool) -> None:
@@ -216,17 +214,9 @@ def _get_joint_value(joint: CrossJoint,
                      ) -> float:
     """Get the joint value in the specified unit."""
     if joint.Type == 'prismatic':
-        # TODO: add a check for unit compatibility.
-        # As of 2023-08-31 (0.21.1.33694) `Value` must be used as workaround
-        # Cf. https://forum.freecad.org/viewtopic.php?t=82905.
-        return fc.Units.Quantity(
-                f'{joint.Position} m').getValueAs(unit).Value
+        return quantity_as(fc.Units.Quantity( f'{joint.Position} m'), unit)
     elif joint.Type in ['revolute', 'continuous']:
-        # TODO: add a check for unit compatibility.
-        # As of 2023-08-31 (0.21.1.33694) `Value` must be used as workaround
-        # Cf. https://forum.freecad.org/viewtopic.php?t=82905.
-        return fc.Units.Quantity(
-                f'{joint.Position} rad').getValueAs(unit).Value
+        return quantity_as(fc.Units.Quantity(f'{joint.Position} rad'), unit)
     else:
         # Other types are not supported.
         raise NotImplementedError()

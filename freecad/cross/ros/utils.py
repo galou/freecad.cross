@@ -8,7 +8,7 @@ import sys
 
 import FreeCAD as fc
 
-from .utils import get_parent_by_pattern
+from ..utils import get_parent_by_pattern
 
 
 def warn(text: str, gui: bool = False) -> None:
@@ -67,6 +67,7 @@ def add_ros_python_library(ros_distro: str = '') -> bool:
     ros_workspace = get_ros_workspace_from_env()
     # Works only for workspace with colcon's merge install strategy.
     _add_python_path(f'{ros_workspace}/install/lib/{python_ver}/site-packages')
+    _add_python_path(f'{ros_workspace}/install/local/lib/{python_ver}/dist-packages')
     # On some systems (e.g. FreeCAD 0.21 on Ubuntu 20), $PYTHONPATH is not
     # taken into account in FreeCAD, add them manually.
     base = f'/opt/ros/{ros_distro}'
@@ -89,12 +90,13 @@ def get_ros_distro_from_env() -> str:
     having a higher priority.
 
     """
-    if os.environ.get('ROS_DISTRO'):
+    if 'ROS_DISTRO' in os.environ:
         return os.environ.get('ROS_DISTRO')
     candidates = ['rolling', 'humble', 'galactic', 'foxy']
     for c in candidates:
         if Path(f'/opt/ros/{c}').exists():
             return c
+    return ''
 
 
 def get_ros_workspace_from_env() -> Path:
@@ -227,23 +229,24 @@ def abs_path_from_ros_path(
         from ament_index_python.packages import get_package_share_directory
     except ImportError:
         warn('Cannot import ament_index_python.packages', False)
-        return
+        return None
 
     if not path:
-        return
+        return None
     if (not (path.startswith('package://')
              or path.startswith('file://'))):
-        return
+        return None
     if path.startswith('package://'):
         pkg, rel_path = pkg_and_file_from_ros_path(path)
         if not pkg:
-            return
+            return None
         pkg_path = get_package_share_directory(pkg)
         return Path(pkg_path) / rel_path
     elif path.startswith('file://'):
         if relative_to is not None:
             return Path(relative_to) / path[len('file://'):]
         return Path(path[len('file://'):])
+    return None
 
 
 def ros_path_from_abs_path(
@@ -258,7 +261,7 @@ def ros_path_from_abs_path(
     """
     pkg, rel_path = get_package_and_file(path)
     if not pkg:
-        return
+        return Non
     return f'package://{pkg}/{rel_path}'
 
 

@@ -22,7 +22,7 @@ class _NewLinkCommand:
         doc = fc.activeDocument()
         doc.openTransaction(tr('Create Link'))
         fcgui.doCommand('')
-        fcgui.addModule('freecad.cross.link')
+        fcgui.addModule('freecad.cross.link_proxy')
         fcgui.doCommand("_link = freecad.cross.link_proxy.make_link('Link')")
         fcgui.doCommand('FreeCADGui.ActiveDocument.setEdit(_link.Name)')
         doc.commitTransaction()

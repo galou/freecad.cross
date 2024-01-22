@@ -7,12 +7,14 @@ from PySide import QtGui  # FreeCAD's PySide!
 from ..freecad_utils import warn
 from ..gui_utils import tr
 from ..robot_from_urdf import robot_from_urdf
-from ..ros_utils import is_ros_found
+from ..ros.utils import is_ros_found
 try:
     from ..urdf_loader import UrdfLoader
+    imports_ok = True
 except ImportError as e:
     # TODO: Warn the user more nicely.
     warn(str(e), gui=False)
+    imports_ok = False
 
 
 class _UrdfImportCommand:
@@ -41,7 +43,7 @@ class _UrdfImportCommand:
             fcgui.SendMsgToActiveView('ViewFit')
 
     def IsActive(self):
-        return is_ros_found()
+        return is_ros_found() and imports_ok
 
 
 fcgui.addCommand('UrdfImport', _UrdfImportCommand())

@@ -21,7 +21,7 @@ class _NewRobotCommand:
         doc = fc.activeDocument()
         doc.openTransaction(tr('Create Robot'))
         fcgui.doCommand('')
-        fcgui.addModule('freecad.cross.robot')
+        fcgui.addModule('freecad.cross.robot_proxy')
         fcgui.doCommand("_robot = freecad.cross.robot_proxy.make_robot('Robot')")
         fcgui.doCommand('FreeCADGui.ActiveDocument.setEdit(_robot.Name)')
         doc.commitTransaction()

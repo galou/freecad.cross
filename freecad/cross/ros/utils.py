@@ -37,8 +37,21 @@ def is_ros_found() -> bool:
     return get_ros_distro_from_env() != ''
 
 
-def add_ros_python_library(ros_distro: str = '') -> bool:
-    """Add /opt/ros/$ROS_DISTRO/lib/python?.?/site-packages to sys.path."""
+def add_ros_library_path(ros_distro: str = '') -> bool:
+    """Add necessary paths to sys.path and os.environ['LD_LIBRARY_PATH'].
+
+    If existing:
+    - Add {ros_workspace}/install/lib/{python_ver}/site-packages to sys.path.
+    - Add {ros_workspace}/install/local/lib/{python_ver}/dist-packages to sys.path.
+    - Add /opt/ros/$ROS_DISTRO/lib/python?.?/site-packages to sys.path.
+    - Add /opt/ros/$ROS_DISTRO/local/lib/python?.?/dist-packages to sys.path.
+    - Add {ros_workspace}/install/lib to os.environ['LD_LIBRARY_PATH'].
+    - Add /opt/ros/$ROS_DISTRO/lib to os.environ['LD_LIBRARY_PATH'].
+    - Add /opt/ros/$ROS_DISTRO/opt/rviz_ogre_vendor/lib to os.environ['LD_LIBRARY_PATH'].
+    - Add /opt/ros/$ROS_DISTRO/lib/x86_64-linux-gnu to os.environ['LD_LIBRARY_PATH'].
+
+    """
+
     if not ros_distro:
         ros_distro = get_ros_distro_from_env()
     if not ros_distro:
@@ -77,6 +90,14 @@ def add_ros_python_library(ros_distro: str = '') -> bool:
         Path(f'{base}/local/lib/{python_ver}/dist-packages'),
         ]:
         _add_python_path(path)
+
+    _add_ld_library_path(f'{ros_workspace}/install/lib')
+    for path in [
+        Path(f'{base}/opt/rviz_ogre_vendor/lib'),
+        Path(f'{base}/lib/x86_64-linux-gnu'),
+        Path(f'{base}/lib'),
+        ]:
+        _add_ld_library_path(path)
     return True
 
 
@@ -261,7 +282,7 @@ def ros_path_from_abs_path(
     """
     pkg, rel_path = get_package_and_file(path)
     if not pkg:
-        return Non
+        return None
     return f'package://{pkg}/{rel_path}'
 
 
@@ -287,6 +308,17 @@ def split_package_path(package_path: [Path | str]) -> tuple[Path, str]:
 
 def _add_python_path(path: [Path | str]) -> None:
     """Add the path to sys.path if existing."""
-    path = Path(path)
+    path = Path(path).expanduser().absolute()
     if path.exists() and (str(path) not in sys.path):
         sys.path.append(str(path))
+
+
+def _add_ld_library_path(path: [Path | str]) -> None:
+    """Add the path to LD_LIBRARY_PATH if existing."""
+    path = Path(path).expanduser().absolute()
+    existing_paths = os.environ.get('LD_LIBRARY_PATH', '').split(':')
+    if path.exists() and (str(path) not in existing_paths):
+        if 'LD_LIBRARY_PATH' not in os.environ:
+            os.environ['LD_LIBRARY_PATH'] = str(path)
+        else:
+            os.environ['LD_LIBRARY_PATH'] += ':' + str(path)

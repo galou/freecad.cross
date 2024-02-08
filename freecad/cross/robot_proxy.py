@@ -8,7 +8,7 @@ exported as URDF file.
 from __future__ import annotations
 
 from math import radians
-from typing import ForwardRef, List, Optional
+from typing import ForwardRef, List, Optional, Union, cast
 import xml.etree.ElementTree as et
 
 import FreeCAD as fc
@@ -47,6 +47,7 @@ from .wb_utils import ros_name
 from .joint import Joint as CrossJoint  # A Cross::Joint, i.e. a DocumentObject with Proxy "Joint". # noqa: E501
 from .link import Link as CrossLink  # A Cross::Link, i.e. a DocumentObject with Proxy "Link". # noqa: E501
 from .robot import Robot as CrossRobot  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot". # noqa: E501
+BasicElement = Union[CrossJoint, CrossLink]
 DO = fc.DocumentObject
 DOList = List[DO]
 VPDO = ForwardRef('FreeCADGui.ViewProviderDocumentObject')  # Don't want to import FreeCADGui here. # noqa: E501
@@ -178,7 +179,7 @@ class RobotProxy(ProxyBase):
         # Only for actuated non-mimicking joints.
         self._joint_variables: dict[CrossJoint, str] = {}
 
-        self.init_properties(obj)
+        self._init_properties(obj)
 
     @property
     def created_objects(self) -> DOList:
@@ -190,7 +191,7 @@ class RobotProxy(ProxyBase):
         """Map of joint names to joint variable names."""
         return self._joint_variables
 
-    def init_properties(self, obj: CrossRobot):
+    def _init_properties(self, obj: CrossRobot):
         add_property(obj, 'App::PropertyString', '_Type', 'Internal',
                      'The type')
         obj.setPropertyStatus('_Type', ['Hidden', 'ReadOnly'])
@@ -478,16 +479,16 @@ class RobotProxy(ProxyBase):
         """Return the root link of the robot."""
         chains = self.get_chains()
         if not chains:
-            return
+            return None
         if not chains[0]:
-            return
+            return None
         return chains[0][0]
 
-    def get_chains(self) -> list[DOList]:
+    def get_chains(self) -> list[list[BasicElement]]:
         """Return the list of chains.
 
         A chain starts at the root link, alternates links and joints, and ends
-        at the last joint of the chain.
+        at the last link of the chain.
 
         If the last element of a chain would be a joint, that chain is not
         considered.
@@ -505,7 +506,7 @@ class RobotProxy(ProxyBase):
     def export_urdf(self, interactive: bool = False) -> Optional[et.Element]:
         """Export the robot as URDF, writing files."""
         if not self.is_execute_ready():
-            return
+            return None
         if not self.robot.OutputPath:
             # TODO: ask the user for OutputPath.
             warn('Property `OutputPath` cannot be empty', True)

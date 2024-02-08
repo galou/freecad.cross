@@ -151,6 +151,7 @@ def get_chains(
     considered.
 
     """
+    # TODO: Make the function faster.
     base_links: list[CrossLink] = []
     tip_links: list[CrossLink] = []
     for link in links:
@@ -169,14 +170,14 @@ def get_chains(
     return chains
 
 
-def get_chain(link: CrossLink) -> DOList:
+def get_chain(link: CrossLink) -> list[CrossBasicElement]:
     """Return the chain from base link to link, excluded.
 
-    The chain start with the base link, then alternates a joint and a link. The
-    last item is the joint that has `link` as child.
+    The chain starts with the base link, then alternates a joint and a link.
+    The last item is the joint that has `link` as child.
 
     """
-    chain: DOList = []
+    chain: list[CrossBasicElement] = []
     ref_joint = link.Proxy.get_ref_joint()
     if not ref_joint:
         # A root link.

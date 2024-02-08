@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from math import degrees, radians
-from typing import ForwardRef, Optional
+from typing import ForwardRef, Optional, cast
 import xml.etree.ElementTree as et
 
 import FreeCAD as fc
@@ -334,7 +334,7 @@ class JointProxy(ProxyBase):
 
 
 class _ViewProviderJoint(ProxyBase):
-    """A view provider for CROSS::Joint objects."""
+    """The view provider for CROSS::Joint objects."""
 
     def __init__(self, vobj: VPDO):
         super().__init__('view_object', [
@@ -361,7 +361,7 @@ class _ViewProviderJoint(ProxyBase):
         # workbench activation in GUI.
         return str(ICON_PATH / 'joint.svg')
 
-    def attach(self, vobj):
+    def attach(self, vobj: VPDO):
         """Setup the scene sub-graph of the view provider."""
         self.view_object = vobj
 
@@ -464,7 +464,7 @@ def make_joint(name, doc: Optional[fc.Document] = None) -> CrossJoint:
     if doc is None:
         warn('No active document, doing nothing', False)
         return
-    obj: Joint = doc.addObject('App::FeaturePython', name)
+    obj: CrossJoint = doc.addObject('App::FeaturePython', name)
     JointProxy(obj)
     # Default to type "fixed".
     obj.Type = 'fixed'
@@ -480,8 +480,11 @@ def make_joint(name, doc: Optional[fc.Document] = None) -> CrossJoint:
             candidate = sel[0]
             if (is_robot(candidate)
                     or is_workcell(candidate)):
+                robot = cast(CrossRobot, candidate)
                 obj.adjustRelativeLinks(candidate)
-                candidate.addObject(obj)
+                robot.addObject(obj)
+                if candidate.ViewObject:
+                    obj.ViewObject.AxisLength = robot.ViewObject.JointAxisLength
             elif is_link(candidate):
                 robot = candidate.Proxy.get_robot()
                 if robot:

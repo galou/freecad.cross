@@ -533,7 +533,11 @@ class ProxyBase(ABC):
     """A base class for proxies of dynamic (scripted) objects in FreeCAD."""
 
     def __init__(self, object_name: str, properties: list[str]):
+        # Name of the attribute being the FreeCAD object.
         self._object_name: str = object_name
+
+        # List of properties that the FreeCAD object must have to be ready to
+        # execute.
         self._properties: list[str] = properties
 
     def is_execute_ready(self) -> bool:

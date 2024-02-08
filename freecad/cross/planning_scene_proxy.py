@@ -7,15 +7,12 @@ from xml.etree import ElementTree as et
 
 import FreeCAD as fc
 
-import FreeCADGui as fcgui
-
 from pivy import coin
 
 from .freecad_utils import ProxyBase
 from .freecad_utils import add_property
 from .freecad_utils import warn
 from .planning_scene_utils import coin_from_planning_scene_msg
-from .ui.file_overwrite_confirmation_dialog import FileOverwriteConfirmationDialog
 from .wb_utils import ICON_PATH
 
 try:

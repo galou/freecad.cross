@@ -129,7 +129,7 @@ def get_ros_workspace_from_file(file_path: [Path | str]) -> Path:
 def is_in_ros_workspace(path: [Path | str]) -> bool:
     """Return true if the given path starts with $ROS_WORKSPACE/src."""
     # Import here to avoid circular import.
-    from .wb_globals import g_ros_workspace
+    from ..wb_globals import g_ros_workspace
 
     src = str(g_ros_workspace / 'src')
     return str(path).startswith(src)
@@ -142,7 +142,7 @@ def without_ros_workspace(path: [Path | str]) -> str:
 
     """
     # Import here to avoid circular import.
-    from .wb_globals import g_ros_workspace
+    from ..wb_globals import g_ros_workspace
 
     src = str(g_ros_workspace / 'src')
     if str(path).startswith(src):

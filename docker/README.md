@@ -1,3 +1,7 @@
+# Copy your FreeCAD-0.21.2-Linux-x86_64.AppImage to freecad_appimage_dir
+
+``cp FreeCAD-0.21.2-Linux-x86_64.AppImage freecad_appimage_dir``
+
 # Run container
 
 ``sh run.sh``

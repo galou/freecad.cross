@@ -503,6 +503,107 @@ class RobotProxy(ProxyBase):
         joints = self.get_joints()
         return get_chains(links, joints)
 
+    def get_links_fixed_with(self, link_name: str) -> list[CrossLink]:
+        """Return the list of links fixed with the specified link.
+
+        The order of the links can be considered as arbitrary.
+        If not empty, the returned list contains the specified link itself.
+        An empty list indicated an error (link not found).
+
+        """
+        if not self.is_execute_ready():
+            return []
+        link = self.get_link(link_name)
+        if not link:
+            return []
+        chains = self.get_chains()
+        out_links: set[CrossLink] = set([link])
+        for chain in chains:
+            if link not in chain:
+                # Shortcut.
+                continue
+            subchain: list[CrossLink] = []
+            # Iterate over joints.
+            joints = cast(list[CrossJoint], chain[1::2])
+            for joint in joints:
+                # No need to check the parent- and child link validity because
+                # the joint is part of a chain.
+                parent = cast(CrossLink, self.get_link(joint.Parent))
+                child = cast(CrossLink, self.get_link(joint.Child))
+                if not subchain:
+                    # Add the first link.
+                    subchain.append(parent)
+                if joint.Proxy.is_fixed():
+                    subchain.append(child)
+                    if (joint is chain[-2]):
+                        # Last joint of the chain.
+                        out_links.update(subchain)
+                        # Next subchain.
+                else:
+                    if link in subchain:
+                        out_links.update(subchain)
+                        # Next subchain.
+                        break
+                    # Link not in subchain, wrong subchain, start a new one.
+                    subchain.clear()
+                # Next element in the chain.
+            # Next chain.
+        return list(out_links)
+
+    def get_transform(self, from_link: str, to_link: str) -> Optional[fc.Placement]:
+        """Return the current transform between two links.
+
+        Return the current transform, i.e. with the current joint values,
+        from link `from_link` to link `to_link`.
+
+        """
+        if not self.is_execute_ready():
+            return None
+        from_ = self.get_link(from_link)
+        if not from_:
+            return None
+        to = self.get_link(to_link)
+        if not to:
+            return None
+        if from_ is to:
+            return fc.Placement()
+        chains = self.get_chains()
+        for chain in chains:
+            if from_ not in chain:
+                continue
+            if to not in chain:
+                continue
+            from_or_to_found = False
+            first_transform = fc.Placement()
+            second_transform = fc.Placement()
+            for link, joint in grouper(chain, 2):
+                if ((not ((link is from_) or (link is to)))
+                        and (not from_or_to_found)):
+                    continue
+                if not from_or_to_found:
+                    first_transform = link.Placement
+                if (link is from_) and (not from_or_to_found):
+                    second = to
+                if (link is to) and (not from_or_to_found):
+                    second = from_
+                from_or_to_found = True
+                if link is second:
+                    first_to_second = first_transform.inverse() * second_transform
+                    if second is to:
+                        return first_to_second
+                    else:
+                        return first_to_second.inverse()
+                child = self.get_link(joint.Child)
+                if not child:
+                    return None
+                parent = self.get_link(joint.Parent)
+                if not parent:
+                    return None
+                if (child is second) or (parent is second):
+                    second_transform = (joint.Placement
+                                        * joint.Proxy.get_actuation_placement())
+        return None
+
     def export_urdf(self, interactive: bool = False) -> Optional[et.Element]:
         """Export the robot as URDF, writing files."""
         if not self.is_execute_ready():

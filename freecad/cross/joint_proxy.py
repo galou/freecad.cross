@@ -191,6 +191,10 @@ class JointProxy(ProxyBase):
         if state:
             self.Type, = state
 
+    def is_fixed(self) -> bool:
+        """Return whether the joint is of type 'fixed'."""
+        return self.joint.Type == 'fixed'
+
     def get_actuation_placement(self,
                                 joint_value: Optional[float] = None,
                                 ) -> fc.Placement:

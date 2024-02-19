@@ -766,15 +766,15 @@ def make_robot(name, doc: Optional[fc.Document] = None) -> CrossRobot:
     if doc is None:
         warn('No active document, doing nothing', False)
         return
-    obj: CrossRobot = doc.addObject('App::DocumentObjectGroupPython', name)
-    # obj = doc.addObject('Part::FeaturePython', name)
-    RobotProxy(obj)
+    robot: CrossRobot = doc.addObject('App::DocumentObjectGroupPython', name)
+    # robot = doc.addObject('Part::FeaturePython', name)
+    RobotProxy(robot)
 
     if hasattr(fc, 'GuiUp') and fc.GuiUp:
-        _ViewProviderRobot(obj.ViewObject)
-        obj.ViewObject.ShowReal = True
-        obj.ViewObject.ShowVisual = False
-        obj.ViewObject.ShowCollision = False
+        _ViewProviderRobot(robot.ViewObject)
+        robot.ViewObject.ShowReal = True
+        robot.ViewObject.ShowVisual = False
+        robot.ViewObject.ShowCollision = False
 
     doc.recompute()
-    return obj
+    return robot

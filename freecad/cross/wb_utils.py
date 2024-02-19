@@ -270,7 +270,7 @@ def get_xacro_chains(
     return chains
 
 
-def ros_name(obj: DO):
+def ros_name(obj: DO) -> str:
     """Return in order obj.Label2, obj.Label, obj.Name."""
     if ((not hasattr(obj, 'isDerivedFrom')
          or (not obj.isDerivedFrom('App::DocumentObject')))):

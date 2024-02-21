@@ -63,7 +63,7 @@ def add_ros_library_path(ros_distro: str = '') -> bool:
         if not has_ros_distro():
             warn('The environment variable `ROS_DISTRO` is not set but a ROS'
                  f' installation was found in /opt/ros/{ros_distro}'
-                 ', using it')
+                 ', attempting to use it')
 
     # Add the paths in PYTHONPATH to sys.path.
     # Unfortunately, on some systems and with some versions of FreeCAD, the

@@ -29,8 +29,9 @@ def warn(text: str, gui: bool = False) -> None:
 
 def has_ros_distro() -> bool:
     """Return True if environment variable ROS_DISTRO is set."""
+    p = get_ros_workspace_from_env()
     return (('ROS_DISTRO' in os.environ)
-            and (Path(f'/opt/ros/{os.environ["ROS_DISTRO"]}').exists()))
+            and (Path(p).exists()))
 
 
 def is_ros_found() -> bool:
@@ -61,8 +62,9 @@ def add_ros_library_path(ros_distro: str = '') -> bool:
         return False
     else:
         if not has_ros_distro():
+            p = get_ros_workspace_from_env()
             warn('The environment variable `ROS_DISTRO` is not set but a ROS'
-                 f' installation was found in /opt/ros/{ros_distro}'
+                 f' installation was found in {p}'
                  ', attempting to use it')
 
     # Add the paths in PYTHONPATH to sys.path.

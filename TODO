@@ -9,6 +9,17 @@ Bugs
 - Handle empty star-style macro parameters (e.g. `*origin` in `robotiq-3f-gripper_articulated.urdf.xacro`).
 - Fix bug when setting a prefix in XacroObject, then setting it to ''. Some objects are deleted but not all and the Cross::Robot cannot be rebuilt.
 - Fix workbench loading without ROS.
+- Bug with units with `SetJoints`:
+```
+Traceback (most recent call last):
+  File "/home/gael/.local/share/FreeCAD/Mod/freecad.cross/freecad/cross/ui/set_joints_dialog.py", line 153, in _on_table_edited
+    self.robot.Proxy.set_joint_values(self._joint_values)
+  File "/home/gael/.local/share/FreeCAD/Mod/freecad.cross/freecad/cross/robot_proxy.py", line 380, in set_joint_values
+    value = quantity_as(value, target_units[unit_type])
+  File "/home/gael/.local/share/FreeCAD/Mod/freecad.cross/freecad/cross/freecad_utils.py", line 602, in quantity_as
+    return float(q.getValueAs(to_))
+ValueError: Unit mismatch
+```
 
 Missing features
 ----------------

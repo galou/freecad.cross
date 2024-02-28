@@ -42,8 +42,8 @@ class _ReloadCommand:
         _reload_module('freecad.cross.planning_scene_utils')
         _reload_module('freecad.cross.pose_proxy')
         _reload_module('freecad.cross.robot')
-        _reload_module('freecad.cross.robot_proxy')
         _reload_module('freecad.cross.robot_from_urdf')
+        _reload_module('freecad.cross.robot_proxy')
         _reload_module('freecad.cross.ros.node')
         _reload_module('freecad.cross.ros.planning_scene')
         _reload_module('freecad.cross.ros.utils')
@@ -74,8 +74,10 @@ class _ReloadCommand:
         _reload_module('freecad.cross.version')
         _reload_module('freecad.cross.wb_utils')
         _reload_module('freecad.cross.workcell')
+        _reload_module('freecad.cross.workcell_proxy')
         _reload_module('freecad.cross.xacro_loader')
         _reload_module('freecad.cross.xacro_object')
+        _reload_module('freecad.cross.xacro_object_proxy')
 
 
 fcgui.addCommand('Reload', _ReloadCommand())

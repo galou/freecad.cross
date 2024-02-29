@@ -202,7 +202,6 @@ class LinkProxy(ProxyBase):
 
         add_property(obj, 'App::PropertyPlacement', 'Placement', 'Internal',
                      'Placement of elements in the robot frame')
-        obj.setEditorMode('Placement', ['ReadOnly'])
 
         # Used when adding a link which shape in located at the origin but
         # looks correctly placed. For example, when opening a STEP file or a
@@ -211,6 +210,8 @@ class LinkProxy(ProxyBase):
         # joint that is parent of this link.
         add_property(obj, 'App::PropertyPlacement', 'MountedPlacement',
                      'ROS Parameters', 'Shapes placement')
+
+        self._set_property_modes()
 
     def execute(self, obj: CrossLink) -> None:
         pass
@@ -243,9 +244,24 @@ class LinkProxy(ProxyBase):
             if not self.is_execute_ready():
                 return
             for fclink in obj.Group:
+                if self.get_robot():
+                    new_placement = obj.Placement
+                else:
+                    new_placement = obj.Placement * obj.MountedPlacement
                 if (is_freecad_link(fclink)
-                        and (fclink.LinkPlacement != obj.Placement)):
-                    fclink.LinkPlacement = obj.Placement
+                        and (fclink.LinkPlacement != new_placement)):
+                    fclink.LinkPlacement = new_placement
+        if prop == 'MountedPlacement':
+            robot = self.get_robot()
+            if robot:
+                # The placement of FreeCAD links is managed by the robot.
+                return
+            new_placement = obj.Placement * obj.MountedPlacement
+            for fclink in obj.Group:
+                if (is_freecad_link(fclink)
+                        and (fclink.LinkPlacement != new_placement)):
+                    fclink.LinkPlacement = new_placement
+        self._set_property_modes()
 
     def onDocumentRestored(self, obj: CrossLink) -> None:
         self.__init__(obj)
@@ -510,6 +526,16 @@ class LinkProxy(ProxyBase):
                 self._fc_links_visual.append(o)
             elif o.Label.startswith('collision'):
                 self._fc_links_collision.append(o)
+
+    def _set_property_modes(self) -> None:
+        """Set the modes of the properties."""
+        if not self.is_execute_ready():
+            return
+        if self.get_robot():
+            # Placement is managed by the robot.
+            self.link.setEditorMode('Placement', ['ReadOnly'])
+        else:
+            self.link.setEditorMode('Placement', [])
 
 
 class _ViewProviderLink(ProxyBase):

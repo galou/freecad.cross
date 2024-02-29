@@ -239,13 +239,13 @@ class LinkProxy(ProxyBase):
                     and is_name_used(obj, robot)
                     and getattr(obj, prop) != self.old_ros_name):
                 setattr(obj, prop, self.old_ros_name)
-        if prop == 'Placement':
+        if prop == 'MountedPlacement':
             if not self.is_execute_ready():
                 return
             for fclink in obj.Group:
                 if (is_freecad_link(fclink)
-                        and (fclink.LinkPlacement != obj.Placement)):
-                    fclink.LinkPlacement = obj.Placement
+                        and (fclink.LinkPlacement != obj.MountedPlacement)):
+                    fclink.LinkPlacement = obj.MountedPlacement
 
     def onDocumentRestored(self, obj: CrossLink) -> None:
         self.__init__(obj)

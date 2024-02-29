@@ -75,4 +75,4 @@
 
 # Phobos add-on for Blender
 
-- [Phobos](https://github.com/dfki-ric/phobos) Phobos allows to make kinematic, inertia, collision, etc for your robot model and export as URDF, SDF, SMURF and other formats
+- [Phobos](https://github.com/dfki-ric/phobos) allows to make kinematic, inertia, collision, etc for your robot model and export as URDF, SDF, SMURF and other formats.

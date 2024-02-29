@@ -45,7 +45,7 @@ class _SetCROSSPlacementCommand:
     def GetResources(self):
         return {'Pixmap': 'set_cross_placement.svg',
                 'MenuText': tr('Set placement'),
-                'Accel': 'N, L',
+                'Accel': 'S, P',
                 'ToolTip': tr('Set the mounted placement'
                               ' of a link or the origin of a joint.'
                               'Select either\n'

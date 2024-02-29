@@ -18,8 +18,8 @@ class _GetPlanningSceneCommand:
     def GetResources(self):
         return {'Pixmap': 'planning_scene.svg',
                 'MenuText': tr('Get Planning Scene'),
-                'Accel': 'S, J',
-                'ToolTip': tr('Get the Current Planning Scene')}
+                'Accel': 'G, P',
+                'ToolTip': tr('Get the Current Planning Scene from the /get_planning_scene service.')}
 
     def IsActive(self):
         return True

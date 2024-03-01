@@ -260,11 +260,11 @@ class _ViewProviderPose(ProxyBase):
         sep = coin.SoSeparator()
         sep.addChild(transform_from_placement(pose))
         sep.addChild(tcp_group(
-            tcp_diameter_mm=vobj.AxisLength / 6.0,
             tcp_length_mm=0.66 * vobj.AxisLength,
+            tcp_diameter_ratio_to_length=0.17,
             tcp_color=(0.7, 0.7, 0.7),
             axis_length_mm=vobj.AxisLength,
-            axis_diameter_mm=0.03 * vobj.AxisLength,
+            axis_diameter_ratio_to_length=0.03,
             ))
 
         if (self.pose.Proxy.is_execute_ready(debug=True)

@@ -19,6 +19,7 @@ class ViewProviderPlanningScene:
     Object: PlanningScene
     PlaneSides: float
     Proxy: VPPlanningSceneProxy
+    SubframeSize: float
     Visibility: bool
 
     def addDisplayMode(self, separator, mode: str) -> None: ...

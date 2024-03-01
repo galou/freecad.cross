@@ -106,6 +106,12 @@ class _ViewProviderPlanningScene(ProxyBase):
                      'The length of the sides of the plane.',
                      1000.0)
 
+        # Default to 100.0, i.e. 100 cm.
+        add_property(vobj, 'App::PropertyLength', 'SubframeSize',
+                     'ROS Display Options',
+                     'The length of the subframe axes.',
+                     100.0)
+
     def getIcon(self):
         # Implementation note: "return 'planning_scene.svg'" works only after
         # workbench activation in GUI.
@@ -146,9 +152,11 @@ class _ViewProviderPlanningScene(ProxyBase):
         if not self.view_object.Visibility:
             return
 
-        plane_sides_mm = quantity_as(self.view_object.PlaneSides, 'mm')
         planning_scene_group = coin_from_planning_scene_msg(
-                msg, plane_sides_mm=plane_sides_mm)
+                msg,
+                plane_sides_mm=self.view_object.PlaneSides,
+                subframe_length_mm=self.view_object.SubframeSize,
+                )
         self.shaded.addChild(planning_scene_group)
         self.wireframe.addChild(planning_scene_group)
 

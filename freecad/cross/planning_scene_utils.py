@@ -22,7 +22,7 @@ from .coin_utils import frame_group
 def coin_from_planning_scene_msg(
         scene: PlanningScene,
         plane_sides_mm: float,
-        subframes_length_mm: float = 100.0,
+        subframe_length_mm: [float | fc.Units.Quantity] = 100.0,
         ) -> coin.SoSeparator:
     """Convert a moveit_msgs.msg.PlanningScene to Coin3D.
 
@@ -40,7 +40,7 @@ def coin_from_planning_scene_msg(
 
     separator.addChild(coin_from_planning_scene_world(scene.world,
         plane_sides_mm=plane_sides_mm,
-        subframes_length_mm=subframes_length_mm))
+        subframe_length_mm=subframe_length_mm))
 
     return separator
 
@@ -48,7 +48,7 @@ def coin_from_planning_scene_msg(
 def coin_from_planning_scene_world(
         world: PlanningSceneWorld,
         plane_sides_mm: float,
-        subframes_length_mm: float = 100.0,
+        subframe_length_mm: [float | fc.Units.Quantity] = 100.0,
         ) -> coin.SoSeparator:
     """Convert a moveit_msgs.msg.PlanningSceneWorld to Coin3D.
 
@@ -66,14 +66,14 @@ def coin_from_planning_scene_world(
     for co in world.collision_objects:
         separator.addChild(coin_from_collision_object(co,
             plane_sides_mm=plane_sides_mm,
-            subframes_length_mm=subframes_length_mm))
+            subframe_length_mm=subframe_length_mm))
     return separator
 
 
 def coin_from_collision_object(
         co: CollisionObject,
         plane_sides_mm: float,
-        subframes_length_mm: float = 100.0,
+        subframe_length_mm: [float | fc.Units.Quantity] = 100.0,
         ) -> coin.SoSeparator:
     separator = coin.SoSeparator()
     separator.setName(co.id)
@@ -91,7 +91,7 @@ def coin_from_collision_object(
 
     for (subframe_name, pose) in zip(co.subframe_names, co.subframe_poses):
         separator.addChild(coin_from_subframe(subframe_name, pose,
-                                              axis_length_mm=subframes_length_mm))
+                                              axis_length_mm=subframe_length_mm))
     return separator
 
 

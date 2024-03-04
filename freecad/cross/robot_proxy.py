@@ -230,12 +230,20 @@ class RobotProxy(ProxyBase):
         """Restore attributes because __init__ is not called on restore."""
         self.__init__(obj)
 
-    def __getstate__(self):
+    def dumps(self):
         return self.Type,
 
-    def __setstate__(self, state):
+    def __getstate__(self):
+        # Deprecated.
+        return self.dumps()
+
+    def loads(self, state):
         if state:
             self.Type, = state
+
+    def __setstate__(self, state):
+        # Deprecated.
+        return self.loads(state)
 
     def _reset_group(self) -> None:
         """Add FreeCAD links in CrossLinks for Real, Visual, and Collision."""

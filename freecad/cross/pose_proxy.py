@@ -89,6 +89,21 @@ class PoseProxy(ProxyBase):
         # `self.__init__()` is not called on document restore, do it manually.
         self.__init__(obj)
 
+    def dumps(self):
+        return self.Type,
+
+    def __getstate__(self):
+        # Deprecated.
+        return self.dumps()
+
+    def loads(self, state):
+        if state:
+            self.Type, = state
+
+    def __setstate__(self, state):
+        # Deprecated.
+        return self.loads(state)
+
     def onChanged(self, obj: CrossPose, prop: str) -> None:
         """Handle a property change of the object, after the change.
 

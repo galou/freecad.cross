@@ -268,12 +268,20 @@ class LinkProxy(ProxyBase):
         self._fix_lost_fc_links()
         self._fill_fc_link_lists()
 
-    def __getstate__(self):
+    def dumps(self):
         return self.Type,
 
-    def __setstate__(self, state):
+    def __getstate__(self):
+        # Deprecated.
+        return self.dumps()
+
+    def loads(self, state):
         if state:
             self.Type, = state
+
+    def __setstate__(self, state):
+        # Deprecated.
+        return self.loads(state)
 
     def cleanup_children(self) -> DOList:
         """Remove and return all objects not supported by CROSS::Link."""

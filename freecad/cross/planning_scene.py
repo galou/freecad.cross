@@ -22,4 +22,5 @@ class ViewProviderPlanningScene:
     SubframeSize: float
     Visibility: bool
 
+    # This is missing inFreeCAD's stubs.
     def addDisplayMode(self, separator, mode: str) -> None: ...

@@ -39,9 +39,8 @@ class _UpdatePlanningSceneCommand:
             warn('Internal error, no Cross::PlanningScene selected', true)
             return
 
-        fcgui.doCommand('')
         fcgui.addModule('freecad.cross.ros.planning_scene')
-        fcgui.doCommand('_scene_msg = freecad.cross.ros.planning_scene.get_planning_scene(timeout_sec=1.0)')
+        fcgui.doCommand('_scene_msg = freecad.cross.ros.planning_scene.get_planning_scene(timeout_sec=10.0)')
         doc.openTransaction(tr('Update Planning Scene'))
         fcgui.doCommand('if _scene_msg is not None:\n'
                         f"     FreeCAD.getDocument('{doc.Name}').getObject('{cross_planning_scene.Name}').Proxy.update_scene(_scene_msg)")

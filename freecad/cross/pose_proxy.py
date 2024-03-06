@@ -1,24 +1,21 @@
 from __future__ import annotations
 
-from typing import Any, ForwardRef, Optional
+from typing import Any, Optional
 
 import FreeCAD as fc
 
 from .freecad_utils import ProxyBase
 from .freecad_utils import add_property
 from .freecad_utils import warn
-from .freecad_utils import message # DEBUG
 from .wb_utils import ICON_PATH
 from .wb_utils import is_link
 from .wb_utils import is_robot
 from .wb_utils import ros_name
 
 try:
-    from moveit_msgs.msg import PlanningScene
-    imports_ok = True
+    from moveit_msgs.msg import PlanningScene as PlanningSceneMsg
 except ImportError:
-    PlanningScene = Any
-    imports_ok = False
+    PlanningSceneMsg = Any
 
 # Stubs and type hints.
 from .link import Link as CrossLink  # A Cross::Link, i.e. a DocumentObject with Proxy "Link". # noqa: E501
@@ -35,7 +32,7 @@ class PoseProxy(ProxyBase):
 
     def __init__(self,
                  obj: CrossPose,
-                 planning_scene_msg: Optional[PlanningScene] = None):
+                 planning_scene_msg: Optional[PlanningSceneMsg] = None):
         """Initialize the proxy.
 
         Not called on document restore.
@@ -213,7 +210,7 @@ class _ViewProviderPose(ProxyBase):
         Required by FreeCAD.
 
         """
-        message(f'{obj.Name}.updateData({prop})') # DEBUG
+        print(f'{obj.Name}.updateData({prop})') # DEBUG
         self.draw()
 
     def onChanged(self, vobj: VP, prop: str) -> None:
@@ -222,7 +219,7 @@ class _ViewProviderPose(ProxyBase):
         Required by FreeCAD.
 
         """
-        message(f'view_object({vobj.Object.Name}).onChanged({prop})') # DEBUG
+        print(f'view_object({vobj.Object.Name}).onChanged({prop})') # DEBUG
         self.draw()
 
     def getDisplayModes(self, vobj: VP) -> list[str]:
@@ -250,7 +247,7 @@ class _ViewProviderPose(ProxyBase):
         return mode
 
     def draw(self) -> None:
-        message(f'view_object({self.view_object.Object.Name}).draw()') # DEBUG
+        print(f'view_object({self.view_object.Object.Name}).draw()') # DEBUG
         from pivy import coin
         from .coin_utils import tcp_group
         from .coin_utils import transform_from_placement

@@ -42,6 +42,7 @@ class PoseProxy(ProxyBase):
         super().__init__('pose', [
             'AllowNonLeafLink',
             'EndEffector',
+            'Placement',  # Set by `App::GeometryPython`.
             'Robot',
             '_Type',
             ])
@@ -64,9 +65,6 @@ class PoseProxy(ProxyBase):
                      'The type')
         obj.setPropertyStatus('_Type', ['Hidden', 'ReadOnly'])
         obj._Type = self.Type
-
-        add_property(obj, 'App::PropertyPlacement', 'Pose', 'Base',
-                     'The pose')
 
         add_property(obj, 'App::PropertyLink', 'Robot', 'Robot',
                      'The associated robot')
@@ -268,9 +266,10 @@ class _ViewProviderPose(ProxyBase):
 
         if not vobj.Visibility:
             return
-        pose = obj.Pose
         sep = coin.SoSeparator()
-        sep.addChild(transform_from_placement(pose))
+        # When `self.pose` is a `App::GeometryPython` object, the
+        # placement of the view object is managed by the view object itself
+        # and sep.addChild(transform_from_placement(Placement)) should not be used.
         sep.addChild(tcp_group(
             tcp_length_mm=0.66 * vobj.AxisLength,
             tcp_diameter_ratio_to_length=0.17,
@@ -302,7 +301,7 @@ def make_pose(name, doc: Optional[fc.Document] = None) -> CrossPose:
     if doc is None:
         warn('No active document, doing nothing', False)
         return
-    obj: CrossPose = doc.addObject('App::FeaturePython', name)
+    obj: CrossPose = doc.addObject('App::GeometryPython', name)
     PoseProxy(obj)
     obj.Label2 = name
 

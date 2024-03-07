@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from math import degrees, radians
-from typing import ForwardRef, Optional, cast
+from typing import cast, ForwardRef, Optional, cast
 import xml.etree.ElementTree as et
 
 import FreeCAD as fc
@@ -63,12 +63,15 @@ class JointProxy(ProxyBase):
         self.child_link: Optional[CrossLink] = None
         self.parent_link: Optional[CrossLink] = None
 
-        self.init_properties(obj)
-
         # Used to recover a valid and unique name on change of `Label` or
         # `Label2`.
         # Updated in `onBeforeChange` and potentially used in `onChanged`.
         self.old_ros_name: str = ''
+
+        # Save the robot to speed-up self.get_robot().
+        self._robot: Optional[CrossRobot] = None
+
+        self.init_properties(obj)
 
     def init_properties(self, obj: CrossJoint):
         add_property(obj, 'App::PropertyString', '_Type', 'Internal',
@@ -249,22 +252,31 @@ class JointProxy(ProxyBase):
 
     def get_robot(self) -> Optional[CrossRobot]:
         """Return the Cross::Robot this joint belongs to."""
+        # TODO: as property.
+        if (hasattr(self, '_robot')
+            and self._robot
+                and hasattr(self._robot, 'Group')
+                and (self.joint in self._robot.Group)):
+            return self._robot
         if not self.is_execute_ready():
-            return
+            return None
         for o in self.joint.InList:
             if is_robot(o):
-                return o
+                self._robot = cast(CrossRobot, o)
+                return self._robot
+        return None
 
     def get_predecessor(self) -> Optional[CrossJoint]:
         """Return the predecessing joint."""
         robot = self.get_robot()
         if robot is None:
-            return
+            return None
         for candidate_joint in robot.Proxy.get_joints():
             child_of_candidate = robot.Proxy.get_link(candidate_joint.Child)
             parent_of_self = robot.Proxy.get_link(self.joint.Parent)
             if child_of_candidate is parent_of_self:
                 return candidate_joint
+        return None
 
     def get_unit_type(self) -> str:
         """Return `Length` or `Angle`."""

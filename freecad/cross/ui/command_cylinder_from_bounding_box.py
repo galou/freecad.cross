@@ -29,8 +29,7 @@ class CylinderFromBoundingBoxCommand:
                 # Inside a part.
                 subpath = selection_object.SubElementNames[0]
                 try:
-                    subobj_source = obj.getSubObjectList(subpath)[-1]
-                    subobj = subobj_source.getPropertyOfGeometry()
+                    subobj = obj.getSubObjectList(subpath)[-1].getPropertyOfGeometry()
                 except AttributeError:
                     is_one_object_incompatible = True
                     continue
@@ -56,12 +55,6 @@ class CylinderFromBoundingBoxCommand:
             cylinder.Label = box_name
             cylinder.Height = bbox.ZLength
             cylinder.Radius = bbox.DiagonalLength / 2.0
-            # correction FeatureBase offset (bottom edge placed in middle of height by some reason)
-            try:
-                if subobj_source.TypeId == 'PartDesign::FeatureBase':
-                    cylinder.Placement.Base.z = - (bbox.ZLength / 2)
-            except (NameError, AttributeError):
-                continue
             cylinder.Placement = placement * cylinder.Placement
             doc.commitTransaction()
         if not is_one_object_compatible:

@@ -29,7 +29,8 @@ class BoxFromBoundingBoxCommand:
                 # Inside a part.
                 subpath = selection_object.SubElementNames[0]
                 try:
-                    subobj = obj.getSubObjectList(subpath)[-1].getPropertyOfGeometry()
+                    subobj_source = obj.getSubObjectList(subpath)[-1]
+                    subobj = subobj_source.getPropertyOfGeometry()
                 except AttributeError:
                     is_one_object_incompatible = True
                     continue
@@ -59,6 +60,12 @@ class BoxFromBoundingBoxCommand:
             box.Placement.Base.x = bbox.XMin
             box.Placement.Base.y = bbox.YMin
             box.Placement.Base.z = bbox.ZMin
+            # correction FeatureBase offset (bottom edge placed in middle of height by some reason)
+            try:
+                if subobj_source.TypeId == 'PartDesign::FeatureBase':
+                    box.Placement.Base.z = - (bbox.ZLength / 2)
+            except (NameError, AttributeError):
+                continue
             box.Placement = placement * box.Placement
             doc.commitTransaction()
         if not is_one_object_compatible:

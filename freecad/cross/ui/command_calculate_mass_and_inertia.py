@@ -28,7 +28,7 @@ class CalculateMassAndInertiaCommand:
 
         for elem in robot.Group:
             if is_link(elem):
-                print('Start process inertia of elem - Label: ', elem.Label, ' Label2: ', elem.Label2)
+                print('Start process inertia and mass of elem - Label: ', elem.Label, ' Label2: ', elem.Label2)
                 if elem.MaterialNotCalculate == False:
                     
                     if  len(elem.Real) > 0:
@@ -95,7 +95,7 @@ class CalculateMassAndInertiaCommand:
                 else:
                     print('   Link skipped. Option "MaterialNotCalculate" is True.')
 
-                print('Finish process inertia of elem - Label: ', elem.Label, ' Label2: ', elem.Label2)
+                print('Finish process inertia and mass of elem - Label: ', elem.Label, ' Label2: ', elem.Label2)
 
         doc.recompute()
         doc.commitTransaction()

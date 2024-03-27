@@ -208,6 +208,16 @@ class RobotProxy(ProxyBase):
                      'The path to the ROS package to export files to,'
                      ' relative to $ROS_WORKSPACE/src')
 
+        add_property(obj, 'App::PropertyString', 'MaterialCardName', 'Material',
+                     'Default material of robot. Used to calculate mass and inertia if link has not its own material. Use "Set material" tool to change')
+        obj.setPropertyStatus('MaterialCardName', ['ReadOnly'])
+        add_property(obj, 'App::PropertyPath', 'MaterialCardPath', 'Material', 
+                     'Default material of robot. Used to calculate mass and inertia')
+        obj.setPropertyStatus('MaterialCardPath', ['Hidden', 'ReadOnly'])
+        add_property(obj, 'App::PropertyString', 'MaterialDensity', 'Material',
+                     'Density of material. Used to calculate mass. May be outdated if you updated the material density outside CROSS workbench. Actual density will taken from material (material editor) at mass calculation moment.')
+        obj.setPropertyStatus('MaterialDensity', ['ReadOnly'])
+
         # The `Placement` is not used directly by the robot but it is used to
         # transform the pose of its links.
         add_property(obj, 'App::PropertyPlacement', 'Placement',

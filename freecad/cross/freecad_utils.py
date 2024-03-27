@@ -8,6 +8,7 @@ import string
 from typing import Any, Iterable, Optional
 
 import FreeCAD as fc
+import MaterialEditor
 
 from .utils import true_then_false
 
@@ -620,3 +621,76 @@ def unit_type(
 
     """
     return fc.Units.Quantity(v).Unit.Type
+
+
+def get_material(
+        card_path: str,
+        ) -> dict:
+    """Return material data from Material Editor (FEM -> Model -> Materials -> Material Editor).
+    """
+    defaultMaterial = {}
+    defaultMaterial['card_path'] = card_path
+    materialEditor = MaterialEditor.MaterialEditor(card_path=defaultMaterial['card_path'])
+    try:
+        defaultMaterial['card_name'] = materialEditor.cards[materialEditor.card_path]
+        density = materialEditor.materials[materialEditor.card_path]['Density'].split()
+        defaultMaterial['density'] = int(density[0])
+        defaultMaterial['density_dimension'] = density[1]
+    except (KeyError, AttributeError):
+        defaultMaterial['card_name'] = False
+        defaultMaterial['density'] = False
+
+    return defaultMaterial
+
+
+def get_inertia(
+        obj: fc.DocumentObject,
+        ) -> fc.Matrix:
+    """Return matrix of inertia of object or False.
+    """
+
+    try:  
+        matrixOfInertia = obj.Shape.MatrixOfInertia
+    except (AttributeError, KeyError):
+        try:
+            matrixOfInertia = obj.Shape.Solids[0].MatrixOfInertia
+        except (AttributeError, KeyError):
+            matrixOfInertia = False
+
+    return matrixOfInertia
+
+
+def get_volume(
+        obj: fc.DocumentObject,
+        ) -> float:
+    """Return volume of object or False.
+    """
+
+    try:  
+        volume = obj.Shape.Volume
+    except (AttributeError, KeyError):
+        try:
+            volume = obj.Shape.Solids[0].Volume
+        except (AttributeError, KeyError):
+            volume = False
+
+    return volume
+
+
+def get_center_of_gravity(
+        obj: fc.DocumentObject,
+        ) -> fc.Vector:
+    """Return center of gravity (aka center of mass) of object or False.
+    """
+
+    try:  
+        centerOfGravity = obj.Shape.CenterOfGravity
+    except (AttributeError, KeyError):
+        try:
+            centerOfGravity = obj.Shape.Solids[0].CenterOfGravity
+        except (AttributeError, KeyError):
+            centerOfGravity = False
+
+    return centerOfGravity
+
+

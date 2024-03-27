@@ -20,6 +20,8 @@ from .ui import command_sphere_from_bounding_box
 from .ui import command_cylinder_from_bounding_box
 from .ui import command_update_planning_scene
 from .ui import command_urdf_export
+from .ui import command_set_material
+from .ui import command_calculate_mass_and_inertia
 from .ui import command_wb_settings
 from .wb_utils import ICON_PATH
 
@@ -60,6 +62,8 @@ class CrossWorkbench(fcgui.Workbench):
             'UrdfExport',  # Defined in ./ui/command_urdf_export.py.
             'SetCROSSPlacement',  # Defined in ./ui/command_set_placement.py.
             'SetJoints',  # Defined in ./ui/command_set_joints.py.
+            'SetMaterial',  # Defined in ./ui/command_set_material.py.
+            'CalculateMassAndInertia',  # Defined in ./ui/command_calculate_mass_and_inertia.py.
             'WbSettings',  # Defined in ./ui/command_wb_settings.py.
             'Reload',  # Comment out to disable this developer tool.
             ]

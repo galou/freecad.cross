@@ -164,6 +164,9 @@ class RobotProxy(ProxyBase):
         # DocumentObjectGroupPython.
         super().__init__('robot', [
             'OutputPath',
+            'MaterialCardName',
+            'MaterialCardPath',
+            'MaterialDensity',
             '_Type',
             ])
         obj.Proxy = self

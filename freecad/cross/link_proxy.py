@@ -145,7 +145,10 @@ class LinkProxy(ProxyBase):
             'Placement',
             'Real',
             'Visual',
-            'Material',
+            'MaterialCardName',
+            'MaterialCardPath',
+            'MaterialDensity',
+            'MaterialNotCalculate',
             '_Type',
             ])
         obj.Proxy = self

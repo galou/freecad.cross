@@ -329,6 +329,13 @@ def is_link(obj: DO) -> bool:
     """Return True if the object is a 'App::Link'."""
     return is_derived_from(obj, 'App::Link')
 
+def get_linked_obj(obj: DO, recursive=True) -> bool:
+    """Return linked object."""
+    
+    if recursive and is_link(obj):
+        return get_linked_obj(obj.LinkedObject, recursive)
+    else:
+        return obj
 
 def is_lcs(obj: DO) -> bool:
     """Return True if the object is a 'PartDesign::CoordinateSystem'."""
@@ -643,7 +650,7 @@ def get_material(
     return defaultMaterial
 
 
-def get_inertia(
+def get_matrix_of_inertia(
         obj: fc.DocumentObject,
         ) -> fc.Matrix:
     """Return matrix of inertia of object or False.
@@ -663,7 +670,7 @@ def get_inertia(
 def get_volume(
         obj: fc.DocumentObject,
         ) -> float:
-    """Return volume of object or False.
+    """Return volume of object or False. FreeCAD uses mm3 for volume
     """
 
     try:  

@@ -18,12 +18,6 @@ class CalculateMassAndInertiaCommand:
         doc = fc.activeDocument()
         doc.openTransaction(tr('Calculate mass and inertia'))
         objs = fcgui.Selection.getSelection()
-        #obj = FreeCADGui.Selection.getSelection()[0].Real[0].LinkedObject.Group[0].Shape.Volume
-        #FreeCAD.Placement(obj.Placement.Base, obj.Placement.Rotation, FreeCADGui.Selection.getSelection()[0].Real[0].getLinkedObject().Group[0].Shape.CenterOfMass)
-        #FreeCAD.Placement(FreeCADGui.Selection.getSelection()[0].Real[0].getLinkedObject().Group[0].Shape.CenterOfMass, FreeCAD.Rotation(), FreeCAD.Vector())
-        #obj = FreeCADGui.Selection.getSelection()[0].Real[0].getLinkedObject().Group[0].Shape.CenterOfMass
-        #FreeCAD.ActiveDocument.ActiveObject.Shape
-        #FreeCAD.ActiveDocument.ActiveObject.Group[0].Real
         
         robot = objs[0]
         
@@ -80,9 +74,6 @@ class CalculateMassAndInertiaCommand:
                                                 ratioForCorrectScale = 1 / 1000000 
                                                 elemMatrixOfInertia = elemMatrixOfInertia * elemVolumeReversed * elem.Mass * ratioForCorrectScale
                                             
-                                            # elem.CenterOfMass = fc.Placement(fc.Vector(), fc.Rotation(), fc.Vector(elemCenterOfGravity)) 
-                                            #elem.CenterOfMass = fc.Placement(elem.Placement.Base, elem.Placement.Rotation, fc.Vector(elemCenterOfGravity)) 
-                                            #elem.CenterOfMass = fc.Placement(elemCenterOfGravity, elem.Placement.Rotation, fc.Vector()) 
                                             elem.CenterOfMass = fc.Placement(elem.MountedPlacement * elemCenterOfGravity, elem.MountedPlacement.Rotation, fc.Vector()) 
 
                                             elem.Ixx = elemMatrixOfInertia.A11

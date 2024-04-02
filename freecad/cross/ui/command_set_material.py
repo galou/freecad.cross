@@ -8,7 +8,7 @@ from ..wb_utils import is_robot_selected, is_link_selected
 
 class SetMaterialCommand:
     def GetResources(self):
-        return {'Pixmap': 'sphere_from_bbox.svg',
+        return {'Pixmap': 'set_material.svg',
                 'MenuText': tr('Set material to whole robot or link'),
                 'ToolTip': tr('Select robot or link and press this bottom for selection of material. Material will be used for calculating mass and inertia based on material density'),
                 }

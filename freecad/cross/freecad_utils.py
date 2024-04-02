@@ -641,7 +641,7 @@ def get_material(
     try:
         defaultMaterial['card_name'] = materialEditor.cards[materialEditor.card_path]
         density = materialEditor.materials[materialEditor.card_path]['Density'].split()
-        defaultMaterial['density'] = int(density[0])
+        defaultMaterial['density'] = int(round(float(density[0])))
         defaultMaterial['density_dimension'] = density[1]
     except (KeyError, AttributeError):
         defaultMaterial['card_name'] = False

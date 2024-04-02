@@ -11,7 +11,7 @@ class CalculateMassAndInertiaCommand:
     def GetResources(self):
         return {'Pixmap': 'sphere_from_bbox.svg',
                 'MenuText': tr('Calculate mass and inertia'),
-                'ToolTip': tr('Select robot and press this button. It will calculate mass and inertia based on density and fills links data. If link does not have material default material will be taken from robot element. Link will skipped if property of link - "MaterialNotCalculate" is true. Only do correct calculation for original bodies with zero (0.0.0 coordinate) placement. You can viasully check inertia placement in Gazebo. Turn on display of inertia in Gazebo and check what generated inertia blocks approximately same size and same position/orientation as their links'),
+                'ToolTip': tr('Select robot and press this button. It will calculate mass and inertia based on density and fills links data. If link does not have material, default material will be taken from robot element. Link will skipped if property of link - "MaterialNotCalculate" is true. It only do correct calculation for links with original bodies at zero (0.0.0 coordinate) placement (you must not change default placement of original bodies otherwise it will lead to wrong center of mass and inertial block drift). You can viasully check inertia placement in Gazebo. Turn on display of inertia in Gazebo and check what generated inertia blocks approximately same size and same position/orientation as their links. Inertia block orientation tilt to towards the mass displacement is ok for unsymmetrical bodies.'),
                 }
     
     def Activated(self):

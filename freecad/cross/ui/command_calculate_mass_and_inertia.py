@@ -2,7 +2,7 @@ import FreeCAD as fc
 import FreeCADGui as fcgui
 
 from ..freecad_utils import error
-from ..freecad_utils import get_material, get_matrix_of_inertia, get_volume, get_center_of_gravity, get_first_object_with_volume, correct_matrix_of_inertia
+from ..freecad_utils import get_material, get_matrix_of_inertia, get_volume, get_center_of_gravity, get_first_object_with_volume, correct_matrix_of_inertia, get_linked_obj
 from ..gui_utils import tr
 from ..wb_utils import is_robot_selected, is_link
 
@@ -11,7 +11,7 @@ class CalculateMassAndInertiaCommand:
     def GetResources(self):
         return {'Pixmap': 'calculate_mass_and_inertia.svg',
                 'MenuText': tr('Calculate mass and inertia'),
-                'ToolTip': tr('Select robot and press this button. It will calculate mass and inertia based on density and fills links data. If link does not have material, default material will be taken from robot element. Link will skipped if property of link - "MaterialNotCalculate" is true. It only do correct calculation for links with original bodies at zero (0.0.0 coordinate) placement (you must not change default placement of original bodies otherwise it will lead to wrong center of mass and inertial block drift). You can visually check inertia placement in Gazebo. Turn on display of inertia in Gazebo and check what generated inertia blocks approximately same size and same position/orientation as their links. Inertia block orientation tilt to towards the mass displacement is ok for unsymmetrical bodies.'),
+                'ToolTip': tr('Select robot and press this button. It will calculate mass and inertia based on density and fills links data. If link does not have material, default material will be taken from robot element. Link will skipped if property of link - "MaterialNotCalculate" is true. You can visually check inertia placement in Gazebo. Turn on display of inertia in Gazebo and check what generated inertia blocks approximately same size and same position/orientation as their links. Inertia block orientation tilt to towards the mass displacement is ok for unsymmetrical bodies.'),
                 }
     
     def Activated(self):
@@ -56,8 +56,12 @@ class CalculateMassAndInertiaCommand:
                                                 elemVolumeM3 = elemVolumeMM3 / 1000000000 # convert mm3 to m3
                                                 elem.Mass = elemVolumeM3 * material['density']
                                                 elemMatrixOfInertia = correct_matrix_of_inertia(elemMatrixOfInertia, elemVolumeMM3, elem.Mass)
-
+                                                
+                                                basic_obj = get_linked_obj(real)
+                                                # correction if basic obj has not zero placement
+                                                elemCenterOfGravity = elemCenterOfGravity - basic_obj.Placement.Base
                                                 elem.CenterOfMass = fc.Placement(elem.MountedPlacement * elemCenterOfGravity, elem.MountedPlacement.Rotation, fc.Vector()) 
+                                                
                                                 elem.Ixx = elemMatrixOfInertia.A11
                                                 elem.Ixy = elemMatrixOfInertia.A12
                                                 elem.Ixz = elemMatrixOfInertia.A13

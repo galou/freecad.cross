@@ -329,6 +329,7 @@ def is_link(obj: DO) -> bool:
     """Return True if the object is a 'App::Link'."""
     return is_derived_from(obj, 'App::Link')
 
+
 def get_linked_obj(obj: DO, recursive=True) -> DO:
     """Return linked object or False."""
     
@@ -339,6 +340,28 @@ def get_linked_obj(obj: DO, recursive=True) -> DO:
             return obj.LinkedObject
         else:
             return obj
+        
+
+def get_first_object_with_volume(obj: DO) -> DO | False:
+    """Return first object with volume attribute from part, body, link (depest linked body or body in part) or False."""
+
+    linked_obj = get_linked_obj(obj) # deepest linked obj
+    first_object_with_volume = False
+
+    if is_part(linked_obj):
+        try:
+            for part_member in linked_obj.Group:
+                if get_volume(part_member) > 0:
+                    first_object_with_volume = part_member
+                    break
+        except KeyError:
+            error('Part - ', linked_obj.Label, ' - ', linked_obj.Label, ' - has not solid object')
+    else:
+        if get_volume(linked_obj) > 0:
+            first_object_with_volume = linked_obj
+    
+    return first_object_with_volume
+
 
 def is_lcs(obj: DO) -> bool:
     """Return True if the object is a 'PartDesign::CoordinateSystem'."""
@@ -646,7 +669,7 @@ def get_material(
         density = materialEditor.materials[materialEditor.card_path]['Density'].split()
         defaultMaterial['density'] = int(round(float(density[0])))
         defaultMaterial['density_dimension'] = density[1]
-    except (KeyError, AttributeError):
+    except (KeyError, AttributeError, IndexError):
         defaultMaterial['card_name'] = False
         defaultMaterial['density'] = False
 
@@ -661,10 +684,10 @@ def get_matrix_of_inertia(
 
     try:  
         matrixOfInertia = obj.Shape.MatrixOfInertia
-    except (AttributeError, KeyError):
+    except (AttributeError, IndexError, RuntimeError):
         try:
             matrixOfInertia = obj.Shape.Solids[0].MatrixOfInertia
-        except (AttributeError, KeyError):
+        except (AttributeError, IndexError, RuntimeError):
             matrixOfInertia = False
 
     return matrixOfInertia
@@ -678,10 +701,10 @@ def get_volume(
 
     try:  
         volume = obj.Shape.Volume
-    except (AttributeError, KeyError):
+    except (AttributeError, IndexError, RuntimeError):
         try:
             volume = obj.Shape.Solids[0].Volume
-        except (AttributeError, KeyError):
+        except (AttributeError, IndexError, RuntimeError):
             volume = False
 
     return volume
@@ -695,10 +718,10 @@ def get_center_of_gravity(
 
     try:  
         centerOfGravity = obj.Shape.CenterOfGravity
-    except (AttributeError, KeyError):
+    except (AttributeError, IndexError, RuntimeError):
         try:
             centerOfGravity = obj.Shape.Solids[0].CenterOfGravity
-        except (AttributeError, KeyError):
+        except (AttributeError, IndexError, RuntimeError):
             centerOfGravity = False
 
     return centerOfGravity

@@ -343,7 +343,7 @@ def get_linked_obj(obj: DO, recursive=True) -> DO:
         
 
 def get_first_object_with_volume(obj: DO) -> DO | False:
-    """Return first object with volume attribute from part, body, link (depest linked body or body in part) or False."""
+    """Return first object with positive volume from part, body, link (depest linked body or body in part) or False."""
 
     linked_obj = get_linked_obj(obj) # deepest linked obj
     first_object_with_volume = False

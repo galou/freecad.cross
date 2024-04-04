@@ -1,8 +1,8 @@
 import FreeCAD as fc
 import FreeCADGui as fcgui
 
-from ..freecad_utils import error, warn
-from ..freecad_utils import get_material, get_matrix_of_inertia, get_volume, get_center_of_gravity, get_linked_obj, is_part
+from ..freecad_utils import error
+from ..freecad_utils import get_material, get_matrix_of_inertia, get_volume, get_center_of_gravity, get_first_object_with_volume
 from ..gui_utils import tr
 from ..wb_utils import is_robot_selected, is_link
 
@@ -11,7 +11,7 @@ class CalculateMassAndInertiaCommand:
     def GetResources(self):
         return {'Pixmap': 'calculate_mass_and_inertia.svg',
                 'MenuText': tr('Calculate mass and inertia'),
-                'ToolTip': tr('Select robot and press this button. It will calculate mass and inertia based on density and fills links data. If link does not have material, default material will be taken from robot element. Link will skipped if property of link - "MaterialNotCalculate" is true. It only do correct calculation for links with original bodies at zero (0.0.0 coordinate) placement (you must not change default placement of original bodies otherwise it will lead to wrong center of mass and inertial block drift). Also if you use parts body must be first element in part. You can visually check inertia placement in Gazebo. Turn on display of inertia in Gazebo and check what generated inertia blocks approximately same size and same position/orientation as their links. Inertia block orientation tilt to towards the mass displacement is ok for unsymmetrical bodies.'),
+                'ToolTip': tr('Select robot and press this button. It will calculate mass and inertia based on density and fills links data. If link does not have material, default material will be taken from robot element. Link will skipped if property of link - "MaterialNotCalculate" is true. It only do correct calculation for links with original bodies at zero (0.0.0 coordinate) placement (you must not change default placement of original bodies otherwise it will lead to wrong center of mass and inertial block drift). You can visually check inertia placement in Gazebo. Turn on display of inertia in Gazebo and check what generated inertia blocks approximately same size and same position/orientation as their links. Inertia block orientation tilt to towards the mass displacement is ok for unsymmetrical bodies.'),
                 }
     
     def Activated(self):
@@ -31,16 +31,8 @@ class CalculateMassAndInertiaCommand:
                     if  len(elem.Real) > 0:
                         if  len(elem.Collision) > 0:
                             real = elem.Real[0]
-                            linked_obj = get_linked_obj(real) # deepest linked obj
-                            if is_part(linked_obj):
-                                try:
-                                    first_body = linked_obj.Group[0] # solid body must be first in part. It can be improved to other cases
-                                except KeyError:
-                                    error('Part - ', linked_obj.Label, ' - ', linked_obj.Label, ' - has not body')
-                                    first_body = False
-                            else:
-                                first_body = linked_obj
 
+                            first_body = get_first_object_with_volume(real)
                             elemCenterOfGravity = get_center_of_gravity(first_body)
                             elemMatrixOfInertia = get_matrix_of_inertia(first_body)
                             elemVolumeMM3 = get_volume(first_body)

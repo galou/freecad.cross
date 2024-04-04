@@ -692,6 +692,21 @@ def get_matrix_of_inertia(
 
     return matrixOfInertia
 
+def correct_matrix_of_inertia(elemMatrixOfInertia: fc.Matrix, elemVolumeMM3: float, mass: float) -> fc.Matrix:
+    # convert matrix of inertia considering mass
+
+    elemVolumeReversed = 1 / elemVolumeMM3 # for matrix multiplication instead of division 
+
+    # Looks freecad uses mass = volume and therefore default density is 1  
+    # my formula for correction of matrixOfInertia is:
+    # matrixOfInertia = elemMatrixOfInertia / volume (because it equal mass) * real_mass
+
+    # formula works but with wrong scale. I entered this ratio for correct scale. If you can rewrite formula without ratio do plz.                                          
+    ratioForCorrectScale = 1 / 1000000 
+    elemMatrixOfInertiaCorrected = elemMatrixOfInertia * elemVolumeReversed * mass * ratioForCorrectScale
+
+    return elemMatrixOfInertiaCorrected
+
 
 def get_volume(
         obj: fc.DocumentObject,

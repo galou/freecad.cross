@@ -2,7 +2,7 @@ import FreeCAD as fc
 import FreeCADGui as fcgui
 
 from ..freecad_utils import error
-from ..freecad_utils import get_material, get_matrix_of_inertia, get_volume, get_center_of_gravity, get_first_object_with_volume
+from ..freecad_utils import get_material, get_matrix_of_inertia, get_volume, get_center_of_gravity, get_first_object_with_volume, correct_matrix_of_inertia
 from ..gui_utils import tr
 from ..wb_utils import is_robot_selected, is_link
 
@@ -53,28 +53,19 @@ class CalculateMassAndInertiaCommand:
                                                 material = elemMaterial
 
                                             if material['density'] > 0:
-                                                # convert matrix of inertia considering density
                                                 elemVolumeM3 = elemVolumeMM3 / 1000000000 # convert mm3 to m3
                                                 elem.Mass = elemVolumeM3 * material['density']
-                                                elemVolumeReversed = 1 / elemVolumeMM3 # for matrix multiplication instead of division 
+                                                elemMatrixOfInertia = correct_matrix_of_inertia(elemMatrixOfInertia, elemVolumeMM3, elem.Mass)
 
-                                                # Looks freecad uses mass = volume and therefore default density is 1  
-                                                # my formula for correction of matrixOfInertia is:
-                                                # matrixOfInertia = elemMatrixOfInertia / volume (because it equal mass) * real_mass
-
-                                                # formula works but with wrong scale. I entered this ratio for correct scale. If you can rewrite formula without ratio do plz.                                          
-                                                ratioForCorrectScale = 1 / 1000000 
-                                                elemMatrixOfInertia = elemMatrixOfInertia * elemVolumeReversed * elem.Mass * ratioForCorrectScale
-                                            
-                                            elem.CenterOfMass = fc.Placement(elem.MountedPlacement * elemCenterOfGravity, elem.MountedPlacement.Rotation, fc.Vector()) 
-
-                                            elem.Ixx = elemMatrixOfInertia.A11
-                                            elem.Ixy = elemMatrixOfInertia.A12
-                                            elem.Ixz = elemMatrixOfInertia.A13
-                                            elem.Iyy = elemMatrixOfInertia.A22
-                                            elem.Iyz = elemMatrixOfInertia.A23
-                                            elem.Izz = elemMatrixOfInertia.A33
-
+                                                elem.CenterOfMass = fc.Placement(elem.MountedPlacement * elemCenterOfGravity, elem.MountedPlacement.Rotation, fc.Vector()) 
+                                                elem.Ixx = elemMatrixOfInertia.A11
+                                                elem.Ixy = elemMatrixOfInertia.A12
+                                                elem.Ixz = elemMatrixOfInertia.A13
+                                                elem.Iyy = elemMatrixOfInertia.A22
+                                                elem.Iyz = elemMatrixOfInertia.A23
+                                                elem.Izz = elemMatrixOfInertia.A33
+                                            else:
+                                                error('   Link skipped. Material density less or equal zero.') 
                                         else:
                                             error('   Link skipped. Can not get MatrixOfInertia of binded Real element.')                                        
                                     else:

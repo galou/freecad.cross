@@ -330,12 +330,15 @@ def is_link(obj: DO) -> bool:
     return is_derived_from(obj, 'App::Link')
 
 def get_linked_obj(obj: DO, recursive=True) -> bool:
-    """Return linked object."""
+    """Return linked object or False."""
     
     if recursive and is_link(obj):
         return get_linked_obj(obj.LinkedObject, recursive)
     else:
-        return obj
+        if is_link(obj):
+            return obj.LinkedObject
+        else:
+            False
 
 def is_lcs(obj: DO) -> bool:
     """Return True if the object is a 'PartDesign::CoordinateSystem'."""

@@ -652,7 +652,9 @@ class RobotProxy(ProxyBase):
         template_files = [
             'package.xml',
             'CMakeLists.txt',
+            'launch/description.launch.py',
             'launch/display.launch.py',
+            'launch/gazebo.launch.py',
             'rviz/robot_description.rviz',
             ]
 

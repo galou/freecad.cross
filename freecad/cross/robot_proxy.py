@@ -214,7 +214,7 @@ class RobotProxy(ProxyBase):
         add_property(obj, 'App::PropertyString', 'MaterialCardName', 'Material',
                      'Default material of robot. Used to calculate mass and inertia if link has not its own material. Use "Set material" tool to change')
         obj.setPropertyStatus('MaterialCardName', ['ReadOnly'])
-        add_property(obj, 'App::PropertyPath', 'MaterialCardPath', 'Material', 
+        add_property(obj, 'App::PropertyPath', 'MaterialCardPath', 'Material',
                      'Default material of robot. Used to calculate mass and inertia')
         obj.setPropertyStatus('MaterialCardPath', ['Hidden', 'ReadOnly'])
         add_property(obj, 'App::PropertyString', 'MaterialDensity', 'Material',
@@ -722,7 +722,7 @@ class RobotProxy(ProxyBase):
                          package_parent,
                          package_name=package_name,
                          urdf_file=urdf_file,
-                         fixed_frame=self.get_root_link().Name,
+                         fixed_frame=ros_name(self.get_root_link()),
                          )
         return xml
 

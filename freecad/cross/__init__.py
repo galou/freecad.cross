@@ -13,4 +13,4 @@ from .ros.utils import is_ros_found  # noqa: E402.
 
 
 if is_ros_found():
-    fc.addImportType('URDF files (*.urdf *.xacro)', 'import_urdf')
+    fc.addImportType('URDF files (*.urdf *.xacro)', 'freecad.cross.import_urdf')

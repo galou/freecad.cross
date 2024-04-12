@@ -373,10 +373,17 @@ class _ViewProviderJoint(ProxyBase):
             'ShowAxis',
             'Visibility',
             ])
-        vobj.Proxy = self
-        self.set_properties(vobj)
+        if vobj.Proxy is not self:
+            # Implementation note: triggers `self.attach`.
+            vobj.Proxy = self
+        self._init(vobj)
 
-    def set_properties(self, vobj: VP) -> None:
+    def _init(self, vobj: VP) -> None:
+        self.view_object = vobj
+        self.pose = vobj.Object
+        self._init_properties(vobj)
+
+    def _init_properties(self, vobj: VP) -> None:
         """Set properties of the view provider."""
         add_property(vobj, 'App::PropertyBool', 'ShowAxis',
                      'ROS Display Options',
@@ -394,7 +401,8 @@ class _ViewProviderJoint(ProxyBase):
 
     def attach(self, vobj: VP) -> None:
         """Setup the scene sub-graph of the view provider."""
-        self.view_object = vobj
+        # `self.__init__()` is not called on document restore, do it manually.
+        self.__init__(vobj)
 
     def updateData(self,
                    obj: CrossJoint,
@@ -408,6 +416,7 @@ class _ViewProviderJoint(ProxyBase):
         # this triggers a change in 'Placement'.
 
     def onChanged(self, vobj: VP, prop: str) -> None:
+        # print(f'{self.view_object.Object.Name}.onChanged({prop})') # DEBUG
         if prop in ('ShowAxis', 'AxisLength'):
             self.draw()
 
@@ -422,7 +431,7 @@ class _ViewProviderJoint(ProxyBase):
             return
         root_node = vobj.RootNode
         root_node.removeAllChildren()
-        if not (vobj.Visibility and vobj.AxisLength):
+        if not (vobj.Visibility and vobj.AxisLength and vobj.ShowAxis):
             return
         obj = vobj.Object
         if not obj:
@@ -437,9 +446,9 @@ class _ViewProviderJoint(ProxyBase):
         else:
             color = (0.0, 0.0, 1.0)
         if hasattr(vobj, 'AxisLength'):
-            length = vobj.AxisLength.Value
+            length = vobj.AxisLength.Value  # mm.
         else:
-            length = 1000.0
+            length = 1000.0  # mm.
         p0 = placement.Base
         pz = placement * fc.Vector(0.0, 0.0, length)
         arrow = arrow_group([p0, pz], scale=0.2, color=color)

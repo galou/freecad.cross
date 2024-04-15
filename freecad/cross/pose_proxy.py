@@ -84,7 +84,7 @@ class PoseProxy(ProxyBase):
         # `self.__init__()` is not called on document restore, do it manually.
         self.__init__(obj)
 
-    def dumps(self):
+    def dumps(self) -> tuple[str]:
         return self.Type,
 
     def __getstate__(self):
@@ -243,6 +243,20 @@ class _ViewProviderPose(ProxyBase):
 
         """
         return mode
+
+    def dumps(self):
+        return
+
+    def __getstate__(self):
+        # Deprecated.
+        return self.dumps()
+
+    def loads(self, state) -> None:
+        return None
+
+    def __setstate__(self, state):
+        # Deprecated.
+        return self.loads(state)
 
     def draw(self) -> None:
         print(f'view_object({self.view_object.Object.Name}).draw()') # DEBUG

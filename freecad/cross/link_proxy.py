@@ -214,7 +214,7 @@ class LinkProxy(ProxyBase):
 
         add_property(obj, 'App::PropertyPlacement', 'Placement', 'Internal',
                      'Placement of elements in the robot frame')
-        
+
         add_property(obj, 'App::PropertyString', 'MaterialCardName', 'Material',
                      'Material of element. Used to calculate mass and inertia. Use "Set material" tool to change')
         obj.setPropertyStatus('MaterialCardName', ['ReadOnly'])
@@ -226,7 +226,7 @@ class LinkProxy(ProxyBase):
         obj.setPropertyStatus('MaterialDensity', ['ReadOnly'])
         add_property(obj, 'App::PropertyBool', 'MaterialNotCalculate', 'Material',
                      'If true this material will be not used to calculate mass and inertia of element. In this case you can use manually filled mass and inertia for some elements and auto calculation for others.')
-        
+
         # Used when adding a link which shape in located at the origin but
         # looks correctly placed. For example, when opening a STEP file or a
         # mesh with all links at the mounted position.

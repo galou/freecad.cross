@@ -339,6 +339,7 @@ def make_pose(name, doc: Optional[fc.Document] = None) -> CrossPose:
                     if link_name not in obj.getEnumerationsOfProperty('EndEffector'):
                         obj.AllowNonLeafLink = True
                     obj.EndEffector = ros_name(candidate)
+                    obj.Placement = candidate.Placement
     return obj
 
 

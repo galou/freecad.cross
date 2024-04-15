@@ -163,24 +163,34 @@ class RobotProxy(ProxyBase):
         # Implementation note: 'Group' is not required because
         # DocumentObjectGroupPython.
         super().__init__('robot', [
+            'CreatedObjects',
             'OutputPath',
             'MaterialCardName',
             'MaterialCardPath',
             'MaterialDensity',
             '_Type',
             ])
-        obj.Proxy = self
+        if obj.Proxy is not self:
+            obj.Proxy = self
         self.robot = obj
 
         # List of objects created for the robot.
         # Used for example by `robot_from_urdf` to keep track of imported
         # meshes.
         # This class doesn't add any object to this list itself.
+        # TODO: remove `_created_objects` and use `robot.CreatedObjects` instead.
         self._created_objects: DOList = []
 
         # Map of joint names to joint variable names.
         # Only for actuated non-mimicking joints.
         self._joint_variables: dict[CrossJoint, str] = {}
+
+        # Map of ROS names to joint variable names.
+        # Used to restore the joint variables from the dumped state because
+        # DocumentObject instances cannot be saved.
+        # Defined in onDocumentRestored().
+        # TODO: Mayber save as two lists (App::PropertyLinkList and App::PropertyStringList).
+        self._joint_variables_ros_map: dict[str, str]
 
         # Save the links and joints to speed-up get_links() and get_joints().
         self._links: Optional[list[CrossLink]] = None
@@ -203,6 +213,10 @@ class RobotProxy(ProxyBase):
                      'The type')
         obj.setPropertyStatus('_Type', ['Hidden', 'ReadOnly'])
         obj._Type = self.Type
+
+        add_property(obj, 'App::PropertyLinkList', 'CreatedObjects', 'Internal',
+                     'Objects created for the robot')
+        obj.setPropertyStatus('_Type', ['Hidden', 'ReadOnly'])
 
         # Managed in self.reset_group().
         obj.setPropertyStatus('Group', 'ReadOnly')
@@ -250,21 +264,28 @@ class RobotProxy(ProxyBase):
     def onDocumentRestored(self, obj):
         """Restore attributes because __init__ is not called on restore."""
         self.__init__(obj)
+        self._created_objects = obj.CreatedObjects
+        # Rebuilt self._joint_variables from the map {ros_name: joint_variable_name}.
+        self._joint_variables = {self.get_joint(name): var
+                                 for name, var in self._joint_variables_ros_map.items()}
 
     def dumps(self):
-        return self.Type,
+        self.robot.CreatedObjects = self._created_objects
+        # Map {ros_name: joint_variable_name}.
+        var_map = {ros_name(joint): var for joint, var in self.joint_variables.items()}
+        return self.Type, var_map
 
     def __getstate__(self):
         # Deprecated.
         return self.dumps()
 
-    def loads(self, state):
+    def loads(self, state) -> None:
         if state:
-            self.Type, = state
+            self.Type, self._joint_variables_ros_map = state
 
     def __setstate__(self, state):
         # Deprecated.
-        return self.loads(state)
+        self.loads(state)
 
     def _reset_group(self) -> None:
         """Add FreeCAD links in CrossLinks for Real, Visual, and Collision."""
@@ -404,10 +425,11 @@ class RobotProxy(ProxyBase):
         for joint, value in joint_values.items():
             var_name = joint_variables[joint]
             unit_type = joint.Proxy.get_unit_type()
-            if isinstance(var_name, float):
+            if isinstance(value, float):
                 value = fc.Units.Quantity(f'{value} {source_units[unit_type]}')
             value = quantity_as(value, target_units[unit_type])
-            setattr(self.robot, var_name, value)
+            if getattr(self.robot, var_name) != value:
+                setattr(self.robot, var_name, value)
 
     def add_joint_variables(self) -> None:
         """Add a property for each actuated joint."""

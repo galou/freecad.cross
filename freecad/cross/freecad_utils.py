@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from abc import ABC
 from copy import copy
+from dataclasses import dataclass
 import string
 from typing import Any, Iterable, Optional
 
@@ -660,28 +661,35 @@ def unit_type(
     return fc.Units.Quantity(v).Unit.Type
 
 
-def material(
-        card_path: str,
-        ) -> dict:
-    """Return material data from Material Editor
+@dataclass
+class Material:
+    """A class to store material data."""
+    # Absolute path to the material card (*.FCMat).
+    card_path: str
+    material_name: Optional[str] = None
+    density: Optional[fc.Units.Quantity] = None
 
-    Return material data from Material Editor
+
+def material_from_material_editor(
+        card_path: str,
+        ) -> Material:
+    """Return the material data from the Material Editor
+
+    Return the material data from the Material Editor
     (FEM -> Model -> Materials -> Material Editor).
 
     """
-    default_material = {}
-    default_material['card_path'] = card_path
-    material_editor = MaterialEditor.MaterialEditor(card_path=default_material['card_path'])
+    material = Material(card_path)
+    material.card_path = card_path
+    material_editor = MaterialEditor.MaterialEditor(card_path=card_path)
     try:
-        default_material['card_name'] = material_editor.cards[material_editor.card_path]
-        density = material_editor.materials[material_editor.card_path]['Density'].split()
-        default_material['density'] = int(round(float(density[0])))
-        default_material['density_dimension'] = density[1]
-    except (KeyError, AttributeError, IndexError):
-        default_material['card_name'] = None
-        default_material['density'] = None
-
-    return default_material
+        material.material_name = material_editor.cards[material_editor.card_path]
+        material.density = fc.Units.Quantity(
+                material_editor.materials[material_editor.card_path]['Density'])
+    except (KeyError, AttributeError):
+        material.material_name = None
+        material.density = None
+    return material
 
 
 def matrix_of_inertia(
@@ -712,7 +720,8 @@ def correct_matrix_of_inertia(
     # Formula works but with wrong scale. I entered this ratio for correct scale.
     # If you can rewrite formula without ratio do plz.
     ratio_for_correct_scale = 1 / 1e6
-    return matrix_of_inertia * mass / volume_mm3 * ratio_for_correct_scale
+    # Implementation note fc.Matrix doesn't support division by a scalar.
+    return matrix_of_inertia * mass * (1.0 / volume_mm3) * ratio_for_correct_scale
 
 
 def volume_mm3(

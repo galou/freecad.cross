@@ -77,17 +77,9 @@ class PlanningSceneProxy(ProxyBase):
     def dumps(self):
         return self.Type,
 
-    def __getstate__(self):
-        # Deprecated.
-        return self.dumps()
-
     def loads(self, state):
         if state:
             self.Type, = state
-
-    def __setstate__(self, state):
-        # Deprecated.
-        return self.loads(state)
 
     def update_scene(self, planning_scene_msg: PlanningSceneMsg) -> None:
         """Update the scene with a new PlanningScene message."""
@@ -190,15 +182,11 @@ class _ViewProviderPlanningScene(ProxyBase):
     def setDisplayMode(self, mode: str) -> str:
         return mode
 
-    def loads(self) -> None:
+    def dumps(self):
         return None
 
-    def __getstate__(self) -> None:
-        # Deprecated.
-        return
-
-    def __setstate__(self, state) -> None:
-        return
+    def loads(self, state) -> None:
+        pass
 
     def draw(self) -> None:
         if ((not self.is_execute_ready())

@@ -275,17 +275,9 @@ class RobotProxy(ProxyBase):
         var_map = {ros_name(joint): var for joint, var in self.joint_variables.items()}
         return self.Type, var_map
 
-    def __getstate__(self):
-        # Deprecated.
-        return self.dumps()
-
     def loads(self, state) -> None:
         if state:
             self.Type, self._joint_variables_ros_map = state
-
-    def __setstate__(self, state):
-        # Deprecated.
-        self.loads(state)
 
     def _reset_group(self) -> None:
         """Add FreeCAD links in CrossLinks for Real, Visual, and Collision."""
@@ -821,11 +813,11 @@ class _ViewProviderRobot(ProxyBase):
         import FreeCADGui as fcgui
         fcgui.Control.closeDialog()
 
-    def __getstate__(self):
-        return
+    def dumps(self):
+        return None
 
-    def __setstate__(self, state):
-        return
+    def loads(self, state) -> None:
+        pass
 
 
 def make_robot(name, doc: Optional[fc.Document] = None) -> CrossRobot:

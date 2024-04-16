@@ -87,17 +87,9 @@ class PoseProxy(ProxyBase):
     def dumps(self) -> tuple[str]:
         return self.Type,
 
-    def __getstate__(self):
-        # Deprecated.
-        return self.dumps()
-
-    def loads(self, state):
+    def loads(self, state) -> None:
         if state:
             self.Type, = state
-
-    def __setstate__(self, state):
-        # Deprecated.
-        return self.loads(state)
 
     def onChanged(self, obj: CrossPose, prop: str) -> None:
         """Handle a property change of the object, after the change.
@@ -245,18 +237,10 @@ class _ViewProviderPose(ProxyBase):
         return mode
 
     def dumps(self):
-        return
-
-    def __getstate__(self):
-        # Deprecated.
-        return self.dumps()
-
-    def loads(self, state) -> None:
         return None
 
-    def __setstate__(self, state):
-        # Deprecated.
-        return self.loads(state)
+    def loads(self, state) -> None:
+        pass
 
     def draw(self) -> None:
         print(f'view_object({self.view_object.Object.Name}).draw()') # DEBUG

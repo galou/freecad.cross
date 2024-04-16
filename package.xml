@@ -11,7 +11,7 @@
   <url type="readme">https://github.com/galou/freecad.cross/blob/main/README.md</url>
   <icon>resources/icons/cross.svg</icon>
 
-  <freecadmin>0.20.0</freecadmin>
+  <freecadmin>0.21.2</freecadmin>
 
   <content>
     <workbench>

@@ -295,17 +295,9 @@ class LinkProxy(ProxyBase):
     def dumps(self):
         return self.Type,
 
-    def __getstate__(self):
-        # Deprecated.
-        return self.dumps()
-
-    def loads(self, state):
+    def loads(self, state) -> None:
         if state:
             self.Type, = state
-
-    def __setstate__(self, state):
-        # Deprecated.
-        return self.loads(state)
 
     def cleanup_children(self) -> DOList:
         """Remove and return all objects not supported by CROSS::Link."""
@@ -645,11 +637,11 @@ class _ViewProviderLink(ProxyBase):
         fcgui.Control.closeDialog()
         return
 
-    def __getstate__(self):
+    def dumps(self):
         return None
 
-    def __setstate__(self, state):
-        return None
+    def loads(self, state) -> None:
+        pass
 
 
 def make_link(name, doc: Optional[fc.Document] = None) -> CrossLink:

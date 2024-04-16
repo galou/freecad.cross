@@ -190,17 +190,9 @@ class JointProxy(ProxyBase):
     def dumps(self):
         return self.Type,
 
-    def __getstate__(self):
-        # Deprecated.
-        return self.dumps()
-
     def loads(self, state):
         if state:
             self.Type, = state
-
-    def __setstate__(self, state):
-        # Deprecated.
-        return self.loads(state)
 
     def is_fixed(self) -> bool:
         """Return whether the joint is of type 'fixed'."""
@@ -492,11 +484,11 @@ class _ViewProviderJoint(ProxyBase):
         import FreeCADGui as fcgui
         fcgui.Control.closeDialog()
 
-    def __getstate__(self):
-        return
+    def dumps(self):
+        return None
 
-    def __setstate__(self, state):
-        return
+    def loads(self, state) -> None:
+        pass
 
 
 def make_joint(name, doc: Optional[fc.Document] = None) -> CrossJoint:

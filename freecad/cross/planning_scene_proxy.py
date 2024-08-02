@@ -78,6 +78,7 @@ class PlanningSceneProxy(ProxyBase):
         return self.Type,
 
     def loads(self, state):
+        self.planning_scene_msg = None  # TODO
         if state:
             self.Type, = state
 
@@ -194,6 +195,8 @@ class _ViewProviderPlanningScene(ProxyBase):
                 or (not hasattr(self.view_object.Proxy, 'wireframe'))):
             return
         scene: CrossPlanningScene = self.view_object.Object
+        if not hasattr(scene.Proxy, 'planning_scene_msg'):
+            return
         msg = scene.Proxy.planning_scene_msg
 
         self.shaded.removeAllChildren()

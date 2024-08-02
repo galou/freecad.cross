@@ -606,6 +606,28 @@ class ProxyBase(ABC):
                 return False
         return True
 
+    def update_prop(self, prop: str, value: Any, tolerance=1e-6, debug=False) -> None:
+        """Update a property of the object if needed."""
+        if not hasattr(self, '_object_name'):
+            if debug:
+                warn('Attribute "_object_name" not found in `self`')
+            return
+        try:
+            obj = getattr(self, self._object_name)
+        except AttributeError:
+            if debug:
+                warn(f'Attribute "{self._object_name}" not found in `self`')
+            return
+        if not hasattr(obj, prop):
+            if debug:
+                warn(f'Attribute "{prop}" not found in "self.{self._object_name}"')
+            return
+        old_value = getattr(obj, prop)
+        if old_value != value:
+            if debug:
+                message(f'{obj.Name}.{prop} = {value:.15f} was {old_value:.15f} ({obj.Label})')
+            setattr(obj, prop, value)
+
 
 def convert_units(
         value: float,

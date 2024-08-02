@@ -129,8 +129,8 @@ def _dispatch_to_joint_view_objects(
         return
     prop_value = getattr(robot.ViewObject, prop)
     for joint in get_joints(robot.Group):
-        if hasattr(joint.ViewObject, joint_prop):
-            setattr(joint.ViewObject, joint_prop, prop_value)
+        if hasattr(joint.ViewObject, 'Proxy') and (joint.ViewObject.Proxy is not None):
+            joint.ViewObject.Proxy.update_prop(joint_prop, prop_value)
 
 
 def _dispatch_to_link_view_objects(
@@ -144,8 +144,8 @@ def _dispatch_to_link_view_objects(
         return
     prop_value = getattr(robot.ViewObject, prop)
     for link in get_links(robot.Group):
-        if hasattr(link.ViewObject, link_prop):
-            setattr(link.ViewObject, link_prop, prop_value)
+        if hasattr(link.ViewObject, 'Proxy') and (link.ViewObject.Proxy is not None):
+            link.ViewObject.Proxy.update_prop(link_prop, prop_value)
 
 
 class RobotProxy(ProxyBase):
@@ -420,8 +420,7 @@ class RobotProxy(ProxyBase):
             if isinstance(value, float):
                 value = fc.Units.Quantity(f'{value} {source_units[unit_type]}')
             value = quantity_as(value, target_units[unit_type])
-            if getattr(self.robot, var_name) != value:
-                setattr(self.robot, var_name, value)
+            self.update_prop(var_name, value)
 
     def add_joint_variables(self) -> None:
         """Add a property for each actuated joint."""

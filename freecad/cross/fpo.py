@@ -51,7 +51,7 @@ if typing.TYPE_CHECKING:
     from FreeCAD import Document                        # type: ignore
     from FreeCAD import DocumentObject                  # type: ignore
     from FreeCAD import ParameterGrp                    # type: ignore
-    from Gui import ViewProviderDocumentObject          # type: ignore
+    from FreeCADGui import ViewProviderDocumentObject   # type: ignore
     from PySide2.QtWidgets import QMenu, QMessageBox    # type: ignore
     from Part import Shape                              # type: ignore
 else:
@@ -61,7 +61,7 @@ else:
     ParameterGrp = NewType('ParameterGrp', object)
     QMenu = NewType('QMenu', object)
     QMessageBox = NewType('QMessageBox', object)
-    Shape = NewType('Shape', object) # Part.Shape class
+    Shape = NewType('Shape', object)  # Part.Shape class
 
 #: Conditional imports
 #: ─────────────────────────────────────────────────────────────────────────────
@@ -1248,7 +1248,7 @@ def t_proxy_before_change(overridden: Any, meta: TypeMeta):
 #$ ─────────────────────────────────────────────────────────────────────────────
 @template(
         name='onChanged',
-        override_error_msg=f"User {_ON_CHANGE} instead")
+        override_error_msg=f"Use {_ON_CHANGE} instead")
 def t_proxy_change(overridden: Any, meta: TypeMeta):
     def handler(self, fp: DocumentObject, prop_name: str):
         if getattr(self, '__so_state__', None) == FeatureState.Active:

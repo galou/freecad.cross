@@ -62,11 +62,11 @@ class TrajectoryViewProxy:
             fcgui.getMainWindow(),
             'Select a multi-doc YAML file to import a trajectory from',
         )
-        # set option "DontUseNativeDialog"=True, as native Filedialog shows
-        # misbehavior on Unbuntu 18.04. It works case sensitively, what is not wanted...
         dialog.setNameFilter('YAML *.yaml;;All files (*.*)')
         if dialog.exec_():
             filename = str(dialog.selectedFiles()[0])
+        else:
+            return
 
         # Check and warn if the multi-doc YAML contains more than one message
         # (1 message == 1 document) with `ros2 topic echo`.
@@ -151,7 +151,7 @@ class TrajectoryProxy:
         for name in self._joint_map.keys():
             if name not in new_joint_names:
                 self._joint_map.pop(name)
-                self.robot.remove_property(name)
+                self.Object.remove_property(name)
         # Add missing properties.
         for name in new_joint_names:
             if name not in self._joint_map:
@@ -161,8 +161,9 @@ class TrajectoryProxy:
     @point_index.observer
     def on_point_index_changed(self, obj: CrossTrajectory, new, old):
         if not (0 <= new < self.point_count):
-            warn(f'Invalid point index: {new}, must be within [0, {self.point_count})',
-                 True,
+            warn(
+                f'Invalid point index: {new}, must be within [0, {self.point_count})',
+                True,
              )
             if 0 <= old < self.point_count:
                 self.point_index = old

@@ -103,10 +103,13 @@ class TrajectoryProxy:
             mode=PropertyEditorMode.Hidden,
     )
 
-    # The map of joint names to FreeCAD properties, {joint_name: property}.
-    # It's more practical than a property `PropertyMap` because the property
-    # cannot be updated with indexing or `merge()`.
-    _joint_map: dict[str, str] = {}
+    def __init__(self):
+        super().__init__()
+
+        # The map of joint names to FreeCAD properties, {joint_name: property}.
+        # It's more practical than a property `PropertyMap` because the property
+        # cannot be updated with indexing or `merge()`.
+        self._joint_map: dict[str, str] = {}
 
     def on_create(self, obj: CrossTrajectory):
         self._set_editor_mode()

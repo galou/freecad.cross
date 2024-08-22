@@ -21,14 +21,15 @@ except ImportError:
     JointTrajectory = Any
     JointTrajectoryPoint = Any
 
+from .fpo import PropertyEditorMode
 from .fpo import PropertyIntegerConstraint
 from .fpo import PropertyLink
-from .fpo import PropertyEditorMode
 from .fpo import proxy  # Cf. https://github.com/mnesarco/fcapi
 from .fpo import view_proxy
 from .freecad_utils import add_property
 from .freecad_utils import message
 from .freecad_utils import warn
+from .ui.replay_trajectory_dialog import ReplayTrajectoryDialog
 from .utils import i_th_item
 from .wb_utils import ICON_PATH
 from .wb_utils import is_robot
@@ -53,6 +54,7 @@ class TrajectoryViewProxy:
             menu: QMenu,
             ) -> None:
         menu.addAction('Load Trajectory from YAML file...', self.load_yaml)
+        menu.addAction('Replay...', self.replay)
 
     def load_yaml(self):
         import FreeCADGui as fcgui
@@ -82,6 +84,14 @@ class TrajectoryViewProxy:
             pass
         self.Object.Proxy.load_yaml(filename, 0)
 
+    def replay(self):
+        old_index = self.Object.Proxy.point_index
+        diag = ReplayTrajectoryDialog(self.Object)
+        index = diag.exec_()
+        diag.close()
+        if index == -1:
+            self.Object.Proxy.point_index = old_index
+
 
 @proxy(
         object_type='App::FeaturePython',
@@ -89,6 +99,7 @@ class TrajectoryViewProxy:
 )
 class TrajectoryProxy:
 
+    # TODO: self._Type.
     robot = PropertyLink(
             name='Robot',
             section='Robot',

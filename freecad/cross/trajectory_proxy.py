@@ -21,9 +21,11 @@ except ImportError:
     JointTrajectory = Any
     JointTrajectoryPoint = Any
 
+from .fpo import PropertyMode
 from .fpo import PropertyEditorMode
 from .fpo import PropertyIntegerConstraint
 from .fpo import PropertyLink
+from .fpo import PropertyString
 from .fpo import proxy  # Cf. https://github.com/mnesarco/fcapi
 from .fpo import view_proxy
 from .freecad_utils import add_property
@@ -93,13 +95,24 @@ class TrajectoryViewProxy:
             self.Object.Proxy.point_index = old_index
 
 
+_TRAJECTORY_TYPE = 'Cross::Trajectory'
+
+
 @proxy(
         object_type='App::FeaturePython',
+        subtype=_TRAJECTORY_TYPE,
         view_proxy=TrajectoryViewProxy,
 )
 class TrajectoryProxy:
 
-    # TODO: self._Type.
+    type = PropertyString(
+            name='_Type',
+            default=_TRAJECTORY_TYPE,
+            section='Internal',
+            description='The type of the object',
+            mode=PropertyMode.ReadOnly + PropertyMode.Hidden,
+    )
+
     robot = PropertyLink(
             name='Robot',
             section='Robot',

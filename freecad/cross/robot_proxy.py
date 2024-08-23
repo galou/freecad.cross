@@ -51,7 +51,6 @@ from .wb_utils import ros_name
 from .joint import Joint as CrossJoint  # A Cross::Joint, i.e. a DocumentObject with Proxy "Joint". # noqa: E501
 from .link import Link as CrossLink  # A Cross::Link, i.e. a DocumentObject with Proxy "Link". # noqa: E501
 from .robot import Robot as CrossRobot  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot". # noqa: E501
-from .trajectory import Trajectory as CrossTrajectory  # A Cross::Trajectory, i.e. a DocumentObject with Proxy "Trajectory". # noqa: E501
 BasicElement = Union[CrossJoint, CrossLink]
 DO = fc.DocumentObject
 DOList = List[DO]
@@ -223,7 +222,7 @@ class RobotProxy(ProxyBase):
     def _init_properties(self, obj: CrossRobot):
         add_property(
             obj, 'App::PropertyString', '_Type', 'Internal',
-            'The type',
+            'The type of object',
         )
         obj.setPropertyStatus('_Type', ['Hidden', 'ReadOnly'])
         obj._Type = self.Type
@@ -244,8 +243,15 @@ class RobotProxy(ProxyBase):
         )
 
         add_property(
-            obj, 'App::PropertyString', 'MaterialCardName', 'Material',
-            'Default material of robot. Used to calculate mass and inertia if link has not its own material. Use "Set material" tool to change',
+                obj,
+                'App::PropertyString',
+                'MaterialCardName',
+                'Material',
+                (
+                    'Default material of robot. Used to calculate mass and inertia'
+                    ' if link has not its own material. Use "Set material" tool to'
+                    ' change'
+                ),
         )
         obj.setPropertyStatus('MaterialCardName', ['ReadOnly'])
         add_property(
@@ -254,8 +260,16 @@ class RobotProxy(ProxyBase):
         )
         obj.setPropertyStatus('MaterialCardPath', ['Hidden', 'ReadOnly'])
         add_property(
-            obj, 'App::PropertyString', 'MaterialDensity', 'Material',
-            'Density of material. Used to calculate mass. May be outdated if you updated the material density outside CROSS workbench. Actual density will taken from material (material editor) at mass calculation moment.',
+                obj,
+                'App::PropertyString',
+                'MaterialDensity',
+                'Material',
+                (
+                    'Density of material. Used to calculate mass. May be outdated'
+                    ' if you updated the material density outside CROSS workbench.'
+                    ' Actual density will taken from material (material editor) at'
+                    ' mass calculation moment.'
+                ),
         )
         obj.setPropertyStatus('MaterialDensity', ['ReadOnly'])
 
@@ -868,7 +882,7 @@ class _ViewProviderRobot(ProxyBase):
     def setupContextMenu(self, vobj: VPDO, menu: QMenu) -> None:
         action = menu.addAction("Load trajectories from YAML...")
         action.triggered.connect(
-                lambda function=self.on_context_menu, argument=vobj: function(argument)
+                lambda function=self.on_context_menu, argument=vobj: function(argument),
         )
 
     def doubleClicked(self, vobj: VPDO):

@@ -168,16 +168,16 @@ class RobotProxy(ProxyBase):
     _category_of_joint_values = 'JointValues'
 
     def __init__(self, obj: CrossRobot):
-        # Implementation note: 'Group' is not required because
-        # DocumentObjectGroupPython.
+        # Implementation note: 'Group' and `_GroupTouched` are not required
+        # because DocumentObjectGroupPython.
         super().__init__(
             'robot',
             [
                 'CreatedObjects',
-                'OutputPath',
                 'MaterialCardName',
                 'MaterialCardPath',
                 'MaterialDensity',
+                'OutputPath',
                 '_Type',
             ],
         )
@@ -200,7 +200,7 @@ class RobotProxy(ProxyBase):
         # Used to restore the joint variables from the dumped state because
         # DocumentObject instances cannot be saved.
         # Defined in onDocumentRestored().
-        # TODO: Mayber save as two lists (App::PropertyLinkList and App::PropertyStringList).
+        # TODO: Maybe save as two lists (App::PropertyLinkList and App::PropertyStringList).
         self._joint_variables_ros_map: dict[str, str]
 
         # Save the links and joints to speed-up get_links() and get_joints().
@@ -289,6 +289,8 @@ class RobotProxy(ProxyBase):
 
     def onChanged(self, obj: CrossRobot, prop: str) -> None:
         # print(f'{obj.Name}.onChanged({prop})') # DEBUG
+        if not self.is_execute_ready():
+            return
         if prop in ['Group']:
             # Reset _links and _joints to provoke a recompute.
             self._links = None
@@ -302,7 +304,12 @@ class RobotProxy(ProxyBase):
             self.compute_poses()
 
     def onDocumentRestored(self, obj):
-        """Restore attributes because __init__ is not called on restore."""
+        """Handle the object after a document restore.
+
+        Required by FreeCAD.
+
+        """
+        # `self.__init__()` is not called on document restore, do it manually.
         self.__init__(obj)
         self._created_objects = obj.CreatedObjects
         # Rebuilt self._joint_variables from the map {ros_name: joint_variable_name}.
@@ -482,8 +489,8 @@ class RobotProxy(ProxyBase):
         # Get all old variables.
         old_vars: set[str] = set(
             get_properties_of_category(
-            self.robot,
-            self._category_of_joint_values,
+                self.robot,
+                self._category_of_joint_values,
             ),
         )
         # Add a variable for each actuated (supported) joint.
@@ -502,7 +509,7 @@ class RobotProxy(ProxyBase):
     def compute_poses(self) -> None:
         """Set `Placement` of all joints and links.
 
-        Compute and set the pose of all joints and links relative the the robot
+        Compute and set the pose of all joints and links relative to the robot
         root link.
 
         """
@@ -613,7 +620,7 @@ class RobotProxy(ProxyBase):
         if not self.is_execute_ready():
             return []
         if not is_robot(self.robot):
-            warn(f'{label_or(self.robot)} is not a CROSS::Robot', True)
+            warn(f'Internal error, {label_or(self.robot)} is not a CROSS::Robot', True)
             return []
         links = self.get_links()
         joints = self.get_joints()

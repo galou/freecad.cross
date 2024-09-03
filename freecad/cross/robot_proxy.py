@@ -889,7 +889,7 @@ class _ViewProviderRobot(ProxyBase):
     def setupContextMenu(self, vobj: VPDO, menu: QMenu) -> None:
         action = menu.addAction("Load trajectories from YAML...")
         action.triggered.connect(
-                lambda function=self.on_context_menu, argument=vobj: function(argument),
+                lambda function=self.load_trajectories_from_yaml, argument=vobj: function(argument),
         )
 
     def doubleClicked(self, vobj: VPDO):
@@ -913,7 +913,7 @@ class _ViewProviderRobot(ProxyBase):
     def loads(self, state) -> None:
         pass
 
-    def on_context_menu(self, vobj: VPDO) -> None:
+    def load_trajectories_from_yaml(self, vobj: VPDO) -> None:
         import FreeCADGui as fcgui
         import yaml
 
@@ -927,10 +927,7 @@ class _ViewProviderRobot(ProxyBase):
         else:
             return
 
-        display_trajs = yaml.load_all(
-                open(filename),
-                yaml.CLoader,
-        )
+        display_trajs = yaml.safe_load_all(open(filename))
 
         fcgui.Selection.clearSelection()
         for display_traj in display_trajs:

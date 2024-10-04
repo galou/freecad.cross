@@ -258,12 +258,22 @@ class LinkProxy(ProxyBase):
         obj.setPropertyStatus('MaterialCardPath', ['Hidden', 'ReadOnly'])
         add_property(
             obj, 'App::PropertyString', 'MaterialDensity', 'Material',
-            'Density of material. Used to calculate mass. May be outdated if you updated the material density outside CROSS workbench. Actual density will taken from material (material editor) at mass calculation moment.',
+            (
+                'Density of the material. Used to calculate the mass. May be'
+                ' outdated if you updated the material density outside the'
+                ' CROSS workbench. The actual density will taken from the'
+                ' material (material editor) at the moment the mass is'
+                ' calculated.'
+            ),
         )
         obj.setPropertyStatus('MaterialDensity', ['ReadOnly'])
         add_property(
             obj, 'App::PropertyBool', 'MaterialNotCalculate', 'Material',
-            'If true this material will be not used to calculate mass and inertia of element. In this case you can use manually filled mass and inertia for some elements and auto calculation for others.',
+            (
+                'If true this material will be not used to calculate mass and'
+                ' inertia of this link. If true, the filled mass and inertia'
+                ' will not be changed.'
+            ),
         )
 
         # Used when adding a link which shape in located at the origin but

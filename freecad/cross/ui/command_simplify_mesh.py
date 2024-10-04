@@ -23,7 +23,12 @@ class _SimplifyMeshCommand:
         return {
             'Pixmap': 'simplify_mesh.svg',
             'MenuText': tr('Simplify mesh'),
-            'ToolTip': tr('Generate an approximate convex decomposition mesh from the selected object with V-HACD from https://github.com/kmammou/v-hacd/'),
+            'ToolTip': tr(
+                'Generate an approximate convex decomposition mesh'
+                'from the selected object with V-HACD from'
+                ' https://github.com/kmammou/v-hacd/'
+                ' configured in the workbench settings'
+            ),
         }
 
     def Activated(self):

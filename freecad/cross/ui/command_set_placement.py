@@ -69,7 +69,11 @@ class _SetCROSSPlacementCommand:
         try:
             cross_link, lcs, obj = validate_types(
                 fcgui.Selection.getSelection(),
-                ['Cross::Link', 'PartDesign::CoordinateSystem', 'Any'],
+                [
+                    'Cross::Link',
+                    'PartDesign::CoordinateSystem',
+                    'Any',
+                ],
             )
             selection_ok = True
             selection_link = True
@@ -80,7 +84,11 @@ class _SetCROSSPlacementCommand:
             try:
                 cross_joint, lcs_child, lcs_parent = validate_types(
                     fcgui.Selection.getSelection(),
-                    ['Cross::Joint', 'PartDesign::CoordinateSystem', 'PartDesign::CoordinateSystem'],
+                    [
+                        'Cross::Joint',
+                        'PartDesign::CoordinateSystem',
+                        'PartDesign::CoordinateSystem',
+                    ],
                 )
                 selection_ok = True
                 selection_joint = True

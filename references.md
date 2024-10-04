@@ -8,6 +8,7 @@
 - [Fusion2URDF](https://github.com/syuntoku14/fusion2urdf)
 - [Fusion2PyBullet](https://github.com/yanshil/Fusion2PyBullet)
 - [ACDC4Robot](https://github.com/bionicdl-sustech/ACDC4Robot)
+- [FusionSDF](https://github.com/andreasBihlmaier/FusionSDF)
 
 # Solidworks add-ins
 
@@ -89,6 +90,7 @@
 - [The V-HACD library](https://github.com/kmammou/v-hacd/) decomposes a 3D surface into a set of "near" convex parts
 - [trimesh interface to V-HACD](https://trimsh.org/trimesh.interfaces.vhacd.html)
 - [Mesh-to-SDF](https://github.com/kmammou/v-hacd/) converter (uses V-HACD).
+- [sdfopt from FusionSDF](https://github.com/andreasBihlmaier/FusionSDF/blob/main/sdfopt/README.md)
 
 # Phobos add-on for Blender
 

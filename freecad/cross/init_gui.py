@@ -5,6 +5,7 @@ from .ui import command_assembly_from_urdf
 from .ui import command_box_from_bounding_box
 from .ui import command_get_planning_scene
 from .ui import command_kk_edit
+from .ui import command_new_attached_collision_object  # noqa: F401
 from .ui import command_new_joint
 from .ui import command_new_link
 from .ui import command_new_observer
@@ -58,6 +59,7 @@ class CrossWorkbench(fcgui.Workbench):
             'SimplifyMesh',  # Defined in ./ui/command_simplify_mesh.py.
             'GetPlanningScene',  # Defined in ./ui/command_get_planning_scene.py.
             'UpdatePlanningScene',  # Defined in ./ui/command_update_planning_scene.py.
+            'NewAttachedCollisionObject',  # Defined in ./ui/command_new_attached_collision_object.py.
             'NewPose',  # Defined in ./ui/command_new_pose.py.
             'NewTrajectory',  # Defined in ./ui/command_new_trajectory.py.
             'KKEdit',  # Defined in ./ui/command_kk_edit.py.
@@ -92,6 +94,7 @@ class CrossWorkbench(fcgui.Workbench):
                 # "Live" debugging.
                 'GetPlanningScene',  # Defined in ./ui/command_get_planning_scene.py.
                 'UpdatePlanningScene',  # Defined in ./ui/command_update_planning_scene.py.
+                'NewAttachedCollisionObject',  # Defined in ./ui/command_new_attached_collision_object.py.
                 'NewPose',  # Defined in ./ui/command_new_pose.py.
                 'NewTrajectory',  # Defined in ./ui/command_new_trajectory.py.
                 'NewObserver',  # Defined in ./ui/command_new_observer.py.

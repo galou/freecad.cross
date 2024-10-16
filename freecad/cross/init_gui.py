@@ -45,7 +45,7 @@ class CrossWorkbench(fcgui.Workbench):
 
         """
         # The order here defines the order of the icons in the GUI.
-        commands = [
+        toolbar_commands = [
             'NewRobot',  # Defined in ./ui/command_new_robot.py.
             'NewLink',  # Defined in ./ui/command_new_link.py.
             'NewJoint',  # Defined in ./ui/command_new_joint.py.
@@ -70,7 +70,7 @@ class CrossWorkbench(fcgui.Workbench):
             'WbSettings',  # Defined in ./ui/command_wb_settings.py.
             'Reload',  # Comment out to disable this developer tool.
         ]
-        self.appendToolbar('CROSS', commands)
+        self.appendToolbar('CROSS', toolbar_commands)
 
         # Same as commands but with NewObserver and without Reload.
         menu_commands = [

@@ -1,3 +1,8 @@
+# A trajectory object to store and replay trajectories as list of joint-space
+# points.
+#
+# This file is part of the CROSS workbench for FreeCAD.
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -99,9 +104,9 @@ _TRAJECTORY_TYPE = 'Cross::Trajectory'
 
 
 @proxy(
-        object_type='App::FeaturePython',
-        subtype=_TRAJECTORY_TYPE,
-        view_proxy=TrajectoryViewProxy,
+    object_type='App::FeaturePython',
+    subtype=_TRAJECTORY_TYPE,
+    view_proxy=TrajectoryViewProxy,
 )
 class TrajectoryProxy:
 

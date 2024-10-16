@@ -36,11 +36,13 @@ from .utils import save_xml
 from .utils import warn_unsupported
 from .wb_utils import ICON_PATH
 from .wb_utils import export_templates
+from .wb_utils import get_attached_collision_objects
 from .wb_utils import get_chains
 from .wb_utils import get_joints
 from .wb_utils import get_links
 from .wb_utils import get_rel_and_abs_path
 from .wb_utils import get_valid_urdf_name
+from .wb_utils import is_attached_collision_object
 from .wb_utils import is_joint
 from .wb_utils import is_link
 from .wb_utils import is_robot
@@ -48,6 +50,7 @@ from .wb_utils import remove_ros_workspace
 from .wb_utils import ros_name
 
 # Stubs and type hints.
+from .attached_collision_object import AttachedCollisionObject as CrossAttachedCollisionObject  # A Cross::AttachedCollisionObject, i.e. a DocumentObject with Proxy "Joint". # noqa: E501
 from .joint import Joint as CrossJoint  # A Cross::Joint, i.e. a DocumentObject with Proxy "Joint". # noqa: E501
 from .link import Link as CrossLink  # A Cross::Link, i.e. a DocumentObject with Proxy "Link". # noqa: E501
 from .robot import Robot as CrossRobot  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot". # noqa: E501
@@ -192,7 +195,7 @@ class RobotProxy(ProxyBase):
         # TODO: remove `_created_objects` and use `robot.CreatedObjects` instead.
         self._created_objects: DOList = []
 
-        # Map of joint names to joint variable names.
+        # Map of CROSS joints to joint variable names.
         # Only for actuated non-mimicking joints.
         self._joint_variables: dict[CrossJoint, str] = {}
 
@@ -203,7 +206,8 @@ class RobotProxy(ProxyBase):
         # TODO: Maybe save as two lists (App::PropertyLinkList and App::PropertyStringList).
         self._joint_variables_ros_map: dict[str, str]
 
-        # Save the links and joints to speed-up get_links() and get_joints().
+        # Save the children to speed-up get_links() and get_joints().
+        self._attached_collision_objects: Optional[list[CrossAttachedCollisionObject]] = None
         self._links: Optional[list[CrossLink]] = None
         self._joints: Optional[list[CrossJoint]] = None
 
@@ -216,7 +220,7 @@ class RobotProxy(ProxyBase):
 
     @property
     def joint_variables(self) -> dict[CrossJoint, str]:
-        """Map of joint names to joint variable names."""
+        """Map of CROSS joints to joint variable names."""
         return self._joint_variables
 
     def _init_properties(self, obj: CrossRobot):
@@ -231,7 +235,6 @@ class RobotProxy(ProxyBase):
             obj, 'App::PropertyLinkList', 'CreatedObjects', 'Internal',
             'Objects created for the robot',
         )
-        obj.setPropertyStatus('_Type', ['Hidden', 'ReadOnly'])
 
         # Managed in self.reset_group().
         obj.setPropertyStatus('Group', 'ReadOnly')
@@ -349,7 +352,7 @@ class RobotProxy(ProxyBase):
         if not self.is_execute_ready():
             return None
         for o in self.robot.Group[::-1]:
-            if is_link(o) or is_joint(o):
+            if is_link(o) or is_joint(o) or is_attached_collision_object(o):
                 # Supported.
                 continue
             warn_unsupported(o, by='CROSS::Robot', gui=True)
@@ -507,15 +510,14 @@ class RobotProxy(ProxyBase):
         return
 
     def compute_poses(self) -> None:
-        """Set `Placement` of all joints and links.
+        """Set `Placement` of all joints, links, and attached collision objects.
 
-        Compute and set the pose of all joints and links relative to the robot
-        root link.
+        Compute and set the pose of all joints, links, and attached collision
+        objects in the same frame as the robot.
 
         """
         joint_cache: dict[CrossJoint, fc.Placement] = {}
-        chains = self.get_chains()
-        for chain in chains:
+        for chain in self.get_chains():
             placement = self.robot.Placement  # A copy.
             for link, joint in grouper(chain, 2):
                 if joint in joint_cache:
@@ -542,11 +544,26 @@ class RobotProxy(ProxyBase):
                         * joint.Proxy.get_actuation_placement()
                     )
                     joint_cache[joint] = placement
+        for aco in self.get_attached_collision_objects():
+            if not aco.Link:
+                continue
+            for sub_obj in aco.Objects:
+                sub_obj.Placement = aco.Link.Placement
+
+    def get_attached_collision_objects(self) -> list[CrossAttachedCollisionObject]:
+        # TODO: as property.
+        if self._attached_collision_objects is not None:
+            return list(self._attached_collision_objects)  # A copy.
+        if not self.is_execute_ready():
+            return []
+        self._attached_collision_objects = get_attached_collision_objects(
+                self.robot.Group)
+        return list(self._attached_collision_objects)  # A copy.
 
     def get_links(self) -> list[CrossLink]:
         """Return the list of CROSS links in the order of creation."""
         # TODO: as property.
-        if (self._links is not None):
+        if self._links is not None:
             return list(self._links)  # A copy.
         if not self.is_execute_ready():
             return []
@@ -556,7 +573,7 @@ class RobotProxy(ProxyBase):
     def get_joints(self) -> list[CrossJoint]:
         """Return the list of CROSS joints in the order of creation."""
         # TODO: as property.
-        if (self._joints is not None):
+        if self._joints is not None:
             # self._joints is updated in self.onChanged().
             return list(self._joints)  # A copy.
         if not self.is_execute_ready():

@@ -1222,13 +1222,13 @@ def t_proxy_restore(overridden: Any, meta: TypeMeta):
         meta.apply_extensions(self, fp, _ON_RESTORE)
         _call(self, _ON_RESTORE, fp)
 
-        self._fp_state = FeatureState.Restored
+        self.__so_state__ = FeatureState.Restored
 
         meta.apply_extensions(self, fp, _ON_START)
         meta.ensure_properties(self, fp)
         _call(self, _ON_START, fp)
 
-        self._fp_state = FeatureState.Active
+        self.__so_state__ = FeatureState.Active
     return handler
 
 

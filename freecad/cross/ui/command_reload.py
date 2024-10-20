@@ -28,6 +28,8 @@ class _ReloadCommand:
             reload(module)
         _reload_module('freecad.cross.assembly4_utils')
         _reload_module('freecad.cross.assembly_from_urdf')
+        _reload_module('freecad.cross.attached_collision_object')
+        _reload_module('freecad.cross.attached_collision_object_proxy')
         _reload_module('freecad.cross.coin_utils')
         _reload_module('freecad.cross.deep_copy')
         _reload_module('freecad.cross.freecad_utils')

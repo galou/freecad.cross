@@ -176,15 +176,19 @@ class AttachedCollisionObjectProxy:
     def on_placement_changed(
             self,
             obj: CrossAttachedCollisionObject,
-            old_placement: fc.Placement,
             new_placement: fc.Placement,
-            ) -> None:
+            old_placement: fc.Placement,
+    ) -> None:
+        if self.placement != new_placement:
+            self.placement = new_placement
         for fclink in self.Object.Group:
-            if (
-                is_freecad_link(fclink)
-                and (old_placement != new_placement)
-            ):
-                fclink.LinkPlacement = new_placement
+            if not is_freecad_link(fclink):
+                # Should not happen.
+                continue
+            link_placement = fclink.LinkedObject.Placement * new_placement
+            if fclink.LinkPlacement != link_placement:
+                # Avoid recursion.
+                fclink.LinkPlacement = link_placement
 
     @property
     def robot(self) -> Optional[CrossRobot]:

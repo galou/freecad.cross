@@ -547,8 +547,9 @@ class RobotProxy(ProxyBase):
         for aco in self.get_attached_collision_objects():
             if not aco.Link:
                 continue
-            for sub_obj in aco.Objects:
-                sub_obj.Placement = aco.Link.Placement
+            if aco.Placement != aco.Link.Placement:
+                # Avoid recursive recompute.
+                aco.Placement = aco.Link.Placement
 
     def get_attached_collision_objects(self) -> list[CrossAttachedCollisionObject]:
         # TODO: as property.

@@ -59,6 +59,7 @@ class TrajectoryViewProxy:
 
     def on_context_menu(
             self,
+            vobj: VPDO,
             menu: QMenu,
             ) -> None:
         menu.addAction('Load Trajectory from YAML file...', self.load_yaml)

@@ -482,7 +482,7 @@ class LinkProxy(ProxyBase):
 
     def update_fc_links(self) -> None:
         """Update the FreeCAD link according to the level of details."""
-        # Implementation note: must not be private because it is called by the ViewProxy.
+        # Implementation note: must be public because it is called by the ViewProxy.
 
         if not self.is_execute_ready():
             return

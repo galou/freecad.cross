@@ -308,7 +308,8 @@ class AttachedCollisionObjectProxy:
 
 def make_attached_collision_object(
         name: str,
-        doc: Optional[fc.Document] = None) -> CrossAttachedCollisionObject:
+        doc: Optional[fc.Document] = None,
+) -> CrossAttachedCollisionObject:
     """Add a Cross::AttachedCollisionObject to the current document."""
     if doc is None:
         doc = fc.activeDocument()

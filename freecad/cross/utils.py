@@ -17,11 +17,7 @@ import re
 
 import FreeCAD as fc
 
-# [backwards compatibility]
-# Note: Using '[^A-Za-z0-9_\-.]+' is better because it collapses sequences of invalid chars
-#       into a single _. But it may break something if there are references to paths generated
-#       with the former function and new generated ones must match.
-INVALID_FILENAME_CHARS = re.compile(r'[^A-Za-z0-9_\-.]')
+INVALID_FILENAME_CHARS = re.compile(r'[^A-Za-z0-9_\-.]+')
 
 # Stubs and type hints.
 DO = fc.DocumentObject
@@ -119,7 +115,7 @@ def save_xml(
     file_path.write_text(txt)
 
 
-def grouper(iterable, n, fillvalue=None):
+def grouper(iterable: Iterable, n: int, fillvalue=None):
     """Collect data into fixed-length chunks or blocks."""
     # grouper('ABCDEFG', 3, 'x') --> ABC DEF Gxx"
     # From https://docs.python.org/3.8/library/itertools.html.
@@ -175,7 +171,7 @@ def get_parent_by_pattern(
             return Path(), relative_file_path
 
 
-def true_then_false(list: Iterable[bool]) -> bool:
+def true_then_false(booleans: Iterable[bool]) -> bool:
     """Return True if no False is found after a True.
 
     >>> true_then_false([True])
@@ -190,7 +186,7 @@ def true_then_false(list: Iterable[bool]) -> bool:
     False
 
     """
-    return reduce(lambda a,b: (a[0] and a[1] >= b, b), list, (True, True))[0]
+    return reduce(lambda a, b: (a[0] and a[1] >= b, b), booleans, (True, True))[0]
 
 
 def values_from_string(

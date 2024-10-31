@@ -14,14 +14,14 @@ from ..utils import add_path_to_environment_variable
 
 def warn(text: str, gui: bool = False) -> None:
     """Warn the user."""
-    # Import here to be able to import the module without GUI.
-    from PySide import QtCore  # FreeCAD's PySide!
-    from PySide import QtGui  # FreeCAD's PySide!
-
     # This is a copy of .utils.warn but the utils module should not be imported
     # without GUI.
     fc.Console.PrintWarning(text + '\n')
     if gui and hasattr(fc, 'GuiUp') and fc.GuiUp:
+        # Import here to be able to import the module without GUI.
+        from PySide import QtCore  # type: ignore FreeCAD's PySide!
+        from PySide import QtGui  # type: ignore FreeCAD's PySide!
+
         diag = QtGui.QMessageBox(
             QtGui.QMessageBox.Warning,
             'CROSS - FreeCAD ROS Workbench', text,
@@ -80,7 +80,7 @@ def add_ros_library_path(ros_distro: str = '') -> bool:
     # Unfortunately, on some systems and with some versions of FreeCAD, the
     # environment variable PYTHONPATH is not taken into account and is reset.
     if 'PYTHONPATH' in os.environ:
-        for path in os.environ['PYTHONPATH'].split(':'):
+        for path in os.environ['PYTHONPATH'].split(os.pathsep):
             if path not in sys.path:
                 sys.path.append(path)
     # Python version.
@@ -151,7 +151,7 @@ def get_ros_workspace_from_env() -> Path:
     return Path(colcon_prefix_path[:-len('/install')])
 
 
-def get_ros_workspace_from_file(file_path: [Path | str]) -> Path:
+def get_ros_workspace_from_file(file_path: Path | str) -> Path:
     """Return the workspace containing the given file or directory.
 
     Return Path() if no workspace was found.
@@ -161,7 +161,7 @@ def get_ros_workspace_from_file(file_path: [Path | str]) -> Path:
     return path
 
 
-def is_in_ros_workspace(path: [Path | str]) -> bool:
+def is_in_ros_workspace(path: Path | str) -> bool:
     """Return true if the given path starts with $ROS_WORKSPACE/src."""
     # Import here to avoid circular import.
     from ..wb_globals import g_ros_workspace
@@ -170,7 +170,7 @@ def is_in_ros_workspace(path: [Path | str]) -> bool:
     return str(path).startswith(src)
 
 
-def without_ros_workspace(path: [Path | str]) -> str:
+def without_ros_workspace(path: Path | str) -> str:
     """Return the path relative to $ROS_WORKSPACE/src.
 
     Return the path as-is if it doesn't start with $ROS_WORKSPACE/src.
@@ -186,7 +186,7 @@ def without_ros_workspace(path: [Path | str]) -> str:
     return copy(path)
 
 
-def get_package_and_file(file_path: [Path | str]) -> tuple[str, str]:
+def get_package_and_file(file_path: Path | str) -> tuple[str, str]:
     """Return the package name and relative file path.
 
     For example, if the file path is `$HOME/ros2_ws/src/dir/my_package/file.py`,
@@ -215,8 +215,8 @@ def pkg_and_file_from_ros_path(
     """
     # Import here to be able to import the module without ROS.
     try:
-        from ament_index_python.packages import PackageNotFoundError
-        from ament_index_python.packages import get_package_share_directory
+        from ament_index_python.packages import PackageNotFoundError  # type: ignore
+        from ament_index_python.packages import get_package_share_directory  # type: ignore
     except ImportError:
         warn('Cannot import ament_index_python.packages', False)
         return None, None
@@ -263,7 +263,7 @@ def abs_path_from_ros_path(
     """
     # Import here to be able to import the module without ROS.
     try:
-        from ament_index_python.packages import get_package_share_directory
+        from ament_index_python.packages import get_package_share_directory  # type: ignore
     except ImportError:
         warn('Cannot import ament_index_python.packages', False)
         return None
@@ -291,7 +291,7 @@ def abs_path_from_ros_path(
 
 
 def ros_path_from_abs_path(
-        path: [Path | str],
+        path: Path | str,
 ) -> Optional[str]:
     """Return the ROS path to the given file.
 
@@ -306,7 +306,7 @@ def ros_path_from_abs_path(
     return f'package://{pkg}/{rel_path}'
 
 
-def split_package_path(package_path: [Path | str]) -> tuple[Path, str]:
+def split_package_path(package_path: Path | str) -> tuple[Path, str]:
     """Return the package parent and the package name.
 
     For example, if `package_path` is `/home/user/ros_ws/src/my_pkg`,
@@ -326,30 +326,30 @@ def split_package_path(package_path: [Path | str]) -> tuple[Path, str]:
     return parent, package_name
 
 
-def _add_python_path(path: [Path | str]) -> None:
+def _add_python_path(path: Path | str) -> None:
     """Add the path to sys.path if existing."""
     path = Path(path).expanduser().absolute()
     if path.exists() and (str(path) not in sys.path):
         sys.path.append(str(path))
 
 
-def _add_ld_library_path(path: [Path | str]) -> None:
+def _add_ld_library_path(path: Path | str) -> None:
     """Add the path to LD_LIBRARY_PATH if existing."""
     path = Path(path).expanduser().absolute()
-    existing_paths = os.environ.get('LD_LIBRARY_PATH', '').split(':')
+    existing_paths = os.environ.get('LD_LIBRARY_PATH', '').split(os.pathsep)
     if path.exists() and (str(path) not in existing_paths):
         if 'LD_LIBRARY_PATH' not in os.environ:
             os.environ['LD_LIBRARY_PATH'] = str(path)
         else:
-            os.environ['LD_LIBRARY_PATH'] += ':' + str(path)
+            os.environ['LD_LIBRARY_PATH'] += os.pathsep + str(path)
 
 
-def _add_ament_prefix_path(path: [Path | str]) -> None:
+def _add_ament_prefix_path(path: Path | str) -> None:
     """Add the path to AMENT_PREFIX_PATH if existing."""
     path = Path(path).expanduser().absolute()
-    existing_paths = os.environ.get('AMENT_PREFIX_PATH', '').split(':')
+    existing_paths = os.environ.get('AMENT_PREFIX_PATH', '').split(os.pathsep)
     if path.exists() and (str(path) not in existing_paths):
         if 'AMENT_PREFIX_PATH' not in os.environ:
             os.environ['AMENT_PREFIX_PATH'] = str(path)
         else:
-            os.environ['AMENT_PREFIX_PATH'] += ':' + str(path)
+            os.environ['AMENT_PREFIX_PATH'] += os.pathsep + str(path)

@@ -16,7 +16,7 @@ _Shape = Enum('Shape', ['BOX', 'CONE', 'CUBE', 'CYLINDER', 'SPHERE'])
 
 
 def transform_from_placement(
-        placement: [fc.Placement | fc.Vector | fc.Rotation],
+        placement: fc.Placement | fc.Vector | fc.Rotation,
 ) -> coin.SoTransform:
     """Return the SoTransform equivalent to the placement.
 
@@ -285,7 +285,7 @@ def cone_between_points(
 
 
 def frame_group(
-        length_mm: [float | fc.Units.Quantity] = 200.0,
+        length_mm: float | fc.Units.Quantity = 200.0,
         diameter_ratio_to_length: float = 0.05,
         axis_start_ratio: float = 0.0,
 ) -> coin.SoSeparator:
@@ -339,10 +339,10 @@ def frame_group(
 
 
 def tcp_group(
-        tcp_length_mm: [float | fc.Units.Quantity] = 200.0,
+        tcp_length_mm: float | fc.Units.Quantity = 200.0,
         tcp_diameter_ratio_to_length: float = 0.25,
         tcp_color: Sequence[float] = (0.7, 0.7, 0.7),
-        axis_length_mm: [float | fc.Units.Quantity] = 300.0,
+        axis_length_mm: float | fc.Units.Quantity = 300.0,
         axis_diameter_ratio_to_length: float = 0.05,
 ) -> coin.SoSeparator:
     """Return the SoSeparator representing a TCP.
@@ -393,7 +393,7 @@ def tcp_group(
 
 def save_separator_to_file(
         separator: coin.SoSeparator,
-        filename: [Path | str],
+        filename: Path | str,
         file_format: str = 'iv',
 ) -> None:
     """Save the content of an SoSeparator to a file in Inventor or VRML format.

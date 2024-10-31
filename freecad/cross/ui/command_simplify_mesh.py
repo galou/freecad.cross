@@ -17,7 +17,7 @@ SO = 'FreeCADGui.SelectionObject'  # Could not get the class from Python.
 
 
 class _SimplifyMeshCommand:
-    """Command to make a simplifed mesh from the selected objects."""
+    """Command to make a simplified mesh from the selected objects."""
 
     def GetResources(self):
         return {

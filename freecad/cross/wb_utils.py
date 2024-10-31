@@ -401,8 +401,8 @@ def export_templates(
                       directory `resources` of this workbench.
     - package_name: the directory containing the directory called
                     `package_name`, usually "$ROS_WORKSPACE/src".
-    - keys: dictionnary of replacement string in templates.
-            - package_name (compulsary): name of the ROS package and its containing
+    - keys: dictionary of replacement string in templates.
+            - package_name (compulsory): name of the ROS package and its containing
                                          directory.
             - urdf_file: name of the URDF/xacro file without directory.
                          Used in `launch/display.launch.py`.

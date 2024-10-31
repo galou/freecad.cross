@@ -10,13 +10,13 @@ from ..freecadgui_utils import get_subobjects_and_placements
 from ..gui_utils import tr
 
 
-# Stubs and type hints.
+# Stubs and type hints
 from ..joint import Joint
 from ..link import Link
 DO = fc.DocumentObject
 CrossLink = Link
 CrossJoint = Joint
-LCS = DO  # Local coordinate systen, TypeId == "PartDesign::CoordinateSystem"
+LCS = DO  # Local coordinate system, TypeId == "PartDesign::CoordinateSystem"
 
 
 def get_relative_placement(

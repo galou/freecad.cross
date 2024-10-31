@@ -345,7 +345,7 @@ def tcp_group(
         axis_length_mm: [float | fc.Units.Quantity] = 300.0,
         axis_diameter_ratio_to_length: float = 0.05,
 ) -> coin.SoSeparator:
-    """Return the SoSeparator reprenting a TCP.
+    """Return the SoSeparator representing a TCP.
 
     Return the SoSeparator representing a Tool Center Point, i.e. 3 cylinder
     representing the frame and a spiky cylinder symbolizing the tool (with the

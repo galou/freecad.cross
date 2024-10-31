@@ -178,9 +178,9 @@ def strip_subelement(sub_fullpath: str) -> str:
         Examples:
         - 'Face6' if you select the top face of a cube solid made in Part.
         - 'Body.Box001.' if you select the tip of a Part->Body->"additive
-            primitve" in PartDesign.
+            primitive" in PartDesign.
         - 'Body.Box001.Face6' if you select the top face of a Part->Body->
-            "additive primitve" in PartDesign.
+            "additive primitive" in PartDesign.
 
     """
     if (not sub_fullpath) or ('.' not in sub_fullpath):
@@ -219,9 +219,9 @@ def get_subobjects_by_full_name(
         Examples:
         - 'Face6' if you select the top face of a cube solid made in Part.
         - 'Body.Box001.' if you select the tip of a Part->Body->"additive
-            primitve" in PartDesign.
+            primitive" in PartDesign.
         - 'Body.Box001.Face6' if you select the top face of a Part->Body->
-            "additive primitve" in PartDesign.
+            "additive primitive" in PartDesign.
 
     """
     objects = []

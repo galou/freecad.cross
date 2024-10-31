@@ -243,7 +243,7 @@ def _define_mimic_joints(
         mimicked_urdf_joint = urdf_robot.joint_map.get(urdf_joint.mimic.joint)
         if not mimicked_urdf_joint:
             warn(
-                f'Joint "{urdf_joint.name}" mimicks the unknown'
+                f'Joint "{urdf_joint.name}" mimics the unknown'
                 f' joint "{mimicked_urdf_joint}", ignoring', True,
             )
             continue

@@ -30,15 +30,17 @@ def warn(text: str, gui: bool = False) -> None:
         diag.exec_()
 
 
-def has_ros_distro() -> bool:
+def has_ros_distro_in_env() -> bool:
     """Return True if environment variable ROS_DISTRO is set."""
     p = get_ros_workspace_from_env()
-    return (('ROS_DISTRO' in os.environ)
-            and (Path(p).exists()))
+    return (
+            ('ROS_DISTRO' in os.environ)
+            and (Path(p).exists())
+    )
 
 
 def is_ros_found() -> bool:
-    return get_ros_distro_from_env() != ''
+    return get_ros_distro_from_env_or_default() != ''
 
 
 def add_ros_library_path(ros_distro: str = '') -> bool:
@@ -59,7 +61,7 @@ def add_ros_library_path(ros_distro: str = '') -> bool:
     """
 
     if not ros_distro:
-        ros_distro = get_ros_distro_from_env()
+        ros_distro = get_ros_distro_from_env_or_default()
     if not ros_distro:
         warn(
             'The environment variable `ROS_DISTRO` is not set and no ROS'
@@ -67,13 +69,15 @@ def add_ros_library_path(ros_distro: str = '') -> bool:
             ', some functionalities will be missing',
         )
         return False
-    else:
-        if not has_ros_distro():
-            p = get_ros_workspace_from_env()
+
+    ros_workspace = get_ros_workspace_from_env()
+    if not has_ros_distro_in_env():
+        if ros_workspace == Path():
             warn(
-                'The environment variable `ROS_DISTRO` is not set but a ROS'
-                f' installation was found in {p}'
-                ', attempting to use it',
+                'None of the environment variables `ROS_DISTRO`,'
+                ' `ROS_WORKSPACE`, or `COLCON_PREFIX_PATH` is set but an'
+                ' installation was found in'
+                f' /opt/ros/{ros_distro}, attempting to use it',
             )
 
     # Add the paths in PYTHONPATH to sys.path.
@@ -115,7 +119,7 @@ def add_ros_library_path(ros_distro: str = '') -> bool:
     return True
 
 
-def get_ros_distro_from_env() -> str:
+def get_ros_distro_from_env_or_default() -> str:
     """Return or guess the ROS distribution.
 
     Return the environment variable `ROS_DISTRO` if defined or guess from

@@ -144,18 +144,6 @@ class TrajectoryProxy:
     def on_create(self, obj: CrossTrajectory):
         self._set_editor_mode()
 
-    def on_attach(self, obj: CrossTrajectory):
-        pass
-
-    def on_start(self, obj: CrossTrajectory):
-        pass
-
-    def on_remove(self, obj: CrossTrajectory):
-        pass
-
-    def on_restore(self, obj: CrossTrajectory):
-        pass
-
     def on_execute(self, obj: CrossTrajectory):
         if is_robot(self.robot):
             self._update_robot_joint_values()

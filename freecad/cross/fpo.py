@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-#
 #  This library is free software; you can redistribute it and/or
 #  modify it under the terms of the GNU Lesser General Public
 #  License as published by the Free Software Foundation; either
@@ -53,6 +51,7 @@ from pathlib import Path
 import FreeCAD as App  # type: ignore
 from FreeCAD import Document  # type: ignore
 from FreeCAD import DocumentObject  # type: ignore
+
 # from FreeCAD import ParameterGrp  # type: ignore  !!! Not present in FreeCAD 1.0
 from FreeCADGui import ViewProviderDocumentObject  # type: ignore
 from PySide.QtGui import QMenu, QMessageBox  # type: ignore
@@ -868,17 +867,15 @@ class TypeMeta:
         **kwargs,
     ):
         """Call extensions runtime lifecycle"""
-        if self.extensions:
-            for ext in self.extensions:
-                method = getattr(ext, method_name)
-                method(proxy, obj, self, *args, **kwargs)
+        for ext in self.extensions:
+            method = getattr(ext, method_name)
+            method(proxy, obj, self, *args, **kwargs)
 
     # ──────────
     def apply_extensions_on_class(self):
         """Call extensions static lifecycle"""
-        if self.extensions:
-            for ext in self.extensions:
-                ext.on_class(self)
+        for ext in self.extensions:
+            ext.on_class(self)
 
     # ──────────
     def add_version_prop(self, obj: ObjectRef):
@@ -1001,7 +998,7 @@ class Preference:
         except BaseException:
             print_err(f"Error writing preference: {self}")
 
-    # % ─────────
+    ##% ─────────
     class ParamObserver:
         listeners = dict()
 
@@ -1051,7 +1048,7 @@ def proxy(
 ):
     """
     Main decorator for DataProxy creation. Decorating a class with @proxy(...)
-    adds support for the new API
+    adds support for the fcapi API
     """
 
     # base dir is useful for relative resource lookup
@@ -1103,7 +1100,7 @@ def view_proxy(
 ):
     """
     Decorator for ViewProxy creation. Decorating a class with @view_proxy(...)
-    adds support for the new API.
+    adds support for the fcapi API.
     """
 
     # base dir is useful for relative resource lookup
@@ -1284,7 +1281,11 @@ def t_proxy_attach(overridden: Any, meta: TypeMeta):
 ##$ ─────────────────────────────────────────────────────────────────────────────
 @template(name="create")
 def t_proxy_create(overridden: Any, meta: TypeMeta):
-    def create(name: str = None, label: str = None, doc: Document = None):
+    def create(
+        name: Union[str, None] = None,
+        label: Union[str, None] = None,
+        doc: Union[Document, None] = None,
+    ):
         """Create the FreeCAD Objects, the Python Proxies and bind them"""
         _name = name or meta.subtype
         proxy = meta.cls()
@@ -1299,7 +1300,7 @@ def t_proxy_create(overridden: Any, meta: TypeMeta):
         if hasattr(fp, "ViewObject") and hasattr(fp.ViewObject, "Proxy"):
             if view_proxy is None:
                 fp.ViewObject.Proxy = 0
-            elif fp.ViewObject.Proxy != view_proxy:
+            elif fp.ViewObject.Proxy is not view_proxy:
                 fp.ViewObject.Proxy = view_proxy
 
         fp.Label = label or _name
@@ -1990,7 +1991,7 @@ def PropertyEnumeration(
     )
 
 
-##: Special constructor for Enumeration property type
+##: Special constructor for Options property type
 ##: ─────────────────────────────────────────────────────────────────────────────
 def PropertyOptions(
     options_provider: Callable,

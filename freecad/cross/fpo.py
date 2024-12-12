@@ -19,7 +19,7 @@ from __future__ import annotations
 __author__ = "Frank David Martínez Muñoz"
 __copyright__ = "(c) 2024 Frank David Martínez Muñoz."
 __license__ = "LGPL 2.1"
-__version__ = "1.0.0-beta3"
+__version__ = "1.0.0-beta3-cross"
 __min_python__ = "3.8"
 __min_freecad__ = "0.21"
 
@@ -654,37 +654,37 @@ class ExtensionSupport:
         _extensions[name] = self
 
     # ──────────
-    def on_create(self, proxy: Proxy, obj: ObjectRef, meta: "TypeMeta"):
+    def on_create(self, proxy: Proxy, meta: "TypeMeta"):
         """Extension listener for on_create event"""
         pass
 
     # ──────────
-    def on_restore(self, proxy: Proxy, obj: ObjectRef, meta: "TypeMeta"):
+    def on_restore(self, proxy: Proxy, meta: "TypeMeta"):
         """Extension listener for on_restore event"""
         pass
 
     # ──────────
-    def on_attach(self, proxy: Proxy, obj: ObjectRef, meta: "TypeMeta"):
+    def on_attach(self, proxy: Proxy, meta: "TypeMeta"):
         """Extension listener for on_attach event"""
-        self.add_extension(proxy, obj)
+        self.add_extension(proxy)
 
     # ──────────
-    def on_start(self, proxy: Proxy, obj: ObjectRef, meta: "TypeMeta"):
+    def on_start(self, proxy: Proxy, meta: "TypeMeta"):
         """Extension listener for on_start event"""
-        self.add_extension(proxy, obj)
+        self.add_extension(proxy)
 
     # ──────────
-    def on_execute(self, proxy: Proxy, obj: ObjectRef, meta: "TypeMeta"):
+    def on_execute(self, proxy: Proxy, meta: "TypeMeta"):
         """Extension listener for on_execute event"""
         pass
 
     # ──────────
-    def on_add(self, proxy: Proxy, obj: ObjectRef, meta: "TypeMeta"):
+    def on_add(self, proxy: Proxy, meta: "TypeMeta"):
         """Extension listener for on_add event"""
         pass
 
     # ──────────
-    def on_change(self, proxy: Proxy, obj: ObjectRef, meta: "TypeMeta", prop: str):
+    def on_change(self, proxy: Proxy, meta: "TypeMeta", prop: str):
         """Extension listener for on_change event"""
         pass
 
@@ -694,16 +694,19 @@ class ExtensionSupport:
         pass
 
     # ──────────
-    def add_extension(self, proxy: Proxy, obj: ObjectRef, name: str = None):
+    def add_extension(self, proxy: Proxy, name: str = None):
         """Adds the extension to the object"""
         _name = name or self.name
         if _name not in _extensions:
             raise NameError(f"Extension {_name} not found.")
 
+        obj = getattr(proxy, _SO_REF, None)
+        if not obj:
+            return
         if not obj.hasExtension(_name):
             obj.addExtension(_name)
-            self.on_add(proxy, obj, self.find_meta(proxy))
-            _call(proxy, _ON_EXTENSION, obj, _name)
+            self.on_add(proxy, self.find_meta(proxy))
+            _call(proxy, _ON_EXTENSION, _name)
 
     # ──────────
     def find_meta(self, proxy: Proxy) -> "TypeMeta":
@@ -718,7 +721,8 @@ class Part_AttachExtensionPython(ExtensionSupport):
     """Extension manager of: Part::AttachExtensionPython"""
 
     # ──────────
-    def on_execute(self, proxy: DataProxy, obj: DocumentObject, meta: "TypeMeta"):
+    def on_execute(self, proxy: DataProxy, meta: "TypeMeta"):
+        obj = self.__so_ref__
         obj.positionBySupport()
 
 
@@ -737,14 +741,15 @@ class App_LinkBaseExtensionPython(ExtensionSupport):
         return link_property
 
     # ──────────
-    def on_start(self, proxy: DataProxy, obj: DocumentObject, meta: "TypeMeta"):
-        super().on_start(proxy, obj, meta)
+    def on_start(self, proxy: DataProxy, meta: "TypeMeta"):
+        super().on_start(proxy, meta)
         mapping = {
             self.resolve_link_prop(prop.link_property, prop.name): prop.name
             for prop in meta.properties.values()
             if prop.link_property
         }
         if len(mapping) > 0:
+            obj = self.__so_ref__
             obj.configLinkProperty(**mapping)
 
 
@@ -861,12 +866,12 @@ class TypeMeta:
     def apply_extensions(
         self,
         proxy: Proxy,
-        obj: ObjectRef,
         method_name: str,
         *args,
         **kwargs,
     ):
         """Call extensions runtime lifecycle"""
+        obj = proxy.__so_ref__
         for ext in self.extensions:
             method = getattr(ext, method_name)
             method(proxy, obj, self, *args, **kwargs)
@@ -891,31 +896,34 @@ class TypeMeta:
         setattr(obj, _SO_VERSION, self.version)
 
     # ──────────
-    def ensure_properties(self, proxy: Proxy, obj: ObjectRef):
+    def ensure_properties(self, proxy: Proxy):
         """
         Add missing properties to the ObjectRef, used to add new properties
         on start if the class have declared new properties since the file
         was saved.
         """
         for prop in self.properties.values():
+            obj = proxy.__so_ref__
             prop.create(obj)
 
     # ──────────
-    def init_properties(self, proxy: Proxy, obj: ObjectRef):
+    def init_properties(self, proxy: Proxy):
         for prop in self.properties.values():
+            obj = proxy.__so_ref__
             prop.create(obj)
             if prop.default is not None:
                 proxy.__so_old__[prop.name] = prop.default
 
     # ──────────
-    def init_display_modes(self, proxy: ViewProxy, obj: ViewProviderDocumentObject):
+    def init_display_modes(self, proxy: ViewProxy):
         if len(self.display_modes) > 0:
             for dm in self.display_modes.values():
                 dm_obj = None
                 if dm._builder_func:
-                    dm_obj = dm._builder_func(proxy, obj)
+                    dm_obj = dm._builder_func(proxy)
                 if not dm_obj:
                     dm_obj = coin.SoGroup()
+                obj = proxy.__so_ref__
                 obj.addDisplayMode(dm_obj, dm.name)
 
 
@@ -1208,7 +1216,7 @@ def t_proxy_remove(overridden: Any, meta: TypeMeta):
     if call:
 
         def handler(self, fp: DocumentObject):
-            return call(self, fp)
+            return call(self)
 
         return handler
 
@@ -1257,21 +1265,21 @@ def t_proxy_attach(overridden: Any, meta: TypeMeta):
         self.__so_old__ = dict()
         self.Type = meta.subtype
 
-        meta.apply_extensions(self, fp, _ON_ATTACH)
-        _call(self, _ON_ATTACH, fp)
+        meta.apply_extensions(self, _ON_ATTACH)
+        _call(self, _ON_ATTACH)
 
         self.__so_state__ = FeatureState.Creating
 
         meta.add_version_prop(fp)
-        meta.init_properties(self, fp)
+        meta.init_properties(self)
 
-        meta.apply_extensions(self, fp, _ON_CREATE)
-        _call(self, _ON_CREATE, fp)
+        meta.apply_extensions(self, _ON_CREATE)
+        _call(self, _ON_CREATE)
 
         self.__so_state__ = FeatureState.Created
 
-        meta.apply_extensions(self, fp, _ON_START)
-        _call(self, _ON_START, fp)
+        meta.apply_extensions(self, _ON_START)
+        _call(self, _ON_START)
 
         self.__so_state__ = FeatureState.Active
 
@@ -1340,16 +1348,17 @@ def t_proxy_restore(overridden: Any, meta: TypeMeta):
 
         # Restore last values
         for prop_name, prop in meta.property_lookup.items():
+            fp = self.__so_ref__
             self.__so_old__[prop_name] = prop.read(fp)
 
-        meta.apply_extensions(self, fp, _ON_RESTORE)
-        _call(self, _ON_RESTORE, fp)
+        meta.apply_extensions(self, _ON_RESTORE)
+        _call(self, _ON_RESTORE)
 
         self.__so_state__ = FeatureState.Restored
 
-        meta.apply_extensions(self, fp, _ON_START)
-        meta.ensure_properties(self, fp)
-        _call(self, _ON_START, fp)
+        meta.apply_extensions(self, _ON_START)
+        meta.ensure_properties(self)
+        _call(self, _ON_START)
 
         self.__so_state__ = FeatureState.Active
 
@@ -1360,8 +1369,8 @@ def t_proxy_restore(overridden: Any, meta: TypeMeta):
 @template(name="execute", override_error_msg=f"Use {_ON_EXECUTE} instead")
 def t_proxy_execute(overridden: Any, meta: TypeMeta):
     def handler(self, fp: DocumentObject):
-        meta.apply_extensions(self, fp, _ON_EXECUTE)
-        _call(self, _ON_EXECUTE, fp)
+        meta.apply_extensions(self, _ON_EXECUTE)
+        _call(self, _ON_EXECUTE)
 
     return handler
 
@@ -1373,7 +1382,7 @@ def t_proxy_before_change(overridden: Any, meta: TypeMeta):
         if getattr(self, "__so_state__", None) == FeatureState.Active:
             old_value = getattr(fp, prop_name, None)
             self.__so_old__[prop_name] = old_value
-            _call(self, _ON_BEFORE_CHANGE, fp, prop_name, old_value)
+            _call(self, _ON_BEFORE_CHANGE, prop_name, old_value)
 
     return handler
 
@@ -1386,12 +1395,12 @@ def t_proxy_change(overridden: Any, meta: TypeMeta):
             new_value = getattr(fp, prop_name)
             old_value = self.__so_old__.get(prop_name, None)
             if new_value != old_value:
-                meta.apply_extensions(self, fp, _ON_CHANGE, prop_name)
+                meta.apply_extensions(self, _ON_CHANGE, prop_name)
                 prop = meta.property_lookup.get(prop_name, None)
                 if prop and prop.observer_func:
-                    args = (self, fp, new_value, old_value)[0 : prop.observer_arity]
+                    args = (self, new_value, old_value)[0 : prop.observer_arity]
                     prop.observer_func(*args)
-                _call(self, _ON_CHANGE, fp, prop_name, new_value, old_value)
+                _call(self, _ON_CHANGE, prop_name, new_value, old_value)
 
     return handler
 
@@ -1554,11 +1563,11 @@ def t_view_proxy_attach(overridden: Any, meta: TypeMeta):
         assert vp.Proxy == self
         self.__so_ref__ = vp
         self.__so_old__ = dict()
-        _call(self, _ON_ATTACH, vp)
-        meta.init_properties(self, vp)
-        meta.init_display_modes(self, vp)
-        meta.apply_extensions(self, vp, _ON_ATTACH)
-        _call(self, _ON_START, vp)
+        _call(self, _ON_ATTACH)
+        meta.init_properties(self)
+        meta.init_display_modes(self)
+        meta.apply_extensions(self, _ON_ATTACH)
+        _call(self, _ON_START)
 
     return handler
 
@@ -1573,7 +1582,7 @@ def t_view_proxy_ctx_menu(overridden: Any, meta: TypeMeta):
     if call:
 
         def handler(self, vp: ViewProviderDocumentObject, menu: QMenu):
-            call(self, vp, menu)
+            call(self, menu)
 
         return handler
 
@@ -1597,7 +1606,7 @@ def t_view_proxy_edit_start(overridden: Any, meta: TypeMeta):
     if call:
 
         def handler(self, vp: ViewProviderDocumentObject, mode: int = 0):
-            return call(self, vp, mode)
+            return call(self, mode)
 
         return handler
 
@@ -1609,7 +1618,7 @@ def t_view_proxy_edit_end(overridden: Any, meta: TypeMeta):
     if call:
 
         def handler(self, vp: ViewProviderDocumentObject, mode: int = 0):
-            return call(self, vp, mode)
+            return call(self, mode)
 
         return handler
 
@@ -1621,7 +1630,7 @@ def t_view_proxy_delete(overridden: Any, meta: TypeMeta):
     if call:
 
         def handler(self, vp: ViewProviderDocumentObject, sub_elements):
-            return call(self, vp, sub_elements)
+            return call(self, sub_elements)
 
         return handler
 
@@ -1633,7 +1642,7 @@ def t_view_proxy_dbl_click(overridden: Any, meta: TypeMeta):
     if call:
 
         def handler(self, vp: ViewProviderDocumentObject):
-            return call(self, vp)
+            return call(self)
 
         return handler
 
@@ -1643,13 +1652,13 @@ def t_view_proxy_dbl_click(overridden: Any, meta: TypeMeta):
 def t_view_proxy_change(overridden: Any, meta: TypeMeta):
     def handler(self, vp: ViewProviderDocumentObject, prop_name: str):
         new_value = getattr(vp, prop_name, None)
-        meta.apply_extensions(self, vp, _ON_CHANGE, prop_name)
+        meta.apply_extensions(self, _ON_CHANGE, prop_name)
         prop = meta.property_lookup.get(prop_name, None)
         if prop:
             if prop.observer_func:
                 args = (self, new_value)[0 : prop.observer_arity]
                 prop.observer_func(*args)
-        return _call(self, _ON_CHANGE, vp, new_value)
+        return _call(self, _ON_CHANGE, new_value)
 
     return handler
 
@@ -1744,7 +1753,7 @@ def t_view_proxy_object_change(overridden: Any, meta: TypeMeta):
     if call:
 
         def handler(self, obj: DocumentObject, prop_name: str):
-            return call(self, obj, prop_name)
+            return call(self, prop_name)
 
         return handler
 
@@ -1818,14 +1827,14 @@ def t_migrations_onDocumentRestored(overridden, meta: MigrationMeta):
         self.__so_ref__ = fp
         version = getattr(fp, _SO_VERSION, 1)
         if not meta.inplace:
-            _migrate_class(self, meta, version, current_version, fp)
+            _migrate_class(self, meta, version, current_version)
         else:
             if version < current_version:
-                _migrate_upgrade(self, meta, version, current_version, fp)
+                _migrate_upgrade(self, meta, version, current_version)
             elif version > current_version:
-                _migrate_downgrade(self, meta, version, current_version, fp)
+                _migrate_downgrade(self, meta, version, current_version)
         if overridden:
-            overridden(self, fp)
+            overridden(self)
 
     return handler
 
@@ -1837,7 +1846,6 @@ def _migrate_class(
     meta: MigrationMeta,
     version: int,
     current_version: int,
-    fp: DocumentObject,
 ):
     old_v_id = f"{meta.old.__name__}:{version}"
     new_v_id = f"{meta.current.__name__}:{current_version}"
@@ -1851,8 +1859,7 @@ def _migrate_class(
             meta,
             version,
             current_version,
-            fp,
-            lambda: self.on_migrate_class(version, fp),
+            lambda: self.on_migrate_class(version),
         )
 
 
@@ -1863,7 +1870,6 @@ def _migrate_upgrade(
     meta: MigrationMeta,
     version: int,
     current_version: int,
-    fp: DocumentObject,
 ):
     old_v_id = f"{meta.current.__name__}:{version}"
     print_log(
@@ -1876,8 +1882,7 @@ def _migrate_upgrade(
             meta,
             version,
             current_version,
-            fp,
-            lambda: self.on_migrate_upgrade(version, fp),
+            lambda: self.on_migrate_upgrade(version),
         )
 
 
@@ -1888,7 +1893,6 @@ def _migrate_downgrade(
     meta: MigrationMeta,
     version: int,
     current_version: int,
-    fp: DocumentObject,
 ):
     old_v_id = f"{meta.current.__name__}:{version}"
     print_log(
@@ -1901,8 +1905,7 @@ def _migrate_downgrade(
             meta,
             version,
             current_version,
-            fp,
-            lambda: self.on_migrate_downgrade(version, fp),
+            lambda: self.on_migrate_downgrade(version),
         )
 
 
@@ -1913,7 +1916,6 @@ def _try_migration(
     meta: MigrationMeta,
     version: int,
     current_version: int,
-    fp: DocumentObject,
     action: Callable,
 ):
     old_v_id = f"{meta.old.__name__}:{version}"
@@ -1922,20 +1924,21 @@ def _try_migration(
     print_log(f"A migration handler was found, attempting to migrate {message}")
     try:
         action()
+        fp = self.__so_ref__
         new_version = getattr(fp, _SO_VERSION, version)
         if new_version != current_version or not isinstance(fp.Proxy, meta.current):
             print_err(f"!!! Failed to migrate {message}")
             if hasattr(self, _ON_MIGRATE_ERROR):
-                self.on_migrate_error(version, fp)
+                self.on_migrate_error(version)
         else:
             print_log(f"Migration completed {message}")
             if hasattr(self, _ON_MIGRATE_COMPLETE):
-                self.on_migrate_complete(version, fp)
+                self.on_migrate_complete(version)
     except Exception:
         print_err(f"!!! Failed to migrate {message}")
         traceback.print_exc(file=sys.stderr)
         if hasattr(self, _ON_MIGRATE_ERROR):
-            self.on_migrate_error(version, fp)
+            self.on_migrate_error(version)
 
 
 ##: ┌───────────────────────────────────────────────────────────────────────────┐

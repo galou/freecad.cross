@@ -51,7 +51,8 @@ class ObserverViewProxy:
                          ' (-1.85, 0.9, 0.002) corresponds to top-left'),
     )
 
-    def on_attach(self, vobj: VPDO) -> None:
+    def on_attach(self) -> None:
+        # `self.position` is not yet initialized, use `self.ViewObject.Position`.
         (
             self.root_node,
             self.text_node,
@@ -59,13 +60,10 @@ class ObserverViewProxy:
             self.material_node,
         ) = text_2d(
                 '',
-                tuple(self.position),
+                self.ViewObject.Position,
         )
 
-    def on_create(self, vobj: VPDO) -> None:
-        self.on_position_changed(vobj)
-
-    def on_object_change(self, obj: CrossObserver, prop_name: str) -> None:
+    def on_object_change(self, prop_name: str) -> None:
         if not self.Object.ExpressionEngine:
             self.text_node.string = ''
         else:
@@ -74,7 +72,7 @@ class ObserverViewProxy:
         self._set_color(self.material_node)
 
     @dot_display_mode.builder
-    def dot_display_mode_builder(self, vobj: VPDO):
+    def dot_display_mode_builder(self):
         return self.root_node
 
     def _set_color(self, material_node: coin.SoMaterial) -> None:
@@ -86,7 +84,6 @@ class ObserverViewProxy:
     @position.observer
     def on_position_changed(
             self,
-            vobj: VPDO,
     ) -> None:
         self.matrix_transform_node.matrix = coin.SbMatrix(
             0.0097401002,    0,               0,               0,

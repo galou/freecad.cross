@@ -115,7 +115,7 @@ def _add_joint_variable(
             min_, max_ = -1e999, 1e999
         else:
             min_, max_ = joint.LowerLimit, joint.UpperLimit
-        # Deativate callback on change.
+        # Deactivate callback on change.
         robot.setPropertyStatus(used_var_name, ['NoRecompute'])
         setattr(robot, used_var_name, (value, min_, max_, 1.0))
         robot.setPropertyStatus(used_var_name, [])

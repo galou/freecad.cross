@@ -70,7 +70,7 @@ class KKJoint:
     # perpendicular on Zi and Zj, where (i) is the antecedent of (j).
     # Among all possible directions for Xi, the one which is on the longest
     # branch is chosen. Other directions are denoted X'i, X''i, etc.
-    # Thus, some other auxiliar frames R'(O',X',Y',Z') will be defined fixed
+    # Thus, some other auxiliary frames R'(O',X',Y',Z') will be defined fixed
     # with respect to link(i).
 
     # γi: angle between Xi and X'i about Zi, in radians.
@@ -323,7 +323,7 @@ class KKRobot:
       the antecedent of (j). Among all possible directions
       for Xi, the one which is on the longest branch is
       chosen. Other directions are denoted X'i, X''i, etc.
-      Thus, some other auxiliar frames R'(O',X',Y',Z') will be defined fixed
+      Thus, some other auxiliary frames R'(O',X',Y',Z') will be defined fixed
       with respect to link(i).
 
     """

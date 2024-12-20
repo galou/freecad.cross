@@ -303,7 +303,7 @@ def _add_ros_joint(
         # All attributes of `limit` are compulsory.
         ros_joint.LowerLimit = factor * urdf_joint.limit.lower
         ros_joint.UpperLimit = factor * urdf_joint.limit.upper
-        ros_joint.Effort = factor * urdf_joint.limit.effort
+        ros_joint.Effort = urdf_joint.limit.effort  # Nm or N also in CROSS.
         ros_joint.Velocity = factor * urdf_joint.limit.velocity
     return ros_joint
 

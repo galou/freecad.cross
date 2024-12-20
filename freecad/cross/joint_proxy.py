@@ -364,7 +364,7 @@ class JointProxy(ProxyBase):
                 limit_xml.attrib['lower'] = str(joint.LowerLimit * factor)
                 limit_xml.attrib['upper'] = str(joint.UpperLimit * factor)
                 limit_xml.attrib['velocity'] = str(joint.Velocity * factor)
-                limit_xml.attrib['effort'] = str(joint.Effort)
+                limit_xml.attrib['effort'] = str(joint.Effort)  # Already in N or Nm.
                 joint_xml.append(limit_xml)
         if joint.Mimic:
             mimic_xml = et.fromstring('<mimic/>')

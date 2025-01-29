@@ -11,6 +11,7 @@ import FreeCAD as fc
 import FreeCADGui as fcgui
 
 from ..gui_utils import tr
+from ..wb_utils import is_robot
 
 
 def _supported_object_selected():
@@ -52,6 +53,10 @@ class _KKEditCommand:
             robot = make_robot('Robot')
         else:
             robot = objs[0]
+            if not is_robot(robot):
+                warn('Selected object is not a robot', True)
+                return
+            doc = robot.Document
         diag = KKDialog(robot)
         kk_robot = diag.exec_()
         diag.close()

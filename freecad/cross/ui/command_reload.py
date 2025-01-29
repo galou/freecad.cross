@@ -47,6 +47,7 @@ class _ReloadCommand:
         _reload_module('freecad.cross.planning_scene_utils')
         _reload_module('freecad.cross.pose_proxy')
         _reload_module('freecad.cross.robot')
+        _reload_module('freecad.cross.robot_from_kk')
         _reload_module('freecad.cross.robot_from_urdf')
         _reload_module('freecad.cross.robot_proxy')
         _reload_module('freecad.cross.ros.node')

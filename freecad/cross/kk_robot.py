@@ -13,6 +13,7 @@ from itertools import accumulate
 from itertools import pairwise
 import math
 from typing import Any, Optional
+from typing import TYPE_CHECKING
 
 import FreeCAD as fc
 
@@ -26,20 +27,56 @@ from .wb_utils import ros_name
 
 try:
     import numpy as np
-    from numpy.typing import ArrayLike
     from . import geometry_helpers as gh
 except ImportError as e:
     warn(f'numpy not available, some functionalities will not work, error: {e}',
          False)
-    ArrayLike = Any
 
 # Stubs and type hints.
-from .robot import Robot as CrossRobot  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot". # noqa: E501
+if TYPE_CHECKING:
+    try:
+        from numpy.typing import ArrayLike
+    except ImportError:
+        ArrayLike = Any
+    from .robot import Robot as CrossRobot  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot". # noqa: E501
 
 
 @dataclass
 class KKJoint:
-    """A joint of a robot."""
+    """A joint of a robot.
+
+
+    The parameters of the Khalil-Kleinfinger notation correspond to the order
+    of the applied transforms and are:
+    - pre_rz (gamma): angle between Xi and X'i about Zi.
+    - pre_tz (epsilon): distance between Oi and O'i along Zi.
+    - rx (alpha): angle between Zi and Zj about X'i.
+    - tz (d): distance between O'i and Zj along X'i.
+    - rz (theta): angle between X'i and Xj about Zj.
+    - tx (r): distance between Oj and X'i along Zj.
+
+    The Denavit-Hartenberg convention from
+    [Wikipedia](https://en.wikipedia.org/wiki/Denavit–Hartenberg_parameters)
+    can be converted to the KK notation as follows:
+        KK  DH
+        Θ   γ
+        d   ε
+        α   α
+        r   d
+        0   Θ
+        0   r
+
+    The modified DH parameters (also from Wikipedia) can be converted to the
+    KK notation as follows:
+        modified-DH  KK
+        0            γ
+        0            ε
+        α            α
+        r            d
+        Θ            Θ
+        d            r
+
+    """
     # Notation:
     # The axis of joint (i) will be Zi.
     # The coordinate frame Ri (Oi,Xi,Yi,Zi) is fixed with respect to link (i).
@@ -74,11 +111,11 @@ class KKJoint:
     # with respect to link(i).
 
     # γi: angle between Xi and X'i about Zi, in radians.
-    # Default to 0.0, i.e. pure DH convention.
+    # Default to 0.0, i.e. pure modified DH convention.
     gamma: float = 0.0
 
     # εi: distance between Oi and O'i, in meters.
-    # Default to 0.0, i.e. pure DH convention.
+    # Default to 0.0, i.e. pure modified DH convention.
     epsilon: float = 0.0
 
     @property
@@ -279,26 +316,34 @@ class KKJoint:
         Return the (URDF) origin of the joint as Placement, i.e. the
         placement of the joint frame with respect to the parent link frame.
 
-        The transformation matrix is T(i-1)(i) =
+        The transformation matrix of KK is
+        ⎡-sγ*sθ*cα + cγ*cθ, -sγ*cα*cθ - sθ*cγ,  sα*sγ, d*cγ + r*sα*sγ⎤
+        ⎢ sγ*cθ + sθ*cα*cγ, -sγ*sθ + cα*cγ*cθ, -sα*cγ, d*sγ - r*sα*cγ⎥
+        ⎢            sα*sθ,             sα*cθ,     cα,       ε + r*cα⎥
+        ⎣                0,                 0,      0,              1⎦
+
+        The transformation matrix of modified-DH is T(i-1)(i) =
             | cos(Θ)         -sin(Θ)       0        d         |
             | cos(ɑ)sin(Θ)   cos(ɑ)cos(Θ)  -sin(ɑ)  -r*sin(ɑ) |
             | sin(ɑ)sin(Θ)   sin(ɑ)cos(Θ)  cos(ɑ)   r*cos(ɑ)  |
             | 0              0             0        1         |
 
-        # TODO: Implement KK.
         """
-        if not self.is_dh_compatible:
-            raise NotImplementedError('The joint is not DH compatible.')
         cθ = math.cos(self.theta)
         sθ = math.sin(self.theta)
         cα = math.cos(self.alpha)
         sα = math.sin(self.alpha)
+        cγ = math.cos(self.gamma)
+        sγ = math.sin(self.gamma)
+        r = self.r
+        d = self.d
+        ε = self.epsilon
         placement = fc.Placement(
             fc.Matrix(
-                cθ,      -sθ,     0.0,       self.d,
-                cα * sθ, cα * cθ, -sα, -self.r * sα,
-                sα * sθ, sα * cθ,  cα,  self.r * cα,
-                0.0,     0.0,     0.0,          1.0,
+                  -sγ*sθ*cα + cγ*cθ, -sγ*cα*cθ - sθ*cγ,  sα*sγ, d*cγ + r*sα*sγ,
+                   sγ*cθ + sθ*cα*cγ, -sγ*sθ + cα*cγ*cθ, -sα*cγ, d*sγ - r*sα*cγ,
+                              sα*sθ,             sα*cθ,     cα,       ε + r*cα,
+                                  0,                 0,      0,              1,
             ),
         )
         placement.Base *= 1000.0  # Convert to mm.
@@ -381,16 +426,17 @@ class KKRobot:
         """
         if not self.is_dh_compatible:
             warn(
-                f'Robot {robot.Label} is not compatible with the'
-                ' DH convention, not implemented yet', True,
+                f'Robot "{robot.Label}" is not compatible with the'
+                ' DH convention, not implemented yet',
+                True,
             )
             return False
         cross_joints = robot.Proxy.get_joints()
         cross_links = robot.Proxy.get_links()
 
-        if (not cross_joints) or (len(cross_joints) > len(self.joints)):
+        if len(cross_joints) > len(self.joints):
             warn(
-                f'Robot {robot.Label} has a larger number of joints than'
+                f'Robot "{robot.Label}" has a larger number of joints than'
                 ' in the DH parameter table, not implemented yet',
                 True,
             )
@@ -401,7 +447,7 @@ class KKRobot:
             and (len(cross_joints) != (len(cross_links) - 1))
         ):
             warn(
-                f'Robot {robot.Label} has {len(cross_joints)} joints and'
+                f'Robot "{robot.Label}" has {len(cross_joints)} joints and'
                 f' {len(cross_links)} links, should have'
                 f' {len(cross_joints) + 1} links, not implemented yet',
                 True,
@@ -410,7 +456,7 @@ class KKRobot:
 
         if ((not cross_joints) and (len(cross_links) == 1)):
             warn(
-                f'Robot {robot.Label} has 1 link and no'
+                f'Robot "{robot.Label}" has 1 link and no'
                 ' joint, not implemented yet',
                 True,
             )

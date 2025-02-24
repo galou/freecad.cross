@@ -11,7 +11,6 @@ import FreeCAD as fc
 import FreeCADGui as fcgui
 
 from ..gui_utils import tr
-from ..wb_utils import is_robot
 
 
 def _supported_object_selected():
@@ -40,6 +39,7 @@ class _KKEditCommand:
         # Import late to avoid slowing down workbench start-up.
         from ..freecad_utils import warn
         from ..robot_proxy import make_robot
+        from ..wb_utils import is_robot
         from .kk_dialog import KKDialog
 
         objs = fcgui.Selection.getSelection()

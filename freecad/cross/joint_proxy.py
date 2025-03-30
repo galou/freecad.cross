@@ -167,13 +167,18 @@ class JointProxy(ProxyBase):
         if prop == 'MimickedJoint':
             if ((obj.MimickedJoint is not None)
                     and (obj.Type != obj.MimickedJoint.Type)):
-                warn(
-                    'Mimicked joint must have the same type'
-                    f' but "{obj.Label}"\'s type is {obj.Type} and'
-                    f' "{obj.MimickedJoint}"\'s is {obj.MimickedJoint.Type}',
-                    True,
+                continuous_mimicks_revolute = (
+                        (obj.Type == 'continuous')
+                        and (obj.MimickedJoint.Type == 'revolute')
                 )
-                obj.MimickedJoint = None
+                if not continuous_mimicks_revolute:
+                    warn(
+                        'Mimicked joint must have the same type'
+                        f' but "{obj.Label}"\'s type is {obj.Type} and'
+                        f' "{obj.MimickedJoint.Label}"\'s is {obj.MimickedJoint.Type}',
+                        True,
+                    )
+                    obj.MimickedJoint = None
         if prop in ('Label', 'Label2'):
             robot = self.get_robot()
             if robot and hasattr(robot, 'Proxy'):

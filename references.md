@@ -50,6 +50,10 @@
 
 - [URDF Creator](https://www.roboeverything.com/), closed source
 
+# Mobile Robot URDF Maker
+
+- [Mobile Robot URDF Maker](https://github.com/ali-pahlevani/Mobile_Robot_URDF_Maker/tree/main)
+
 # Workcell Builder
 
 - [Part of Easy Manipulation Deployment](https://easy-manipulation-deployment-docs.readthedocs.io/en/latest/emd_packages/workcell_builder/workcell_builder.html)
@@ -75,6 +79,7 @@
 
 - `ros2 launch urdf_tutorial display.launch.py`
 - [Jupyterlab-urdf](https://jupyterlab-urdf.readthedocs.io/en/latest/)
+- [scikit-robot](https://scikit-robot.readthedocs.io/en/latest/)
 
 # Converting URDF files
 
@@ -103,6 +108,10 @@
 
 - [Phobos](https://github.com/dfki-ric/phobos) allows to make kinematic, inertia, collision, etc for your robot model and export as URDF, SDF, SMURF and other formats.
 - [SDFGen](https://github.com/cole-bsmr/SDFGen)
+
+# Add-ons for MATLAB
+
+- [MATLAB URDF Builder](https://github.com/artineering/robotBuilder_matlab)
 
 # Other links
 

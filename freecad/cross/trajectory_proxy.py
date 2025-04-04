@@ -151,6 +151,7 @@ class TrajectoryProxy:
         if self.robot and (not is_robot(self.robot)):
             warn('The selected object is not a robot', True)
             self.robot = None
+            # Implementation note, do not return here but later.
         if not self.robot:
             self._joint_map.clear()
             return

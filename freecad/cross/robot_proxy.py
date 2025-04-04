@@ -21,6 +21,7 @@ from .freecad_utils import add_property
 from .freecad_utils import error
 from .freecad_utils import get_properties_of_category
 from .freecad_utils import get_valid_property_name
+from .freecad_utils import has_type
 from .freecad_utils import is_origin
 from .freecad_utils import label_or
 from .freecad_utils import quantity_as
@@ -43,7 +44,6 @@ from .wb_utils import get_rel_and_abs_path
 from .wb_utils import get_valid_urdf_name
 from .wb_utils import is_attached_collision_object
 from .wb_utils import is_joint
-from .wb_utils import is_link
 from .wb_utils import is_robot
 from .wb_utils import remove_ros_workspace
 from .wb_utils import ros_name
@@ -349,14 +349,27 @@ class RobotProxy(ProxyBase):
     def _cleanup_group(self) -> Optional[DO]:
         """Remove the objects not supported by CROSS::Robot.
 
-        Recursion provoked by modifying `Group` will take care of removing
-        the remaining unsupported objects.
+        Actually removes only one object but recursion provoked by modifying
+        `Group` will take care of removing the remaining unsupported objects.
 
         """
+        allowed_types = [
+                'Cross::Link',
+                'Cross::Joint',
+                'Cross::AttachedCollisionObject',
+                'Cross::RgbCamera',
+        ]
+
+        def is_allowed(o: DO) -> bool:
+            for t in allowed_types:
+                if has_type(o, t):
+                    return True
+            return False
+
         if not self.is_execute_ready():
             return None
         for o in self.robot.Group[::-1]:
-            if is_link(o) or is_joint(o) or is_attached_collision_object(o):
+            if is_allowed(o):
                 # Supported.
                 continue
             warn_unsupported(o, by='CROSS::Robot', gui=True)
@@ -522,10 +535,10 @@ class RobotProxy(ProxyBase):
         return
 
     def compute_poses(self) -> None:
-        """Set `Placement` of all joints, links, and attached collision objects.
+        """Set `Placement` of CROSS objects.
 
-        Compute and set the pose of all joints, links, and attached collision
-        objects in the same frame as the robot.
+        Compute and set the pose of all joints, links, attached collision
+        objects, and sensors in the same frame as the robot.
 
         """
         joint_cache: dict[CrossJoint, fc.Placement] = {}
@@ -562,6 +575,14 @@ class RobotProxy(ProxyBase):
             if aco.Placement != aco.Link.Placement:
                 # Avoid recursive recompute.
                 aco.Placement = aco.Link.Placement
+        for o in self.robot.Group:
+            if not has_type(o, 'Cross::RgbCamera'):
+                continue
+            if not o.Link:
+                continue
+            if o.Placement != o.Link.Placement:
+                # Avoid recursive recompute.
+                o.Placement = o.Link.Placement
 
     def get_attached_collision_objects(self) -> list[CrossAttachedCollisionObject]:
         # TODO: as property.

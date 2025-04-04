@@ -13,6 +13,7 @@ from .ui import command_new_joint  # noqa: F401
 from .ui import command_new_link  # noqa: F401
 from .ui import command_new_observer  # noqa: F401
 from .ui import command_new_pose  # noqa: F401
+from .ui import command_new_rgb_camera  # noqa: F401
 from .ui import command_new_robot  # noqa: F401
 from .ui import command_new_trajectory  # noqa: F401
 from .ui import command_new_workcell  # noqa: F401
@@ -100,6 +101,7 @@ class CrossWorkbench(fcgui.Workbench):
                 'NewPose',  # Defined in ./ui/command_new_pose.py.
                 'NewTrajectory',  # Defined in ./ui/command_new_trajectory.py.
                 'NewObserver',  # Defined in ./ui/command_new_observer.py.
+                'NewRgbCamera',  # Defined in ./ui/command_new_rgb_camera.py.
                 'SetJoints',  # Defined in ./ui/command_set_joints.py.
                 'Separator',
                 # Definition of inertial properties.

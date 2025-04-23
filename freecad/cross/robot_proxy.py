@@ -415,6 +415,13 @@ class RobotProxy(ProxyBase):
                 self.robot.Document.removeObject(name)
         self.created_objects.clear()
 
+    def clear_attached_collision_objects(self) -> None:
+        """Remove all attached collision objects."""
+        acos = self.get_attached_collision_objects()
+        for aco in acos:
+            aco.removeObjectsFromDocument()  # Remove children.
+            self.robot.Document.removeObject(aco.Name)
+
     def set_joint_enum(self) -> None:
         """Set the enum for Child and Parent of all joints."""
         def get_possible_parent_links(joint: CrossJoint) -> list[str]:
@@ -569,7 +576,7 @@ class RobotProxy(ProxyBase):
     def get_links(self) -> list[CrossLink]:
         """Return the list of CROSS links in the order of creation."""
         # TODO: as property.
-        if self._links is not None:
+        if getattr(self, '_links', None) is not None:
             return list(self._links)  # A copy.
         if not self.is_execute_ready():
             return []

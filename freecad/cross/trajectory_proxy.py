@@ -20,16 +20,18 @@ try:
     from moveit_msgs.msg import RobotState
     from trajectory_msgs.msg import JointTrajectory
     from trajectory_msgs.msg import JointTrajectoryPoint
+    _g_imports_ok = True
 except ImportError:
     RobotState = Any
     JointTrajectory = Any
     JointTrajectoryPoint = Any
+    _g_imports_ok = False
 
 from .freecad_utils import add_property
 from .freecad_utils import message
 from .freecad_utils import warn
-from .ui.replay_trajectory_dialog import ReplayTrajectoryDialog
 from .ui.choose_trajectory_dialog import ChooseTrajectoryDialog
+from .ui.replay_trajectory_dialog import ReplayTrajectoryDialog
 from .utils import i_th_item
 from .wb_utils import ICON_PATH
 from .wb_utils import is_robot
@@ -275,6 +277,9 @@ class TrajectoryProxy:
             - `trajectory` with a list of `JointTrajectory` messages as dict,
             - `trajectory_start` with a `RobotState` message as dict.
         """
+        if not _g_imports_ok:
+            warn('ROS messages could not be imported, giving up', True)
+            return
         if 'trajectory' not in display_trajectory:
             warn('Wrongly formatted DisplayTrajectory message', True)
             return

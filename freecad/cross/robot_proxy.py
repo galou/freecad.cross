@@ -358,6 +358,7 @@ class RobotProxy(ProxyBase):
                 'Cross::Joint',
                 'Cross::AttachedCollisionObject',
                 'Cross::RgbCamera',
+                'Cross::Lidar2d',
         ]
 
         def is_allowed(o: DO) -> bool:
@@ -576,7 +577,8 @@ class RobotProxy(ProxyBase):
                 # Avoid recursive recompute.
                 aco.Placement = aco.Link.Placement
         for o in self.robot.Group:
-            if not has_type(o, 'Cross::RgbCamera'):
+            if (not (has_type(o, 'Cross::RgbCamera')
+                    or has_type(o, 'Cross::Lidar2d'))):
                 continue
             if not o.Link:
                 continue

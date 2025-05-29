@@ -30,6 +30,7 @@ from freecad.cross.gui_utils import *
 from freecad.cross.import_dae import *
 from freecad.cross.joint_proxy import *
 from freecad.cross.kk_robot import *
+from freecad.cross.lidar2d_proxy import *
 from freecad.cross.link_proxy import *
 from freecad.cross.mesh_utils import *
 from freecad.cross.placement_utils import *

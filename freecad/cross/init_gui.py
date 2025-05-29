@@ -10,6 +10,7 @@ from .ui import command_get_planning_scene  # noqa: F401
 from .ui import command_kk_edit  # noqa: F401
 from .ui import command_new_attached_collision_object  # noqa: F401
 from .ui import command_new_joint  # noqa: F401
+from .ui import command_new_lidar2d  # noqa: F401
 from .ui import command_new_link  # noqa: F401
 from .ui import command_new_observer  # noqa: F401
 from .ui import command_new_pose  # noqa: F401
@@ -102,6 +103,7 @@ class CrossWorkbench(fcgui.Workbench):
                 'NewTrajectory',  # Defined in ./ui/command_new_trajectory.py.
                 'NewObserver',  # Defined in ./ui/command_new_observer.py.
                 'NewRgbCamera',  # Defined in ./ui/command_new_rgb_camera.py.
+                'NewLidar2d',  # Defined in ./ui/command_new_lidar2d.py.
                 'SetJoints',  # Defined in ./ui/command_set_joints.py.
                 'Separator',
                 # Definition of inertial properties.

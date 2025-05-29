@@ -38,6 +38,8 @@ class _ReloadCommand:
         _reload_module('freecad.cross.import_dae')
         _reload_module('freecad.cross.joint')
         _reload_module('freecad.cross.joint_proxy')
+        _reload_module('freecad.cross.lidar2d')
+        _reload_module('freecad.cross.lidar2d_proxy')
         _reload_module('freecad.cross.link')
         _reload_module('freecad.cross.link_proxy')
         _reload_module('freecad.cross.mesh_utils')

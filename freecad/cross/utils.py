@@ -11,6 +11,7 @@ from functools import reduce
 import os
 from pathlib import Path
 from typing import Any, Generator, Iterable, Optional
+from typing import TypeVar
 import xml.etree.ElementTree as et
 from xml.dom import minidom
 import re
@@ -20,6 +21,7 @@ import FreeCAD as fc
 INVALID_FILENAME_CHARS = re.compile(r'[^\w.\-]+')
 
 # Stubs and type hints.
+T = TypeVar('T')
 DO = fc.DocumentObject
 DOList = Iterable[DO]
 
@@ -202,6 +204,11 @@ def values_from_string(
     """
     conversions = (str_to_float(v) for v in re.split(delimiters, values_str))
     return [v for v in conversions if v is not None]
+
+
+def sorted_unique(indices: Iterable[T]) -> list[T]:
+    """Return a sorted list of unique indices."""
+    return sorted(set(indices))
 
 
 def str_to_float(text: str, default: float | None = None) -> float | None:

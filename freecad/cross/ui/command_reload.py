@@ -86,6 +86,8 @@ class _ReloadCommand:
         _reload_module('freecad.cross.ui.set_joints_dialog')
         _reload_module('freecad.cross.ui.set_joints_from_trajectory')
         _reload_module('freecad.cross.ui.set_joints_manual_input_table')
+        _reload_module('freecad.cross.ultrasound')
+        _reload_module('freecad.cross.ultrasound_proxy')
         _reload_module('freecad.cross.urdf_loader')
         _reload_module('freecad.cross.urdf_parser_utils')
         _reload_module('freecad.cross.urdf_utils')

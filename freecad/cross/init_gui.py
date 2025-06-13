@@ -17,6 +17,7 @@ from .ui import command_new_pose  # noqa: F401
 from .ui import command_new_rgb_camera  # noqa: F401
 from .ui import command_new_robot  # noqa: F401
 from .ui import command_new_trajectory  # noqa: F401
+from .ui import command_new_ultrasound  # noqa: F401
 from .ui import command_new_workcell  # noqa: F401
 from .ui import command_new_xacro_object  # noqa: F401
 from .ui import command_reload  # Developer tool.  # noqa: F401
@@ -104,6 +105,7 @@ class CrossWorkbench(fcgui.Workbench):
                 'NewObserver',  # Defined in ./ui/command_new_observer.py.
                 'NewRgbCamera',  # Defined in ./ui/command_new_rgb_camera.py.
                 'NewLidar2d',  # Defined in ./ui/command_new_lidar2d.py.
+                'NewUltrasound',  # Defined in ./ui/command_new_ultrasound.py.
                 'SetJoints',  # Defined in ./ui/command_set_joints.py.
                 'Separator',
                 # Definition of inertial properties.

@@ -50,6 +50,31 @@ def add_path_to_environment_variable(path: [Path | str], env_var: str) -> None:
         os.environ[env_var] += f'{path_sep}{path_str}'
 
 
+def prepend_python_path(path: Path | str) -> None:
+    """Add the path to sys.path if existing."""
+    path = Path(path).expanduser().absolute()
+    if (str(path) not in sys.path) and path.exists():
+        sys.path.insert(0, str(path))
+
+
+def add_python_path(path: Path | str) -> None:
+    """Add the path to sys.path if existing."""
+    path = Path(path).expanduser().absolute()
+    if (str(path) not in sys.path) and path.exists():
+        sys.path.append(str(path))
+
+
+def add_ld_library_path(path: Path | str) -> None:
+    """Add the path to LD_LIBRARY_PATH if existing."""
+    path = Path(path).expanduser().absolute()
+    existing_paths = os.environ.get('LD_LIBRARY_PATH', '').split(os.pathsep)
+    if (str(path) not in existing_paths) and path.exists():
+        if 'LD_LIBRARY_PATH' not in os.environ:
+            os.environ['LD_LIBRARY_PATH'] = str(path)
+        else:
+            os.environ['LD_LIBRARY_PATH'] += os.pathsep + str(path)
+
+
 def get_valid_filename(text: str) -> str:
     """Return a string that is a valid file name."""
     return INVALID_FILENAME_CHARS.sub('_', text)

@@ -5,16 +5,15 @@
 
 from __future__ import annotations
 
-from itertools import islice
-from itertools import zip_longest
-from functools import reduce
 import os
-from pathlib import Path
-from typing import Any, Generator, Iterable, Optional
-from typing import TypeVar
-import xml.etree.ElementTree as et
-from xml.dom import minidom
 import re
+import sys
+import xml.etree.ElementTree as et
+from functools import reduce
+from itertools import islice, zip_longest
+from pathlib import Path
+from typing import Any, Generator, Iterable, Optional, TypeVar
+from xml.dom import minidom
 
 import FreeCAD as fc
 

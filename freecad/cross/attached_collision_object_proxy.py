@@ -42,7 +42,7 @@ def _add_fc_links(
     Parameters
     ----------
     - attached_collision_object: a FreeCAD object of type
-                                 Cross::CrossAttachedCollisionObject.
+                                 Cross::AttachedCollisionObject.
     - objects: the list of objects to potentially add.
 
     """

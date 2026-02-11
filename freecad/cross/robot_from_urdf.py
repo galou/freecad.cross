@@ -119,7 +119,7 @@ def robot_from_urdf(
     # Mimic joints must be handled after creating all joints because the
     # mimicking joint can be defined before the mimicked joint in URDF.
     _define_mimic_joints(urdf_robot, joint_map)
-    _compensate_joint_placement(robot, urdf_robot, joint_map)
+    _canonicalize_joint_axis(robot, urdf_robot, joint_map)
 
     # Change the visual properties after having added all links.
     if hasattr(fc, 'GuiUp') and fc.GuiUp:
@@ -350,7 +350,7 @@ def _define_mimic_joints(
         ros_joint.Offset = offset
 
 
-def _compensate_joint_placement(
+def _canonicalize_joint_axis(
         robot: CrossRobot,
         urdf_robot: UrdfRobot,
         joint_map: dict[str, CrossJoint],
@@ -484,7 +484,7 @@ def _add_geometries(
 
     `geometries` is either `visuals` or `collisions` and the geometry itself is
     `geometries[?].geometry`.
-    If `name_linked_geom` is empty, not FC link is created in `link`.
+    If `name_linked_geom` is empty, no FC link is created in `link`.
 
     Return the list of objects representing the geometries and the list of
     FreeCAD links.

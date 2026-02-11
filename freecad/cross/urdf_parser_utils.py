@@ -1,9 +1,6 @@
 # Utility function depending on the `urdf_parser_py` module (provided by ROS).
 
-from __future__ import annotations
-
 from pathlib import Path
-from typing import Optional
 
 import FreeCAD as fc
 
@@ -31,13 +28,13 @@ from .urdf_utils import rotation_from_rpy
 # Typing hints.
 Doc = fc.Document
 DO = fc.DocumentObject
-Shape = [Box, Cylinder, Mesh, Sphere]
+Shape = Box | Cylinder | Mesh | Sphere
 
 
 def obj_from_geometry(
         geometry: Shape,
-        doc_or_group: [Doc | DO],
-) -> tuple[Optional[DO], Optional[Path]]:
+        doc_or_group: Doc | DO,
+) -> tuple[DO | None, Path | None]:
     """Return a FreeCAD object for the URDF shape with the path for meshes."""
     if isinstance(geometry, Box):
         return obj_from_box(geometry, doc_or_group)
@@ -111,14 +108,15 @@ def placement_along_z_from_joint(
 
 def obj_from_box(
         geometry: Box,
-        doc_or_group: [Doc | DO],
-) -> tuple[Optional[DO], None]:
+        doc_or_group: Doc | DO,
+) -> tuple[DO, None]:
     """Return a `Part::Box` object and None.
 
     Return a `Part::Box` object for the URDF shape.
     The second element of the tuple is None for API consistency.
 
     """
+    # A box with its reference point at the lower-left-front corner.
     obj = add_object(doc_or_group, 'Part::Box', 'box')
     obj.Length = geometry.size[0] * 1000.0  # m to mm.
     obj.Width = geometry.size[1] * 1000.0
@@ -127,16 +125,27 @@ def obj_from_box(
     return obj, None
 
 
+def obj_from_sphere(
+        geometry: Sphere,
+        doc_or_group: Doc | DO,
+) -> tuple[DO, None]:
+    obj = add_object(doc_or_group, 'Part::Sphere', 'sphere')
+    obj.Radius = geometry.radius * 1000.0  # m to mm.
+    return obj, None
+
+
 def obj_from_cylinder(
         geometry: Cylinder,
-        doc_or_group: [Doc | DO],
-) -> tuple[Optional[DO], None]:
+        doc_or_group: Doc | DO,
+) -> tuple[DO, None]:
     """Return a `Part::Cylinder` object and None.
 
     Return a `Part::Cylinder` object for the URDF shape.
     The second element of the tuple is None for API consistency.
 
     """
+    # A cylinder along the z-axis with its reference point at the middle of the
+    # bottom disc.
     obj = add_object(doc_or_group, 'Part::Cylinder', 'cylinder')
     obj.Radius = geometry.radius * 1000.0  # m to mm.
     obj.Height = geometry.length * 1000.0  # m to mm.
@@ -146,8 +155,8 @@ def obj_from_cylinder(
 
 def obj_from_mesh(
         geometry: Mesh,
-        doc_or_group: [Doc | DO],
-) -> tuple[Optional[DO], Optional[Path]]:
+        doc_or_group: Doc | DO,
+) -> tuple[DO | None, Path | None]:
     """
     Return a document object and the path to the original file.
 
@@ -160,7 +169,7 @@ def obj_from_mesh(
     """
     mesh_path = abs_path_from_ros_path(geometry.filename)
     if not mesh_path:
-        pkg, rel_path = pkg_and_file_from_ros_path(mesh_path)
+        pkg, _ = pkg_and_file_from_ros_path(geometry.filename)
         if pkg:
             warn(f'ROS package {pkg} not found, cannot read {geometry.filename}')
         else:
@@ -226,12 +235,3 @@ def obj_from_mesh(
     if geometry_scale is not None:
         scale_mesh_object(mesh_obj, geometry_scale)
     return mesh_obj, mesh_path
-
-
-def obj_from_sphere(
-        geometry: Sphere,
-        doc_or_group: [Doc | DO],
-) -> tuple[Optional[DO], None]:
-    obj = add_object(doc_or_group, 'Part::Sphere', 'sphere')
-    obj.Radius = geometry.radius * 1000.0  # m to mm.
-    return obj, None

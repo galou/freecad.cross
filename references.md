@@ -66,6 +66,16 @@
 - No installation, runs in browser
 - No import
 
+# URDF Kitchen
+
+- [URDF Kitchen](https://github.com/Ninagawa123/URDF_kitchen)
+- Web based
+
+# URDF-Studio
+
+- [URDF-Studio](https://github.com/OpenLegged/URDF-Studio)
+- Web based
+
 # Parsing xacro files
 
 - [xacro](https://github.com/ros/xacro)

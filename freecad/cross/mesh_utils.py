@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Iterable
 
 import FreeCAD as fc
-import Mesh  # FreeCAD
+import Mesh as fcmesh  # FreeCAD
 from importers.importDAE import insert as insert_dae  # FreeCAD's BIM workbench
 
 from . import wb_globals
@@ -25,7 +25,7 @@ DOList = Iterable[DO]
 
 def read_mesh_dae(
         filename: Path | str,
-) -> Mesh.Mesh:
+) -> fcmesh.Mesh:
     """Read a mesh from a Collada file."""
     current_doc = fc.activeDocument()
     path = Path(filename)
@@ -35,7 +35,7 @@ def read_mesh_dae(
     fc.setActiveDocument(tmp_doc.Name)
     insert_dae(str(path), tmp_doc.Name)
     tmp_doc.recompute()
-    merged_raw_mesh = Mesh.Mesh()
+    merged_raw_mesh = fcmesh.Mesh()
     for mesh_obj in tmp_doc.Objects:
         if hasattr(mesh_obj, 'Mesh'):
             merged_raw_mesh.addMesh(mesh_obj.Mesh)
@@ -63,7 +63,7 @@ def save_mesh_dae(
 
 def read_mesh(
         filename: Path | str,
-) -> Mesh.Mesh:
+) -> fcmesh.Mesh:
     """Read a mesh from a file.
 
     All files format supported by the Mesh module are supported.
@@ -75,9 +75,9 @@ def read_mesh(
     # object in a temporary document.
     tmp_doc = fc.newDocument(hidden=True, temp=True)
     fc.setActiveDocument(tmp_doc.Name)
-    Mesh.insert(str(path))
+    fcmesh.insert(str(path))
     tmp_doc.recompute()
-    merged_raw_mesh = Mesh.Mesh()
+    merged_raw_mesh = fcmesh.Mesh()
     for mesh_obj in tmp_doc.Objects:
         if hasattr(mesh_obj, 'Mesh'):
             merged_raw_mesh.addMesh(mesh_obj.Mesh)
@@ -99,7 +99,7 @@ def save_mesh(
     """
     Path(filename).parent.mkdir(parents=True, exist_ok=True)
     # TODO: scale to meters.
-    Mesh.export([obj], str(filename))
+    fcmesh.export([obj], str(filename))
 
 
 def read_obj_dae(
@@ -160,7 +160,7 @@ def scale_mesh_object(obj: DO, scale_factor: float | Iterable[float]) -> None:
 
 def get_simplified_mesh(
         obj: DO,
-) -> Mesh.Mesh:
+) -> fcmesh.Mesh:
     """Create a simplified mesh from a FreeCAD object.
 
     Create an approximate-convex-decomposition mesh with V-HACD.
@@ -204,7 +204,7 @@ def get_simplified_mesh(
     tmp_dir = tempfile.TemporaryDirectory(prefix='cross-vhacd-')
     # Input for V-HACD, must be an OBJ file.
     tmp_input_obj = tempfile.NamedTemporaryFile(suffix='.obj', dir=tmp_dir.name, delete=False)
-    Mesh.export([obj], tmp_input_obj.name)
+    fcmesh.export([obj], tmp_input_obj.name)
     # The name of the output file cannot be specified with V-HACD as of
     # 2022-11-22 (commit 454913f), it is 'decomp.obj', along other files.
     try:

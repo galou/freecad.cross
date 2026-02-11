@@ -21,7 +21,7 @@ from .freecad_utils import add_object
 from .freecad_utils import is_group
 from .freecad_utils import is_mesh
 from .freecad_utils import warn
-from .mesh_utils import read_mesh_dae
+from .mesh_utils import read_obj_dae
 from .mesh_utils import scale_mesh_object
 from .ros.utils import abs_path_from_ros_path
 from .ros.utils import pkg_and_file_from_ros_path
@@ -148,10 +148,12 @@ def obj_from_mesh(
         geometry: Mesh,
         doc_or_group: [Doc | DO],
 ) -> tuple[Optional[DO], Optional[Path]]:
-    """Return a `Mesh::Feature` object and the path to its file.
+    """
+    Return a document object and the path to the original file.
 
-    Return a `Mesh::Feature` object for the URDF shape and the path to its
-    file.
+    Return a `Mesh::Feature` or a `App::Part` object for the URDF shape
+    and the absolute path to the associated file.
+
     If the same file was already imported, return the corresponding existing
     object.
 
@@ -180,10 +182,39 @@ def obj_from_mesh(
         if is_mesh(obj):
             if obj.Label2 == mesh_ros_path:
                 return obj, mesh_path
+
+    # Import a new mesh.
+    geometry_scale: float | None = None
+    if ((geometry.scale is not None)
+            and (
+                not ((geometry.scale == 1.0)
+                     or (geometry.scale == [1.0, 1.0, 1.0])
+                    )
+            )):
+        geometry_scale = geometry.scale
+
     if mesh_path.suffix.lower() == '.dae':
-        raw_mesh = read_mesh_dae(mesh_path)
-    else:
-        raw_mesh = fcmesh.read(str(mesh_path))
+        mesh_objects = read_obj_dae(mesh_path, doc)
+        for obj in mesh_objects:
+            if geometry_scale is not None:
+                scale_mesh_object(obj, geometry_scale)
+        if not mesh_objects:
+            return None, None
+        if len(mesh_objects) == 1:
+            mesh_object = mesh_objects[0]
+            mesh_object.Label2 = mesh_ros_path
+            if group:
+                group.addObject(mesh_object)
+            return mesh_object, mesh_path
+        if len(mesh_objects) > 1:
+            part = add_object(doc_or_group, 'App::Part', mesh_path.stem)
+            part.Label = mesh_path.name
+            part.Label2 = mesh_ros_path
+            for mesh_obj in mesh_objects:
+                part.addObject(mesh_obj)
+            return part, mesh_path
+    # else other format.
+    raw_mesh = fcmesh.read(str(mesh_path))
     mesh_obj = doc.addObject('Mesh::Feature', mesh_path.name)
     mesh_obj.Label = mesh_path.name
     mesh_obj.Label2 = mesh_ros_path
@@ -192,12 +223,8 @@ def obj_from_mesh(
     mesh_obj.Mesh = raw_mesh
     if mesh_path.suffix.lower() in ['.stl', '.obj']:
         scale_mesh_object(mesh_obj, 1000.0)  # m to mm.
-    if ((geometry.scale is not None)
-            and (
-                not (geometry.scale == 1.0)
-                or geometry.scale == [1.0, 1.0, 1.0]
-            )):
-        scale_mesh_object(mesh_obj, geometry.scale)
+    if geometry_scale is not None:
+        scale_mesh_object(mesh_obj, geometry_scale)
     return mesh_obj, mesh_path
 
 

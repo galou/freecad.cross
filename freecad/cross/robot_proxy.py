@@ -45,6 +45,7 @@ from .wb_utils import get_valid_urdf_name
 from .wb_utils import is_attached_collision_object
 from .wb_utils import is_joint
 from .wb_utils import is_robot
+from .wb_utils import joint_quantities_from_si_units
 from .wb_utils import remove_ros_workspace
 from .wb_utils import ros_name
 
@@ -483,6 +484,21 @@ class RobotProxy(ProxyBase):
                 # Doesn't change the value if in the new enum.
                 joint.Child = child_links
 
+    def get_joint_values(
+            self,
+    ) -> dict[CrossJoint, fc.Units.Quantity]:
+        """Get the joint values."""
+        source_units = {
+                'Length': 'mm',
+                'Angle': 'deg',
+        }
+        joint_values: dict[CrossJoint, fc.Units.Quantity] = {}
+        for joint, var_name in self.joint_variables.items():
+            unit_type = joint.Proxy.get_unit_type()
+            quantity = fc.Units.Quantity(f'{getattr(self.robot, var_name)} {source_units[unit_type]}')
+            joint_values[joint] = quantity
+        return joint_values
+
     def set_joint_values(
             self,
             joint_values: dict[CrossJoint, [float | fc.Units.Quantity]],
@@ -493,22 +509,11 @@ class RobotProxy(ProxyBase):
         from FreeCAD's `Quantity` objects.
 
         """
-        joint_variables: dict[CrossJoint, str] = self.joint_variables
-        source_units = {
-                'Length': 'm',
-                'Angle': 'rad',
-        }
-        target_units = {
-                'Length': 'mm',
-                'Angle': 'deg',
-        }
-        for joint, value in joint_values.items():
-            var_name = joint_variables[joint]
-            unit_type = joint.Proxy.get_unit_type()
-            if isinstance(value, float):
-                value = fc.Units.Quantity(f'{value} {source_units[unit_type]}')
-            value = quantity_as(value, target_units[unit_type])
-            self.update_prop(var_name, value)
+        joint_quantities = joint_quantities_from_si_units(joint_values)
+        for joint, quantity in joint_quantities.items():
+            if not (var_name := self.joint_variables.get(joint, '')):
+                raise RuntimeError(f'No variable for joint {joint.Name} ({joint.Label})')
+            self.update_prop(var_name, quantity.Value)
 
     def add_joint_variables(self) -> None:
         """Add a property for each actuated joint."""
@@ -751,6 +756,7 @@ class RobotProxy(ProxyBase):
                 continue
             if to not in chain:
                 continue
+            # TODO(Gaël): simplify this with chain.index() or `wb_utils.get_chain_from_to()`.
             from_or_to_found = False
             first_transform = fc.Placement()
             second_transform = fc.Placement()

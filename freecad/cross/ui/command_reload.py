@@ -67,6 +67,7 @@ class _ReloadCommand:
         _reload_module('freecad.cross.ui.choose_trajectory_dialog')
         _reload_module('freecad.cross.ui.command_assembly_from_urdf')
         _reload_module('freecad.cross.ui.command_box_from_bounding_box')
+        _reload_module('freecad.cross.ui.command_bring_robot_to_pose')
         _reload_module('freecad.cross.ui.command_duplicate_robot')
         _reload_module('freecad.cross.ui.command_get_planning_scene')
         _reload_module('freecad.cross.ui.command_kk_edit')

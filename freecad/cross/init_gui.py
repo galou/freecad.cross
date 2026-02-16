@@ -3,6 +3,7 @@ import FreeCADGui as fcgui
 
 from .ui import command_assembly_from_urdf  # noqa: F401
 from .ui import command_box_from_bounding_box  # noqa: F401
+from .ui import command_bring_robot_to_pose  # noqa: F401
 from .ui import command_calculate_mass_and_inertia  # noqa: F401
 from .ui import command_cylinder_from_bounding_box  # noqa: F401
 from .ui import command_duplicate_robot # noqa: F401
@@ -92,6 +93,7 @@ class CrossWorkbench(fcgui.Workbench):
                 'CylinderFromBoundingBox',  # Defined in ./ui/command_cylinder_from_bounding_box.py.
                 'KKEdit',  # Defined in ./ui/command_kk_edit.py.
                 'DuplicateRobot',  # Defined in ./ui/command_duplicate_robot.py.
+                'BringRobotToPose',  # Defined in ./ui/command_bring_robot_to_pose.py.
                 'Separator',
                 # Mesh simplification.
                 'SimplifyMesh',  # Defined in ./ui/command_simplify_mesh.py.

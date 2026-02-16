@@ -88,8 +88,14 @@ def ik(
     # The first joint is the universe joint, we skip it.
     joint_names = [name for name in model.names][1:]
 
+    for name in fixed_joints or {}:
+        if name not in joint_names:
+            raise ValueError(f'The fixed joint "{name}" is not part of the kinematic chain from "{from_link}" to "{to_link}"')
+
     # Initial configuration
     if seed is not None:
+        if len(seed) != len(joint_names):
+            raise ValueError(f"The seed configuration must have {len(joint_names)} values, but got {len(seed)}")
         q = np.array(seed)
     else:
         q = np.array(robot_axis_pose_si_units(robot, joint_names))
@@ -105,7 +111,7 @@ def ik(
     # Simple iterative IK (Gauss-Newton)
     # Cf. https://gepettoweb.laas.fr/doc/stack-of-tasks/pinocchio/master/doxygen-html/md_doc_b_examples_d_inverse_kinematics.html
     # for an alternative implementation.
-    for i in range(max_iter):
+    for _ in range(max_iter):
         pinocchio.forwardKinematics(model, data, q)
         pinocchio.updateFramePlacements(model, data)
         current_se3 = data.oMf[to_link_id]
@@ -114,8 +120,21 @@ def ik(
             return [axis_pose_freecad_from_si_units(robot, q, joint_names)]
         J = pinocchio.computeFrameJacobian(model, data, q, to_link_id)
         v = np.linalg.pinv(J) @ err
-        q = q + v
+        q = _fix_joint_values(q + v, joint_names, fixed_joints)
     warn('IK did not converge', gui=True)
     return []
 
 ik._model_cache: dict[tuple[CrossRobot, str, str], 'pinocchio.pinocchio_pywrap_default.Model'] = {}
+
+
+def _fix_joint_values(
+        q: 'numpy.ndarray',
+        joint_names: list[str],
+        fixed_joints: dict[str, float],
+) -> 'numpy.ndarray':
+    """Return a new configuration with the fixed joints set to their fixed value."""
+    q_fixed = q.copy()
+    for i, name in enumerate(joint_names):
+        if name in fixed_joints:
+            q_fixed[i] = fixed_joints[name]
+    return q_fixed

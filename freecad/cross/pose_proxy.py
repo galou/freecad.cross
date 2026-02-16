@@ -1,8 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
 from typing import Optional
-from typing import TYPE_CHECKING
 
 import FreeCAD as fc
 
@@ -12,12 +10,6 @@ from .wb_utils import is_link
 from .wb_utils import is_robot
 from .wb_utils import ros_name
 from freecad.cross.vendor.fcapi import fpo  # Cf. https://github.com/mnesarco/fcapi
-
-if TYPE_CHECKING:
-    try:
-        from moveit_msgs.msg import PlanningScene as PlanningSceneMsg
-    except ImportError:
-        PlanningSceneMsg = Any
 
 # Stubs and type hints.
 from .link import Link as CrossLink  # A Cross::Link, i.e. a DocumentObject with Proxy "Link". # noqa: E501

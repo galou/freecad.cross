@@ -86,37 +86,37 @@ def set_workbench_param(
 
 def is_attached_collision_object(obj: DO) -> bool:
     """Return True if the object is a Cross::AttachedCollisionObject."""
-    return _has_ros_type(obj, 'Cross::AttachedCollisionObject')
+    return has_cross_type(obj, 'Cross::AttachedCollisionObject')
 
 
 def is_robot(obj: DO) -> bool:
     """Return True if the object is a Cross::Robot."""
-    return _has_ros_type(obj, 'Cross::Robot')
+    return has_cross_type(obj, 'Cross::Robot')
 
 
 def is_link(obj: DO) -> bool:
     """Return True if the object is a Cross::Link."""
-    return _has_ros_type(obj, 'Cross::Link')
+    return has_cross_type(obj, 'Cross::Link')
 
 
 def is_joint(obj: DO) -> bool:
     """Return True if the object is a Cross::Link."""
-    return _has_ros_type(obj, 'Cross::Joint')
+    return has_cross_type(obj, 'Cross::Joint')
 
 
 def is_xacro_object(obj: DO) -> bool:
     """Return True if the object is a Cross::Xacro."""
-    return _has_ros_type(obj, 'Cross::XacroObject')
+    return has_cross_type(obj, 'Cross::XacroObject')
 
 
 def is_workcell(obj: DO) -> bool:
     """Return True if the object is a Cross::Workcell."""
-    return _has_ros_type(obj, 'Cross::Workcell')
+    return has_cross_type(obj, 'Cross::Workcell')
 
 
 def is_planning_scene(obj: DO) -> bool:
     """Return True if the object is a Cross::PlanningScene."""
-    return _has_ros_type(obj, 'Cross::PlanningScene')
+    return has_cross_type(obj, 'Cross::PlanningScene')
 
 
 def is_simple_joint(obj: DO) -> bool:
@@ -476,7 +476,7 @@ def export_templates(
         output_path.write_text(txt)
 
 
-def _has_ros_type(obj: DO, type_: str) -> bool:
+def has_cross_type(obj: DO, type_: str) -> bool:
     """Return True if the object is an object from this workbench."""
     if not isinstance(obj, DO):
         return False

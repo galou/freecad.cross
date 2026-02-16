@@ -1,3 +1,5 @@
+from math import pi, radians
+
 import FreeCAD as fc
 
 from ..ik_utils import get_kinematic_urdf
@@ -42,6 +44,8 @@ def ik(
         - max_iter: The maximum number of iterations to perform.
         - transl_tol: The translational tolerance to consider the target reached.
         - rot_tol: The rotational tolerance to consider the target reached.
+
+    Return a list of solutions in FreeCAD units (mm and degrees).
     """
 
     # Late import to avoid hard dependency on pinocchio and to avoid slowing
@@ -121,6 +125,7 @@ def ik(
         J = pinocchio.computeFrameJacobian(model, data, q, to_link_id)
         v = np.linalg.pinv(J) @ err
         q = _fix_joint_values(q + v, joint_names, fixed_joints)
+        q = _modulo_2pi(q, joint_names, robot)
     warn('IK did not converge', gui=True)
     return []
 
@@ -138,3 +143,31 @@ def _fix_joint_values(
         if name in fixed_joints:
             q_fixed[i] = fixed_joints[name]
     return q_fixed
+
+
+def _modulo_2pi_single(
+        value: float,
+        min_value: float,
+        max_value: float,
+) -> float:
+    while value < min_value:
+        value += 2 * pi
+    while value > max_value:
+        value -= 2 * pi
+    return value
+
+
+def _modulo_2pi(
+        q: 'numpy.ndarray',
+        joint_names: list[str],
+        robot: CrossRobot,
+) -> 'numpy.ndarray':
+    """Return a new configuration with the revolute joints wrapped within their limit."""
+    q_mod = q.copy()
+    for i, name in enumerate(joint_names):
+        joint = robot.Proxy.get_joint(name)
+        if joint and joint.Type == 'revolute':
+            min_value = radians(joint.LowerLimit)
+            max_value = radians(joint.UpperLimit)
+            q_mod[i] = _modulo_2pi_single(q[i], min_value, max_value)
+    return q_mod

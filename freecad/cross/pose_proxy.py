@@ -74,6 +74,14 @@ class _ViewProviderPose:
         """Callback when the `AxisLength` property changed."""
         self.draw()
 
+    def on_change(self, event: fpo.events.PropertyChangedEvent) -> None:
+        """Callback when a property changed.
+
+        We need this for properties defined by mother classes.
+        """
+        if event.property_name == 'Visibility':
+            self.draw()
+
     def draw(self) -> None:
         from pivy import coin
         from .coin_utils import tcp_group

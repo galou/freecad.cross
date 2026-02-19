@@ -76,6 +76,14 @@
 - [URDF-Studio](https://github.com/OpenLegged/URDF-Studio)
 - Web based
 
+# LinkForge
+
+- [LinkForge](https://extensions.blender.org/add-ons/linkforge/), Blender add-on to create robot models and export them to URDF or Xacro.
+
+# Editor for URDF
+
+- [Plugin for Visual Studio Code](https://marketplace.visualstudio.com/items?itemName=morningfrog.urdf-visualizer)
+
 # Parsing xacro files
 
 - [xacro](https://github.com/ros/xacro)

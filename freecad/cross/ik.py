@@ -39,7 +39,8 @@ def ik(
     The optional arguments `max_iter`, `transl_tol` and `rot_tol` are used to
     tune the search in this case.
 
-    Return a list of solutions, each solution being a list of joint values.
+    Return a list of solutions, each solution being a list of joint values in FreeCAD
+    units (mm and degrees).
 
     Args:
         - robot: The Robot to compute the inverse kinematics for.

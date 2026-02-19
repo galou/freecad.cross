@@ -114,6 +114,11 @@ def is_workcell(obj: DO) -> bool:
     return has_cross_type(obj, 'Cross::Workcell')
 
 
+def is_pose(obj: DO) -> bool:
+    """Return True if the object is a Cross::Pose."""
+    return has_cross_type(obj, 'Cross::Pose')
+
+
 def is_planning_scene(obj: DO) -> bool:
     """Return True if the object is a Cross::PlanningScene."""
     return has_cross_type(obj, 'Cross::PlanningScene')
@@ -480,7 +485,15 @@ def has_cross_type(obj: DO, type_: str) -> bool:
     """Return True if the object is an object from this workbench."""
     if not isinstance(obj, DO):
         return False
-    return attr_equals(obj, '_Type', type_)
+    # Old CROSS objects.
+    if attr_equals(obj, '_Type', type_):
+        return True
+    # CROSS objects created with `fpo`.
+    if not hasattr(obj, 'Proxy'):
+        return False
+    if not hasattr(obj.Proxy, 'Type'):
+        return False
+    return obj.Proxy.Type == type_
 
 
 def _has_meshes_directory(

@@ -1,5 +1,7 @@
 import xml.etree.ElementTree as et
 
+import FreeCAD as fc
+
 from .wb_utils import get_chain_from_to
 from .wb_utils import get_valid_urdf_name
 from .wb_utils import is_joint
@@ -29,7 +31,7 @@ def get_kinematic_urdf(
     if not chain:
         raise ValueError(
             f"Could not find a kinematic chain from '{from_link}' to '{to_link}'",
-    )
+        )
     # Implementation note: no need to check for validity here, because
     # this was done in `get_chain_from_to()`.
     to = robot.Proxy.get_link(to_link)
@@ -96,7 +98,7 @@ def joint_values_freecad_from_si_units(
 
 def joint_values_si_units_from_freecad(
         robot: CrossRobot,
-        joint_values: dict[str, float],
+        joint_values: dict[str, float | fc.Units.Quantity],
 ) -> dict[str, float]:
     """
     Return the joint values in SI units.

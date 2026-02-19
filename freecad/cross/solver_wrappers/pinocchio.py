@@ -2,9 +2,10 @@ from math import pi, radians
 
 import FreeCAD as fc
 
-from ..ik_utils import get_kinematic_urdf
-from ..ik_utils import robot_axis_pose_si_units
 from ..ik_utils import axis_pose_freecad_from_si_units
+from ..ik_utils import get_kinematic_urdf
+from ..ik_utils import joint_values_si_units_from_freecad
+from ..ik_utils import robot_axis_pose_si_units
 from ..wb_utils import warn
 
 # Stubs and type hints.
@@ -17,7 +18,7 @@ def ik(
         to_link: str,
         target: fc.Placement,
         seed: list[float] | None = None,
-        fixed_joints: dict[str, float] | None = None,
+        fixed_joints: dict[str, float | fc.Units.Quantity] | None = None,
         max_iter=1000,
         transl_tol=1e-6,
         rot_tol=1e-6,
@@ -40,7 +41,7 @@ def ik(
                 The number of values must match the number of joints from
                 `to_link` to `from_link`, including fixed ones.
         - fixed_joints: An optional dictionary of joint names to fix with their
-                value.
+                value in FreeCAD units or as quantity.
         - max_iter: The maximum number of iterations to perform.
         - transl_tol: The translational tolerance to consider the target
                 reached.
@@ -94,9 +95,12 @@ def ik(
     # The first joint is the universe joint, we skip it.
     joint_names = [name for name in model.names][1:]
 
-    for name in fixed_joints or {}:
+    fixed_joints = fixed_joints or {}
+    for name in fixed_joints:
         if name not in joint_names:
             raise ValueError(f'The fixed joint "{name}" is not part of the kinematic chain from "{from_link}" to "{to_link}"')
+
+    fixed_joints_si = joint_values_si_units_from_freecad(robot, fixed_joints)
 
     # Initial configuration
     if seed is not None:
@@ -105,6 +109,7 @@ def ik(
         q = np.array(seed)
     else:
         q = np.array(robot_axis_pose_si_units(robot, joint_names))
+    q = _fix_joint_values(q, joint_names, fixed_joints_si)
 
     # Get target placement as SE3
     target_se3 = pinocchio.SE3(np.array(target.Matrix.A).reshape((4, 4)))
@@ -133,7 +138,7 @@ def ik(
             break
         J = pinocchio.computeFrameJacobian(model, data, q, to_link_id)
         v = np.linalg.pinv(J) @ err
-        q = _fix_joint_values(q + v, joint_names, fixed_joints)
+        q = _fix_joint_values(q + v, joint_names, fixed_joints_si)
         q = _modulo_2pi(q, joint_names, robot)
         last_lin_err = lin_err
         last_ang_err = ang_err

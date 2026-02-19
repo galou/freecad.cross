@@ -37,6 +37,7 @@ from .utils import warn_unsupported
 from .wb_utils import ICON_PATH
 from .wb_utils import export_templates
 from .wb_utils import get_attached_collision_objects
+from .wb_utils import get_chain_from_to
 from .wb_utils import get_chains
 from .wb_utils import get_joints
 from .wb_utils import get_links
@@ -627,6 +628,30 @@ class RobotProxy(ProxyBase):
     def get_actuated_joints(self) -> list[CrossJoint]:
         """Return the list of CROSS actuated joints in the order of creation."""
         return [j for j in self.get_joints() if j.Type != 'fixed']
+
+    def get_actuated_joints_to(self, to_link: str) -> list[CrossJoint]:
+        """Return the list of actuated joints from the root link to `to_link`."""
+        root_link = self.get_root_link()
+        if not root_link:
+            return []
+        root_link_name = ros_name(root_link)
+        return self.get_actuated_joints_from_to(root_link_name, to_link)
+
+    def get_actuated_joints_from_to(
+        self,
+        from_link: str,
+        to_link: str,
+    ) -> list[CrossJoint]:
+        """Return the list of actuated joints from `from_link` to `to_link`."""
+        from_ = self.get_link(from_link)
+        if not from_:
+            return []
+        to = self.get_link(to_link)
+        if not to:
+            return []
+        chain = get_chain_from_to(self.robot, from_link, to_link)
+        actuated_joints = self.get_actuated_joints()
+        return [o for o in chain if o in actuated_joints]
 
     def get_link(self, name: str) -> Optional[CrossLink]:
         """Return the link with ROS name `name`.

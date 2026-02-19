@@ -42,7 +42,8 @@ def ik(
         - fixed_joints: An optional dictionary of joint names to fix with their
                 value.
         - max_iter: The maximum number of iterations to perform.
-        - transl_tol: The translational tolerance to consider the target reached.
+        - transl_tol: The translational tolerance to consider the target
+                reached.
         - rot_tol: The rotational tolerance to consider the target reached.
 
     Return a list of solutions in FreeCAD units (mm and degrees).
@@ -56,7 +57,8 @@ def ik(
 
     # Add /opt/openrobots/lib/python?.?/site-packages before importing
     # pinocchio.
-    # Otherswise, pinocchio, pinocchio tries to load hppfcl (provided by ROS) instead of coal (provided by robotpkg) and fails.
+    # Otherwise, pinocchio, pinocchio tries to load hppfcl (provided by ROS)
+    # instead of coal (provided by robotpkg) and fails.
     from ..solver_wrappers.robotpkg import add_robotpkg_library_path
     add_robotpkg_library_path()
 
@@ -115,17 +117,26 @@ def ik(
     # Simple iterative IK (Gauss-Newton)
     # Cf. https://gepettoweb.laas.fr/doc/stack-of-tasks/pinocchio/master/doxygen-html/md_doc_b_examples_d_inverse_kinematics.html
     # for an alternative implementation.
+    last_lin_err = float('inf')
+    last_ang_err = float('inf')
     for _ in range(max_iter):
         pinocchio.forwardKinematics(model, data, q)
         pinocchio.updateFramePlacements(model, data)
         current_se3 = data.oMf[to_link_id]
         err = pinocchio.log6(current_se3.inverse() * target_se3).vector
-        if np.linalg.norm(err[:3]) < transl_tol and np.linalg.norm(err[3:]) < rot_tol:
+        lin_err = np.linalg.norm(err[:3])
+        ang_err = np.linalg.norm(err[3:])
+        if lin_err < transl_tol and ang_err < rot_tol:
             return [axis_pose_freecad_from_si_units(robot, q, joint_names)]
+        if abs(lin_err - last_lin_err) < (transl_tol / 10.0) and abs(ang_err - last_ang_err) < (rot_tol / 10.0):
+            # The error is not decreasing anymore, we are likely stuck in a local minimum.
+            break
         J = pinocchio.computeFrameJacobian(model, data, q, to_link_id)
         v = np.linalg.pinv(J) @ err
         q = _fix_joint_values(q + v, joint_names, fixed_joints)
         q = _modulo_2pi(q, joint_names, robot)
+        last_lin_err = lin_err
+        last_ang_err = ang_err
     warn('IK did not converge', gui=True)
     return []
 

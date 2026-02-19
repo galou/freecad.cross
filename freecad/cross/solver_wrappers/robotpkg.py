@@ -8,9 +8,10 @@ def add_robotpkg_library_path() -> bool:
     """Add necessary paths to sys.path.
 
     If existing:
-    - Add /opt/ros/openrobots/lib/python?.?/site-packages to sys.path.
+    - Add /opt/openrobots/lib/python?.?/site-packages to sys.path.
 
-    Return true if a robotpkg installation may have been found, false otherwise.
+    Return True if a robotpkg installation may have been found, false
+    otherwise.
 
     """
     # Python version.

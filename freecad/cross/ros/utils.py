@@ -216,8 +216,9 @@ def get_package_and_file(file_path: Path | str) -> tuple[str, str]:
 
 def pkg_and_file_from_ros_path(
         path: str,
-) -> tuple[Optional[str], Optional[str]]:
-    """Return the tuple (package_name, relative_file_path).
+) -> tuple[str | None, str | None]:
+    """
+    Return the tuple (package_name, relative_file_path).
 
     Return (None, None) if the guessed package does not exist.
 

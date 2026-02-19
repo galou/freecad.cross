@@ -137,8 +137,9 @@ def _make_robot(
 
     Return (robot object, parts group).
 
-    The group called 'URDF Parts' is potentially created and returned. If the object
-    'URDF Parts' is not a group, a different name will be given.
+    The group called 'URDF Parts' is potentially created and returned.
+    If the object 'URDF Parts' is not a group, a different name will
+    be given.
 
     """
 
@@ -229,7 +230,8 @@ def _add_ros_link(
     _set_link_inertial(ros_link, urdf_link)
     robot.addObject(ros_link)
     link_to_visual_part = add_object(
-        parts_group, 'App::Link',
+        parts_group,
+        'App::Link',
         f'visual_{name}',
     )
     robot.Proxy.created_objects.append(link_to_visual_part)
@@ -241,7 +243,8 @@ def _add_ros_link(
     ros_link.Visual = [link_to_visual_part]
 
     link_to_collision_part = add_object(
-        parts_group, 'App::Link',
+        parts_group,
+        'App::Link',
         f'collision_{name}',
     )
     robot.Proxy.created_objects.append(link_to_collision_part)

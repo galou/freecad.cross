@@ -90,7 +90,7 @@ _OBJECT_TYPE = 'Cross::AttachedCollisionObject'
 )
 class AttachedCollisionObjectViewProxy:
 
-    def on_change(self, event: fpo.events.PropertyChangedEvent):
+    def on_change(self, event: fpo.events.PropertyChangedEvent) -> None:
         if event.property_name == 'Visibility':
             for o in event.view_provider.Object.Group:
                 o.ViewObject.Visibility = event.view_provider.Visibility

@@ -12,7 +12,6 @@ from typing import ForwardRef, List, Optional, Union, cast
 import xml.etree.ElementTree as et
 
 import FreeCAD as fc
-
 from PySide.QtWidgets import QFileDialog  # FreeCAD's PySide
 from PySide.QtWidgets import QMenu  # FreeCAD's PySide
 
@@ -24,7 +23,6 @@ from .freecad_utils import get_valid_property_name
 from .freecad_utils import has_type
 from .freecad_utils import is_origin
 from .freecad_utils import label_or
-from .freecad_utils import quantity_as
 from .freecad_utils import warn
 from .gui_utils import tr
 from .ros.utils import split_package_path
@@ -43,7 +41,6 @@ from .wb_utils import get_joints
 from .wb_utils import get_links
 from .wb_utils import get_rel_and_abs_path
 from .wb_utils import get_valid_urdf_name
-from .wb_utils import is_attached_collision_object
 from .wb_utils import is_joint
 from .wb_utils import is_robot
 from .wb_utils import joint_quantities_from_si_units
@@ -502,7 +499,7 @@ class RobotProxy(ProxyBase):
 
     def set_joint_values(
             self,
-            joint_values: dict[CrossJoint, [float | fc.Units.Quantity]],
+            joint_values: dict[CrossJoint, float | fc.Units.Quantity],
     ) -> None:
         """Set the joint values from values in meters and radians.
 

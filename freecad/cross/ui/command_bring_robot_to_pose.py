@@ -92,7 +92,6 @@ class _BringRobotToPoseCommand:
         # f.robot_line_edit.setCompleter(QtGui.QCompleter(...))
         if robot:
             f.robot_line_edit.setText(robot.Label)
-        else:
         if pose:
             f.existing_pose_line_edit.setText(pose.Label)
             f.endeffector_line_edit.setText(pose.EndEffector)

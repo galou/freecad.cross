@@ -52,6 +52,7 @@ class _BringRobotToPoseCommand:
         # Import late to avoid slowing down workbench start-up.
         from ..freecad_utils import validate_types
         from ..wb_utils import UI_PATH
+        robot: CrossRobot | None = None
         pose: CrossPose | None = None
         if len(selected) >= 2:
             robot_and_pose = validate_types(selected, ['Cross::Robot', 'Cross::Pose'])
@@ -66,11 +67,14 @@ class _BringRobotToPoseCommand:
                 str(UI_PATH / 'bring_robot_to_pose_dialog.ui'),
                 fcgui.getMainWindow(),
         )
+        if not self._form:
+            raise RuntimeError('Failed to load UI form for BringRobotToPose')
+
         f = self._form
         # Link the radio buttons.
-        self._form.radio_button_group = QtGui.QButtonGroup(self._form)
-        self._form.radio_button_group.addButton(f.existing_pose_radio_button)
-        self._form.radio_button_group.addButton(f.manual_pose_radio_button)
+        f.radio_button_group = QtGui.QButtonGroup(f)
+        f.radio_button_group.addButton(f.existing_pose_radio_button)
+        f.radio_button_group.addButton(f.manual_pose_radio_button)
 
         # Set initial state of widgets.
         self._toggle_radios()
@@ -97,7 +101,7 @@ class _BringRobotToPoseCommand:
             f.endeffector_line_edit.setText(pose.EndEffector)
 
         self._check_input()
-        if self._form.exec():
+        if f.exec():
             if not self._dialog_confirmed:
                 self._robot = None
                 self._placement = None

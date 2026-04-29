@@ -383,6 +383,22 @@ class JointProxy(ProxyBase):
             joint_xml.append(mimic_xml)
         return joint_xml
 
+    def export_gltf(self) -> tuple[list[float], list[float]]:
+        """Return the glTF transform (translation, rotation) for this joint.
+
+        The values are derived from ``joint.Origin``, which is the joint frame
+        relative to its parent link frame.
+
+        Returns
+        -------
+        (translation, rotation) where:
+        - translation is ``[x, y, z]`` in **metres**.
+        - rotation is a quaternion ``[x, y, z, w]``.
+
+        """
+        from .gltf_utils import placement_to_gltf_trs
+        return placement_to_gltf_trs(self.joint.Origin)
+
     def _toggle_editor_mode(self):
         if not self.is_execute_ready():
             return

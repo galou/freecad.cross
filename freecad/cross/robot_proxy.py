@@ -920,7 +920,7 @@ class RobotProxy(ProxyBase):
         The glTF JSON as a Python dict, or ``None`` if the export failed.
 
         """
-        from .gltf_utils import GltfDocument
+        from .gltf_utils import FC_TO_GLTF_ROTATION, GltfDocument
 
         if not self.is_execute_ready():
             return None
@@ -938,8 +938,16 @@ class RobotProxy(ProxyBase):
         robot_name = ros_name(self.robot)
         doc = GltfDocument(name=robot_name)
 
-        root_node_idx = self._build_gltf_subtree(doc, root_link)
-        doc.set_root_nodes([root_node_idx])
+        robot_node_idx = self._build_gltf_subtree(doc, root_link)
+        # glTF is Y-up; FreeCAD/ROS is Z-up.  Add a root wrapper node that
+        # rotates the entire robot −90° about X so that FreeCAD's Z axis (up)
+        # maps to glTF's Y axis (up).
+        coord_node_idx = doc.add_node(
+            name=f'{robot_name}_zup_to_yup',
+            children=[robot_node_idx],
+            rotation=FC_TO_GLTF_ROTATION,
+        )
+        doc.set_root_nodes([coord_node_idx])
 
         file_base = get_valid_filename(robot_name)
         gltf_path = output_path / 'gltf' / f'{file_base}.gltf'

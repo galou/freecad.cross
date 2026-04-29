@@ -954,7 +954,6 @@ class RobotProxy(ProxyBase):
         root_node_idx = self._build_gltf_subtree(doc, root_link)
         doc.set_root_nodes([root_node_idx])
 
-        output_path.mkdir(parents=True, exist_ok=True)
         file_base = get_valid_filename(robot_name)
         gltf_path = output_path / 'gltf' / f'{file_base}.gltf'
         doc.save(gltf_path)

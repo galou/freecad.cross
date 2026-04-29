@@ -30,6 +30,9 @@ _GLTF_ELEMENT_ARRAY_BUFFER = 34963  # index data
 _GLTF_SCALAR = 'SCALAR'
 _GLTF_VEC3 = 'VEC3'
 
+# Maximum value that fits in an UNSIGNED_SHORT index (2^16 - 1).
+_GLTF_MAX_UNSIGNED_SHORT = 65535
+
 _GLTF_GENERATOR = (
     'CROSS, a ROS Workbench for FreeCAD'
     ' (https://github.com/galou/freecad.cross)'
@@ -225,7 +228,7 @@ class GltfDocument:
         )
 
         # ---- Indices ---------------------------------------------------------
-        if len(indices) <= 65535:
+        if len(indices) <= _GLTF_MAX_UNSIGNED_SHORT:
             ind_bytes = struct.pack(f'{len(indices)}H', *indices)
             ind_component_type = _GLTF_UNSIGNED_SHORT
         else:

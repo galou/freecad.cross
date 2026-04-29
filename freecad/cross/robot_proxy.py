@@ -898,6 +898,117 @@ class RobotProxy(ProxyBase):
         )
         return xml
 
+    def export_gltf(self, interactive: bool = False) -> Optional[dict]:
+        """Export the robot as a glTF file, writing it to disk.
+
+        The resulting scene hierarchy mirrors the kinematic chain: each link
+        becomes a glTF node whose child nodes are the visual meshes plus any
+        child links.  A child link's node carries the transform from its
+        parent joint's ``Origin`` (joint frame relative to parent link frame).
+
+        The file is written to
+        ``{OutputPath}/gltf/{robot_name}.gltf``.
+
+        Parameters
+        ----------
+        interactive:
+            Reserved for future use (e.g. file-overwrite confirmation).
+            Currently unused.
+
+        Returns
+        -------
+        The glTF JSON as a Python dict, or ``None`` if the export failed.
+
+        """
+        from .gltf_utils import GltfDocument
+
+        if not self.is_execute_ready():
+            return None
+        if not self.robot.OutputPath:
+            warn('Property `OutputPath` cannot be empty', True)
+            return None
+
+        _, output_path = get_rel_and_abs_path(self.robot.OutputPath)
+
+        root_link = self.get_root_link()
+        if root_link is None:
+            warn('Robot has no root link, cannot export glTF', True)
+            return None
+
+        robot_name = ros_name(self.robot)
+        doc = GltfDocument(name=robot_name)
+
+        root_node_idx = self._build_gltf_subtree(doc, root_link)
+        doc.set_root_nodes([root_node_idx])
+
+        output_path.mkdir(parents=True, exist_ok=True)
+        file_base = get_valid_filename(robot_name)
+        gltf_path = output_path / 'gltf' / f'{file_base}.gltf'
+        doc.save(gltf_path)
+        return doc.to_dict()
+
+    def _build_gltf_subtree(
+        self,
+        doc: 'GltfDocument',
+        link: CrossLink,
+        translation: Optional[list] = None,
+        rotation: Optional[list] = None,
+    ) -> int:
+        """Recursively build glTF nodes for *link* and its descendants.
+
+        Creates a node for *link* (including visual mesh child nodes), sets
+        its transform from the parent joint's ``Origin``, and repeats for
+        every child link reachable via joints.
+
+        Parameters
+        ----------
+        doc:
+            The :class:`~freecad.cross.gltf_utils.GltfDocument` being built.
+        link:
+            The CROSS link to add to the scene graph.
+        translation:
+            Translation ``[x, y, z]`` in **metres** derived from the parent
+            joint's ``Origin``.  Pass ``None`` for the root link.
+        rotation:
+            Rotation quaternion ``[x, y, z, w]`` derived from the parent
+            joint's ``Origin``.  Pass ``None`` for the root link.
+
+        Returns
+        -------
+        The glTF node index for *link*.
+
+        """
+        if not hasattr(link, 'Proxy') or not link.Proxy.is_execute_ready():
+            return doc.add_node(name=ros_name(link))
+
+        # Create the link node with its visual-mesh children.
+        node_idx = link.Proxy.export_gltf(doc)
+
+        # Apply the transform contributed by the parent joint.
+        if translation is not None and rotation is not None:
+            doc.set_node_transform(node_idx, translation, rotation)
+
+        # Recursively process child links via joints that list this link as
+        # their parent.
+        link_ros_name = ros_name(link)
+        for joint in self.get_joints():
+            if joint.Parent != link_ros_name:
+                continue
+            if not joint.Child:
+                continue
+            child_link = self.get_link(joint.Child)
+            if child_link is None:
+                continue
+            if not (hasattr(joint, 'Proxy') and joint.Proxy):
+                continue
+            trans, rot = joint.Proxy.export_gltf()
+            child_node_idx = self._build_gltf_subtree(
+                doc, child_link, trans, rot,
+            )
+            doc.append_child_to_node(node_idx, child_node_idx)
+
+        return node_idx
+
 
 class _ViewProviderRobot(ProxyBase):
     """A view provider for the Robot container object """

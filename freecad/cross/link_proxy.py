@@ -6,6 +6,7 @@ import xml.etree.ElementTree as et
 
 import FreeCAD as fc
 
+from .deep_copy import deep_copy_object
 from .freecad_utils import ProxyBase
 from .freecad_utils import add_property
 from .freecad_utils import error
@@ -601,6 +602,53 @@ class LinkProxy(ProxyBase):
             ),
         )
         return link_xml
+
+    def export_gltf(self, doc: 'GltfDocument') -> int:
+        """Add this link to a glTF document and return the node index.
+
+        Creates glTF mesh nodes for each visual element and groups them under
+        a single link node.  The link node itself has no transform; the parent
+        joint's transform is applied by :meth:`RobotProxy.export_gltf`.
+
+        Parameters
+        ----------
+        doc:
+            A :class:`~freecad.cross.gltf_utils.GltfDocument` to add nodes
+            and mesh geometry to.
+
+        Returns
+        -------
+        The glTF node index for this link.
+
+        """
+        from .gltf_utils import GltfDocument  # noqa: F401 (type-check import)
+
+        link = self.link
+        visual_node_indices: list[int] = []
+
+        for obj in link.Visual:
+            current_doc = fc.activeDocument()
+            tmp_doc = fc.newDocument(hidden=True, temp=True)
+            try:
+                copies = deep_copy_object(obj, tmp_doc, link.MountedPlacement)
+                for copy in copies:
+                    mesh_idx = doc.add_mesh_from_fc_object(copy)
+                    if mesh_idx is None:
+                        continue
+                    vis_node_idx = doc.add_node(
+                        name=f'{ros_name(link)}_visual_{copy.Label}',
+                        mesh_idx=mesh_idx,
+                    )
+                    visual_node_indices.append(vis_node_idx)
+            finally:
+                fc.closeDocument(tmp_doc.Name)
+                if current_doc:
+                    fc.setActiveDocument(current_doc.Name)
+
+        return doc.add_node(
+            name=ros_name(link),
+            children=visual_node_indices or None,
+        )
 
     def _fix_lost_fc_links(self) -> None:
         """Fix linked objects in CROSS links lost on restore.

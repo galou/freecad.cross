@@ -630,8 +630,8 @@ class LinkProxy(ProxyBase):
             current_doc = fc.activeDocument()
             tmp_doc = fc.newDocument(hidden=True, temp=True)
             try:
-                copies = deep_copy_object(obj, tmp_doc, link.MountedPlacement)
-                for copy in copies:
+                copied_objects = deep_copy_object(obj, tmp_doc, link.MountedPlacement)
+                for copy in copied_objects:
                     mesh_idx = doc.add_mesh_from_fc_object(copy)
                     if mesh_idx is None:
                         continue

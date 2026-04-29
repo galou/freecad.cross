@@ -3,12 +3,24 @@
 The glTF (GL Transmission Format) is a JSON-based format for 3D scenes.
 Reference: https://registry.khronos.org/glTF/specs/2.0/glTF-2.0.html
 
+Coordinate systems
+------------------
+glTF uses a **Y-up, right-handed** coordinate system (X right, Y up, Z toward
+the viewer).  FreeCAD and ROS/URDF use a **Z-up, right-handed** coordinate
+system (X forward, Y left, Z up).
+
+The conversion is a rotation of −90° about the X axis:
+- FreeCAD X → glTF X  (unchanged)
+- FreeCAD Y → glTF −Z
+- FreeCAD Z → glTF Y  (up direction preserved)
+
 """
 
 from __future__ import annotations
 
 import base64
 import json
+import math
 import struct
 from pathlib import Path
 from typing import Optional
@@ -37,6 +49,16 @@ _GLTF_GENERATOR = (
     'CROSS, a ROS Workbench for FreeCAD'
     ' (https://github.com/galou/freecad.cross)'
 )
+
+_SQRT2_OVER_2 = math.sqrt(2.0) / 2.0
+
+# Quaternion [x, y, z, w] for a rotation of −90° about the X axis.
+# Applying this rotation transforms a FreeCAD/ROS Z-up coordinate frame into
+# glTF's Y-up coordinate frame:
+#   FreeCAD X → glTF X
+#   FreeCAD Y → glTF −Z
+#   FreeCAD Z → glTF Y (up direction)
+FC_TO_GLTF_ROTATION: list[float] = [-_SQRT2_OVER_2, 0.0, 0.0, _SQRT2_OVER_2]
 
 
 def placement_to_gltf_trs(

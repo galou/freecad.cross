@@ -136,26 +136,16 @@ def _get_xmls_and_export_meshes(
 
 def _has_shape_or_mesh_recursive(obj: DO) -> bool:
     """Return True if object tree contains at least one shape or mesh."""
-    for subobj, _ in get_leafs_and_subnames(obj):
-        linked_object = subobj
+    for subobj, _subname in get_leafs_and_subnames(obj):
         if hasattr(subobj, 'getLinkedObject'):
             linked_object = subobj.getLinkedObject(recursive=True)
-        candidates = [subobj]
-        if linked_object is not subobj:
-            candidates.append(linked_object)
-        for candidate in candidates:
-            if hasattr(candidate, 'Shape'):
-                try:
-                    if not candidate.Shape.isNull():
-                        return True
-                except AttributeError:
-                    return True
-            if is_mesh(candidate):
-                try:
-                    if candidate.Mesh.CountFacets > 0:
-                        return True
-                except AttributeError:
-                    return True
+        else:
+            linked_object = subobj
+        for candidate in [subobj, linked_object]:
+            if hasattr(candidate, 'Shape') and not candidate.Shape.isNull():
+                return True
+            if is_mesh(candidate) and (candidate.Mesh.CountFacets > 0):
+                return True
     return False
 
 

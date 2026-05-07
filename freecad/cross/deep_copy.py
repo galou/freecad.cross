@@ -26,7 +26,8 @@ def deep_copy_object(
         doc: Optional[fc.Document] = None,
         placement: fc.Placement = fc.Placement(),
 ) -> DOList:
-    """Copy the shapes and meshes of a FreeCAD object.
+    """
+    Copy the shapes and meshes of a FreeCAD object.
 
     Parameters
     ----------
@@ -63,7 +64,8 @@ def deep_copy_part(
         doc: Optional[fc.Document] = None,
         placement: fc.Placement = fc.Placement(),
 ) -> DOList:
-    """Copy the shape of a "App::Part" object.
+    """
+    Copy the shape of an "App::Part" object.
 
     Parameters
     ----------
@@ -109,6 +111,12 @@ def get_placed_mesh_copies(
         part: AppPart,
         doc: Optional[fc.Document] = None,
 ) -> list[MeshFeature]:
+    """
+    Return copies of all meshes in `part`.
+
+    Return a list of copies of all meshes in `part` so that the copies have the
+    same placements as the original meshes in `part`.
+    """
     mesh_copies: list[MeshFeature] = []
     doc = doc if doc else part.Document
     for mesh, placement in get_meshes_and_placements(part):
@@ -119,7 +127,8 @@ def get_placed_mesh_copies(
 def get_meshes_and_placements(
         part: AppPart,
 ) -> list[tuple[MeshFeature, fc.Placement]]:
-    """Return all meshes in a part and their path.
+    """
+    Return all meshes in a part and their path.
 
     Return a list of (mesh_object, path), where path (also called subname) can be
     used to retrieve the physical placement of the mesh, for example with
@@ -151,7 +160,8 @@ def deep_copy_mesh(
         doc: Optional[fc.Document] = None,
         placement: fc.Placement = fc.Placement(),
 ) -> DOList:
-    """Copy a "Mesh::Feature" object.
+    """
+    Copy a "Mesh::Feature" object.
 
     Parameters
     ----------

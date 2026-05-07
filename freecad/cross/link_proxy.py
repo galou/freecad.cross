@@ -141,10 +141,17 @@ def _has_shape_or_mesh_recursive(obj: DO) -> bool:
             linked_object = subobj.getLinkedObject(recursive=True)
         else:
             linked_object = subobj
-        for candidate in [subobj, linked_object]:
+        candidates = [subobj]
+        if linked_object is not subobj:
+            candidates.append(linked_object)
+        for candidate in candidates:
             if hasattr(candidate, 'Shape') and not candidate.Shape.isNull():
                 return True
-            if is_mesh(candidate) and candidate.Mesh.CountFacets > 0:
+            if (
+                is_mesh(candidate)
+                and hasattr(candidate, 'Mesh')
+                and candidate.Mesh.CountFacets > 0
+            ):
                 return True
     return False
 

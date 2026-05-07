@@ -9,7 +9,9 @@ import FreeCAD as fc
 from .freecad_utils import ProxyBase
 from .freecad_utils import add_property
 from .freecad_utils import error
+from .freecad_utils import get_leafs_and_subnames
 from .freecad_utils import is_link as is_freecad_link
+from .freecad_utils import is_mesh
 from .freecad_utils import warn
 from .mesh_utils import save_mesh_dae
 from .urdf_utils import XmlForExport
@@ -130,6 +132,31 @@ def _get_xmls_and_export_meshes(
             save_mesh_dae(export_datum.object, mesh_path)
         xmls.append(export_datum.xml)
     return xmls
+
+
+def _has_shape_or_mesh_recursive(obj: DO) -> bool:
+    """Return True if object tree contains at least one shape or mesh."""
+    for subobj, _ in get_leafs_and_subnames(obj):
+        linked_object = subobj
+        if hasattr(subobj, 'getLinkedObject'):
+            linked_object = subobj.getLinkedObject(recursive=True)
+        candidates = [subobj]
+        if linked_object is not subobj:
+            candidates.append(linked_object)
+        for candidate in candidates:
+            if hasattr(candidate, 'Shape'):
+                try:
+                    if not candidate.Shape.isNull():
+                        return True
+                except AttributeError:
+                    return True
+            if is_mesh(candidate):
+                try:
+                    if candidate.Mesh.CountFacets > 0:
+                        return True
+                except AttributeError:
+                    return True
+    return False
 
 
 class LinkProxy(ProxyBase):
@@ -571,6 +598,8 @@ class LinkProxy(ProxyBase):
             f'<link name="{get_valid_urdf_name(ros_name(self.link))}" />',
         )
         for obj in self.link.Visual:
+            if not _has_shape_or_mesh_recursive(obj):
+                continue
             for xml in _get_xmls_and_export_meshes(
                     obj,
                     urdf_visual_from_object,
@@ -580,6 +609,8 @@ class LinkProxy(ProxyBase):
             ):
                 link_xml.append(xml)
         for obj in self.link.Collision:
+            if not _has_shape_or_mesh_recursive(obj):
+                continue
             for xml in _get_xmls_and_export_meshes(
                     obj,
                     urdf_collision_from_object,

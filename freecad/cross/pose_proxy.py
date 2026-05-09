@@ -115,12 +115,13 @@ class _ViewProviderPose:
             if link is not None:
                 # TODO: only works if robot at null joint-space pose.
                 # TODO: get the correct transform.
+                link_sep = coin.SoSeparator()
                 if link.Proxy.is_execute_ready():
                     robot = link.Proxy.get_robot()
                     if robot is None:
                         # A link outside of a robot (though it should not
                         # happen).
-                        sep.addChild(_get_group_separator(link))
+                        link_sep.addChild(_get_group_separator(link))
                     else:
                         for fixed_with_link in robot.Proxy.get_links_fixed_with(
                                 ros_name(link),
@@ -136,7 +137,8 @@ class _ViewProviderPose:
                             ln_sep.addChild(
                                 _get_group_separator(fixed_with_link),
                             )
-                            sep.addChild(ln_sep)
+                            link_sep.addChild(ln_sep)
+                sep.addChild(link_sep)
 
         shaded.addChild(sep)
         wireframe.addChild(sep)
@@ -274,4 +276,3 @@ def _get_group_separator(link: CrossLink) -> 'coin.SoSeparator':
                 sep.addChild(node)
                 break
     return sep
-

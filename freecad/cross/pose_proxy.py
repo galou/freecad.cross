@@ -115,7 +115,28 @@ class _ViewProviderPose:
             if link is not None:
                 # TODO: only works if robot at null joint-space pose.
                 # TODO: get the correct transform.
-                sep.addChild(_get_link_separator(link))
+                if link.Proxy.is_execute_ready():
+                    robot = link.Proxy.get_robot()
+                    if robot is None:
+                        # A link outside of a robot (though it should not
+                        # happen).
+                        sep.addChild(_get_group_separator(link))
+                    else:
+                        for fixed_with_link in robot.Proxy.get_links_fixed_with(
+                                ros_name(link),
+                        ):
+                            ln_sep = coin.SoSeparator()
+                            fixed_transform = robot.Proxy.get_transform(
+                                ros_name(link),
+                                ros_name(fixed_with_link),
+                            )
+                            ln_sep.addChild(
+                                transform_from_placement(fixed_transform),
+                            )
+                            ln_sep.addChild(
+                                _get_group_separator(fixed_with_link),
+                            )
+                            sep.addChild(ln_sep)
 
         shaded.addChild(sep)
         wireframe.addChild(sep)
@@ -254,34 +275,3 @@ def _get_group_separator(link: CrossLink) -> 'coin.SoSeparator':
                 break
     return sep
 
-
-def _get_link_separator(link: CrossLink) -> 'coin.SoSeparator':
-    """Return the SoSeparator of the link.
-
-    Apply the transform `link.MountedPlacement` and add an SoSeparator with all
-    elements in `link.Group` and all CROSS::Link objects that are fixed to
-    `link`.
-
-    """
-    from pivy import coin
-    from .coin_utils import transform_from_placement
-
-    sep = coin.SoSeparator()
-
-    if not link.Proxy.is_execute_ready():
-        return sep
-    robot = link.Proxy.get_robot()
-    if robot is None:
-        # A link outside of a robot (though it should not happen).
-        sep.addChild(_get_group_separator(link))
-        return sep
-    for fixed_with_link in robot.Proxy.get_links_fixed_with(ros_name(link)):
-        ln_sep = coin.SoSeparator()
-        fixed_transform = robot.Proxy.get_transform(
-            ros_name(link),
-            ros_name(fixed_with_link),
-        )
-        ln_sep.addChild(transform_from_placement(fixed_transform))
-        ln_sep.addChild(_get_group_separator(fixed_with_link))
-        sep.addChild(ln_sep)
-    return sep

@@ -1016,6 +1016,163 @@ class RobotProxy(ProxyBase):
 
         return node_idx
 
+    def export_gltf_static(
+        self,
+        joint_values: dict[str, float],
+        interactive: bool = False,
+    ) -> Optional[dict]:
+        """Export the robot at a fixed joint-space position as a glTF file.
+
+        Saves the current robot pose, sets the requested joint values,
+        recomputes the robot pose, writes the glTF to disk, then restores
+        the robot to its previous state.  Each link is positioned in the
+        scene using its ``link.Placement`` (world pose after kinematic
+        propagation), rather than by reconstructing the kinematic chain.
+
+        The file is written to ``{OutputPath}/gltf/{robot_name}.gltf``.
+
+        Parameters
+        ----------
+        joint_values:
+            Dict ``{joint_name: value_in_freecad_units}`` where *joint_name*
+            is the joint's ROS name, the value is in **mm** for prismatic
+            joints and in **degrees** for revolute/continuous joints.
+        interactive:
+            Reserved for future use.  Currently unused.
+
+        Returns
+        -------
+        The glTF JSON as a Python dict, or ``None`` if the export failed.
+
+        """
+        from .gltf_utils import FC_TO_GLTF_ROTATION, GltfDocument
+
+        if not self.is_execute_ready():
+            return None
+        if not self.robot.OutputPath:
+            warn('Property `OutputPath` cannot be empty', True)
+            return None
+
+        _, output_path = get_rel_and_abs_path(self.robot.OutputPath)
+
+        if self.get_root_link() is None:
+            warn('Robot has no root link, cannot export glTF', True)
+            return None
+
+        # Save current joint positions so we can restore them afterwards.
+        # joint.Position is stored in metres (prismatic) or radians (revolute).
+        saved_positions: dict[CrossJoint, float] = {
+            joint: joint.Position for joint in self.get_joints()
+        }
+
+        result: Optional[dict] = None
+        try:
+            # Apply the requested joint values to joint.Position.
+            for joint_name, value in joint_values.items():
+                joint = self.get_joint(joint_name)
+                if joint is None:
+                    warn(f'Joint "{joint_name}" not found, skipping', True)
+                    continue
+                if joint.Mimic:
+                    warn(
+                        f'Joint "{joint_name}" is a mimic joint and cannot be'
+                        ' set directly, skipping',
+                        True,
+                    )
+                    continue
+                if joint.Type == 'prismatic':
+                    joint.Position = value * 1e-3   # mm → m
+                elif joint.Type in ('revolute', 'continuous'):
+                    joint.Position = radians(value)  # deg → rad
+                else:
+                    warn(
+                        f'Joint "{joint_name}" has unsupported type'
+                        f' "{joint.Type}", skipping',
+                        True,
+                    )
+
+            # Propagate the new joint values to link.Placement.
+            self.compute_poses()
+
+            robot_name = ros_name(self.robot)
+            doc = GltfDocument(name=robot_name)
+
+            link_node_indices = self._build_gltf_static(doc)
+            # glTF is Y-up; FreeCAD/ROS is Z-up.  Wrap in the same
+            # coordinate-correction root node used by export_gltf.
+            coord_node_idx = doc.add_node(
+                name=f'{robot_name}_zup_to_yup',
+                children=link_node_indices,
+                rotation=FC_TO_GLTF_ROTATION,
+            )
+            doc.set_root_nodes([coord_node_idx])
+
+            file_base = get_valid_filename(robot_name)
+            gltf_path = output_path / 'gltf' / f'{file_base}.gltf'
+            doc.save(gltf_path)
+            result = doc.to_dict()
+
+        finally:
+            # Restore the original joint positions and recompute poses.
+            for joint, pos in saved_positions.items():
+                joint.Position = pos
+            self.compute_poses()
+
+        return result
+
+    def _build_gltf_static(
+        self,
+        doc: 'GltfDocument',
+    ) -> list[int]:
+        """Build flat glTF nodes for all links using their current Placement.
+
+        Unlike :meth:`_build_gltf_subtree`, this method does **not** recreate
+        the kinematic chain.  Instead it reads the already-computed
+        ``link.Placement`` (world pose, set by :meth:`compute_poses`) and
+        positions each link node directly in world space.  All link nodes are
+        returned as a flat list so the caller can parent them under a single
+        root node.
+
+        The mesh vertices inside each link node are still expressed in the
+        joint frame (``MountedPlacement`` applied) exactly as in the regular
+        glTF export, so the link node's transform is set to
+        ``link.Placement * MountedPlacement⁻¹`` (the joint frame in world
+        space), which yields the correct final world position for every vertex.
+
+        Parameters
+        ----------
+        doc:
+            The :class:`~freecad.cross.gltf_utils.GltfDocument` to populate.
+
+        Returns
+        -------
+        A list of glTF node indices, one per link.
+
+        """
+        from .gltf_utils import placement_to_gltf_trs
+
+        node_indices: list[int] = []
+        for link in self.get_links():
+            if not hasattr(link, 'Proxy') or not link.Proxy.is_execute_ready():
+                continue
+
+            # Create the link node with visual-mesh child nodes.
+            node_idx = link.Proxy.export_gltf(doc)
+
+            # Compute the joint-frame world pose.
+            # link.Placement = joint_frame_world * MountedPlacement, so:
+            # joint_frame_world = link.Placement * MountedPlacement⁻¹
+            if hasattr(link, 'MountedPlacement'):
+                joint_frame = link.Placement * link.MountedPlacement.inverse()
+            else:
+                joint_frame = link.Placement
+
+            trans, rot = placement_to_gltf_trs(joint_frame)
+            doc.set_node_transform(node_idx, trans, rot)
+            node_indices.append(node_idx)
+
+        return node_indices
+
 
 class _ViewProviderRobot(ProxyBase):
     """A view provider for the Robot container object """

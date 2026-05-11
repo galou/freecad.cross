@@ -121,7 +121,7 @@ class _ViewProviderPose:
                     if robot is None:
                         # A link outside of a robot (though it should not
                         # happen).
-                        link_sep.addChild(_get_group_separator(link))
+                        link_sep.addChild(_coin_separator_from_link(link))
                     else:
                         for fixed_with_link in robot.Proxy.get_links_fixed_with(
                                 ros_name(link),
@@ -135,7 +135,7 @@ class _ViewProviderPose:
                                 transform_from_placement(fixed_transform),
                             )
                             ln_sep.addChild(
-                                _get_group_separator(fixed_with_link),
+                                _coin_separator_from_link(fixed_with_link),
                             )
                             link_sep.addChild(ln_sep)
                 sep.addChild(link_sep)
@@ -253,26 +253,70 @@ def make_pose(
     return obj
 
 
-def _get_group_separator(link: CrossLink) -> 'coin.SoSeparator':
-    """Return the SoSeparator with all element in `link.Group`.
+def _coin_separator_from_object(obj: 'fc.DocumentObject') -> 'coin.SoSeparator':
+    """Return an independent SoSeparator for the visual representation of obj.
 
-    Elements in `link.Group` are FreeCAD links. Their inventor representation
-    contains an SoTransform node with their location in the 3D scene and an
-    SoSwitch node for the different display nodes.
-    For each element, we ignore the SoTransform and add only the SoSwitch to
-    the separator.
+    Uses writeInventor() on the Shape or Mesh attribute to create independent
+    coin nodes, entirely unrelated to obj's own view provider scene graph.
+    This ensures that visibility or display-mode changes on obj (or any robot
+    that contains it) do not affect the returned separator.
+
+    The object's Placement is applied as an SoTransform so that the geometry
+    appears at the same position as in obj's own view.
+
+    Returns an empty separator when obj has neither a usable Shape nor a Mesh.
 
     """
     from pivy import coin
     from .coin_utils import transform_from_placement
+    from .freecad_utils import is_mesh
+
+    sep = coin.SoSeparator()
+
+    inventor_str = None
+    if hasattr(obj, 'Shape') and not obj.Shape.isNull():
+        inventor_str = obj.Shape.writeInventor()
+    elif (
+        is_mesh(obj)
+        and hasattr(obj, 'Mesh')
+        and obj.Mesh.CountFacets > 0
+    ):
+        inventor_str = obj.Mesh.writeInventor()
+
+    if not inventor_str:
+        return sep
+
+    if hasattr(obj, 'Placement'):
+        sep.addChild(transform_from_placement(obj.Placement))
+
+    coin_input = coin.SoInput()
+    coin_input.setBuffer(
+        inventor_str.encode() if isinstance(inventor_str, str) else inventor_str,
+    )
+    node = coin.SoDB.readAll(coin_input)
+    if node is not None:
+        sep.addChild(node)
+    return sep
+
+
+def _coin_separator_from_link(link: CrossLink) -> 'coin.SoSeparator':
+    """Return an independent SoSeparator for the visual elements of link.
+
+    Applies link.MountedPlacement as the first transform, then calls
+    _coin_separator_from_object() for each element in link.Group. The result
+    shares no scene graph nodes with the Robot's representation, so hiding the
+    Robot (or any of its links) does not affect the returned separator.
+
+    """
+    from pivy import coin
+    from .coin_utils import transform_from_placement
+    from .freecad_utils import get_linked_obj
 
     sep = coin.SoSeparator()
     sep.addChild(transform_from_placement(link.MountedPlacement))
     for fc_link in link.Group:
-        if fc_link.ViewObject is None:
+        linked = get_linked_obj(fc_link, recursive=True)
+        if linked is None:
             continue
-        for node in fc_link.ViewObject.RootNode.getChildren():
-            if isinstance(node, coin.SoSwitch):
-                sep.addChild(node)
-                break
+        sep.addChild(_coin_separator_from_object(linked))
     return sep

@@ -279,6 +279,7 @@ def _coin_separator_from_object(obj: 'fc.DocumentObject') -> 'coin.SoSeparator':
     elif (
         is_mesh(obj)
         and hasattr(obj, 'Mesh')
+        and obj.Mesh is not None
         and obj.Mesh.CountFacets > 0
     ):
         inventor_str = obj.Mesh.writeInventor()
@@ -286,13 +287,15 @@ def _coin_separator_from_object(obj: 'fc.DocumentObject') -> 'coin.SoSeparator':
     if not inventor_str:
         return sep
 
+    inventor_bytes = (
+        inventor_str.encode() if isinstance(inventor_str, str) else inventor_str
+    )
+
     if hasattr(obj, 'Placement'):
         sep.addChild(transform_from_placement(obj.Placement))
 
     coin_input = coin.SoInput()
-    coin_input.setBuffer(
-        inventor_str.encode() if isinstance(inventor_str, str) else inventor_str,
-    )
+    coin_input.setBuffer(inventor_bytes)
     node = coin.SoDB.readAll(coin_input)
     if node is not None:
         sep.addChild(node)

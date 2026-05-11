@@ -266,6 +266,10 @@ def _coin_separator_from_object(obj: 'fc.DocumentObject') -> 'coin.SoSeparator':
 
     Returns an empty separator when obj has neither a usable Shape nor a Mesh.
 
+    Implementation note: writeInventor() in FreeCAD returns a str. The
+    encoding branch in the buffer conversion handles the hypothetical future
+    case where the method returns bytes instead.
+
     """
     from pivy import coin
     from .coin_utils import transform_from_placement
@@ -287,7 +291,7 @@ def _coin_separator_from_object(obj: 'fc.DocumentObject') -> 'coin.SoSeparator':
     if not inventor_str:
         return sep
 
-    inventor_bytes = (
+    inventor_bytes: bytes = (
         inventor_str.encode() if isinstance(inventor_str, str) else inventor_str
     )
 
@@ -297,8 +301,14 @@ def _coin_separator_from_object(obj: 'fc.DocumentObject') -> 'coin.SoSeparator':
     coin_input = coin.SoInput()
     coin_input.setBuffer(inventor_bytes)
     node = coin.SoDB.readAll(coin_input)
-    if node is not None:
-        sep.addChild(node)
+    if node is None:
+        warn(
+            f'Could not parse Inventor string for {obj.Label!r},'
+            ' link geometry will not be shown in the Pose view',
+            False,
+        )
+        return sep
+    sep.addChild(node)
     return sep
 
 

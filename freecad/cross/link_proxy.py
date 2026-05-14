@@ -606,9 +606,14 @@ class LinkProxy(ProxyBase):
     def export_gltf(self, doc: 'GltfDocument') -> int:
         """Add this link to a glTF document and return the node index.
 
-        Creates glTF mesh nodes for each visual element and groups them under
-        a single link node.  The link node itself has no transform; the parent
-        joint's transform is applied by :meth:`RobotProxy.export_gltf`.
+        Implements the Three.js **skeleton** convention: mesh vertices are
+        expressed in the mesh's own local frame and each visual mesh node
+        carries ``MountedPlacement`` as its transform.  This mirrors the URDF
+        convention where meshes are described relative to the link/joint frame
+        via a ``<visual><origin>`` element.  The parent joint's
+        ``joint.Origin`` transform is carried by an explicit joint node in the
+        scene graph (added by :meth:`RobotProxy._build_gltf_subtree`), so the
+        link node itself has no transform.
 
         Parameters
         ----------
@@ -621,16 +626,25 @@ class LinkProxy(ProxyBase):
         The glTF node index for this link.
 
         """
-        from .gltf_utils import GltfDocument  # noqa: F401 (type-check import)
+        from .gltf_utils import GltfDocument, placement_to_gltf_trs  # noqa: F401 (GltfDocument type-check only)
 
         link = self.link
         visual_node_indices: list[int] = []
+
+        # Convert MountedPlacement to glTF TRS once; shared by all visual
+        # nodes of this link (same as URDF's per-link <visual><origin>).
+        mounted_trans, mounted_rot = placement_to_gltf_trs(link.MountedPlacement)
 
         for obj in link.Visual:
             current_doc = fc.activeDocument()
             tmp_doc = fc.newDocument(hidden=True, temp=True)
             try:
-                copied_objects = deep_copy_object(obj, tmp_doc, link.MountedPlacement)
+                # Deep-copy WITHOUT applying MountedPlacement to the vertices
+                # so that the mesh data stays in its own local frame.
+                # MountedPlacement is stored as the visual node's transform
+                # instead, making the kinematic information explicit in the
+                # scene graph (skeleton / URDF convention).
+                copied_objects = deep_copy_object(obj, tmp_doc)
                 for copy in copied_objects:
                     mesh_idx = doc.add_mesh_from_fc_object(copy)
                     if mesh_idx is None:
@@ -638,6 +652,8 @@ class LinkProxy(ProxyBase):
                     vis_node_idx = doc.add_node(
                         name=f'{ros_name(link)}_visual_{copy.Label}',
                         mesh_idx=mesh_idx,
+                        translation=mounted_trans,
+                        rotation=mounted_rot,
                     )
                     visual_node_indices.append(vis_node_idx)
             finally:

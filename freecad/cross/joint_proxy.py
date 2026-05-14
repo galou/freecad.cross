@@ -386,7 +386,10 @@ class JointProxy(ProxyBase):
         """Return the glTF transform (translation, rotation) for this joint.
 
         The values are derived from ``joint.Origin``, which is the joint frame
-        relative to its parent link frame.
+        relative to its parent link frame.  In the skeleton scene graph this
+        transform is placed on a dedicated **joint node** that sits between the
+        parent link node and the child link node, mirroring the URDF
+        ``<joint><origin>`` element.
 
         Returns
         -------

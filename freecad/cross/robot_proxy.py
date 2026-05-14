@@ -901,10 +901,20 @@ class RobotProxy(ProxyBase):
     def export_gltf(self, interactive: bool = False) -> Optional[dict]:
         """Export the robot as a glTF file, writing it to disk.
 
-        The resulting scene hierarchy mirrors the kinematic chain: each link
-        becomes a glTF node whose child nodes are the visual meshes plus any
-        child links.  A child link's node carries the transform from its
-        parent joint's ``Origin`` (joint frame relative to parent link frame).
+        The resulting scene hierarchy implements the Three.js **skeleton**
+        convention, mirroring a URDF description:
+
+        * Each link becomes a glTF node whose children are the visual mesh
+          nodes (each carrying ``MountedPlacement`` as their transform so that
+          mesh vertices stay in their own local frame) and the joint nodes that
+          connect to child links.
+        * Each joint becomes a dedicated glTF node carrying ``joint.Origin``
+          (the joint frame relative to the parent link frame) as its transform.
+        * The child link's node is a child of the joint node.
+
+        This structure allows downstream tools such as Three.js to animate the
+        robot by updating individual joint-node transforms without recomputing
+        mesh geometry.
 
         The file is written to
         ``{OutputPath}/gltf/{robot_name}.gltf``.
@@ -958,14 +968,33 @@ class RobotProxy(ProxyBase):
         self,
         doc: 'GltfDocument',
         link: CrossLink,
-        translation: Optional[list] = None,
-        rotation: Optional[list] = None,
     ) -> int:
         """Recursively build glTF nodes for *link* and its descendants.
 
-        Creates a node for *link* (including visual mesh child nodes), sets
-        its transform from the parent joint's ``Origin``, and repeats for
-        every child link reachable via joints.
+        Implements the Three.js **skeleton** convention that mirrors URDF:
+
+        * A link node is created for *link* with its visual mesh nodes as
+          children.  The visual mesh nodes carry ``MountedPlacement`` as their
+          transform so that mesh vertices remain in their own local frame.
+          The link node itself has **no** transform.
+        * For every joint whose parent is *link*, an explicit **joint node**
+          is inserted carrying ``joint.Origin`` (the joint frame relative to
+          the parent link frame) as its transform.  The child link's node is
+          a child of this joint node.
+
+        The resulting hierarchy is::
+
+            root_link_node
+            ├── visual_mesh_nodes  (transform = MountedPlacement)
+            └── joint_node         (transform = joint.Origin)
+                └── child_link_node
+                    ├── visual_mesh_nodes  (transform = MountedPlacement)
+                    └── joint_node         (transform = joint.Origin)
+                        └── ...
+
+        This structure is equivalent to a URDF description and allows
+        downstream tools to animate joint nodes by updating their transforms
+        without recomputing mesh geometry.
 
         Parameters
         ----------
@@ -973,30 +1002,24 @@ class RobotProxy(ProxyBase):
             The :class:`~freecad.cross.gltf_utils.GltfDocument` being built.
         link:
             The CROSS link to add to the scene graph.
-        translation:
-            Translation ``[x, y, z]`` in **metres** derived from the parent
-            joint's ``Origin``.  Pass ``None`` for the root link.
-        rotation:
-            Rotation quaternion ``[x, y, z, w]`` derived from the parent
-            joint's ``Origin``.  Pass ``None`` for the root link.
 
         Returns
         -------
         The glTF node index for *link*.
 
         """
+        from .gltf_utils import placement_to_gltf_trs
+
         if not hasattr(link, 'Proxy') or not link.Proxy.is_execute_ready():
             return doc.add_node(name=ros_name(link))
 
         # Create the link node with its visual-mesh children.
+        # The link node itself has no transform; the parent joint node carries
+        # the joint.Origin transform.
         node_idx = link.Proxy.export_gltf(doc)
 
-        # Apply the transform contributed by the parent joint.
-        if translation is not None and rotation is not None:
-            doc.set_node_transform(node_idx, translation, rotation)
-
-        # Recursively process child links via joints that list this link as
-        # their parent.
+        # For each joint whose parent is this link, create an explicit joint
+        # node carrying joint.Origin, then recurse into the child link.
         link_ros_name = ros_name(link)
         for joint in self.get_joints():
             if joint.Parent != link_ros_name:
@@ -1008,11 +1031,20 @@ class RobotProxy(ProxyBase):
                 continue
             if not (hasattr(joint, 'Proxy') and joint.Proxy):
                 continue
-            trans, rot = joint.Proxy.export_gltf()
-            child_node_idx = self._build_gltf_subtree(
-                doc, child_link, trans, rot,
+
+            # Joint node: transform = joint.Origin (joint frame relative to
+            # the parent link frame, same as URDF's <joint><origin>).
+            trans, rot = placement_to_gltf_trs(joint.Origin)
+            joint_node_idx = doc.add_node(
+                name=ros_name(joint),
+                translation=trans,
+                rotation=rot,
             )
-            doc.append_child_to_node(node_idx, child_node_idx)
+
+            # Child link node is parented under the joint node.
+            child_node_idx = self._build_gltf_subtree(doc, child_link)
+            doc.append_child_to_node(joint_node_idx, child_node_idx)
+            doc.append_child_to_node(node_idx, joint_node_idx)
 
         return node_idx
 
@@ -1133,11 +1165,24 @@ class RobotProxy(ProxyBase):
         returned as a flat list so the caller can parent them under a single
         root node.
 
-        The mesh vertices inside each link node are still expressed in the
-        joint frame (``MountedPlacement`` applied) exactly as in the regular
-        glTF export, so the link node's transform is set to
-        ``link.Placement * MountedPlacement⁻¹`` (the joint frame in world
-        space), which yields the correct final world position for every vertex.
+        Because :meth:`LinkProxy.export_gltf` now uses the skeleton
+        convention — mesh vertices in mesh-local frame, ``MountedPlacement``
+        as the visual mesh node's transform — the link node's transform must
+        be the "joint-frame world pose":
+
+        .. math::
+
+            T_{\\text{link node}} = \\text{link.Placement} \\times
+                                    \\text{MountedPlacement}^{-1}
+
+        so that the combined effect is
+
+        .. math::
+
+            T_{\\text{link node}} \\times \\text{MountedPlacement} \\times v
+            = \\text{link.Placement} \\times v
+
+        which correctly places every mesh vertex at its world position.
 
         Parameters
         ----------

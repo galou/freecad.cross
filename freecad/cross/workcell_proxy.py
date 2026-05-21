@@ -12,8 +12,10 @@ from __future__ import annotations
 
 from typing import ForwardRef, Optional
 import xml.etree.ElementTree as et
+from xml.dom.minidom import parseString
 
 import FreeCAD as fc
+from xacro import process_doc
 
 from .freecad_utils import ProxyBase
 from .freecad_utils import add_property
@@ -167,14 +169,10 @@ class WorkcellProxy(ProxyBase):
                     # Avoid recursive recompute.
                     xo.Placement = placement
 
-    def export_urdf(self, interactive: bool = False) -> Optional[et.Element]:
+    def _build_xacro_xml(self) -> Optional[et.Element]:
         if not self.is_execute_ready():
             return None
         obj: CrossWorkcell = self.workcell
-        if not obj.OutputPath:
-            # TODO: ask the user for OutputPath.
-            warn('Property `OutputPath` cannot be empty', True)
-            return None
 
         robot_et = et.fromstring('<robot/>')
         robot_et.attrib['name'] = get_valid_urdf_name(ros_name(obj))
@@ -255,6 +253,19 @@ class WorkcellProxy(ProxyBase):
                 origin_et = urdf_origin_from_placement(origin)
                 joint_et.append(origin_et)
                 robot_et.append(joint_et)
+        return robot_et
+
+    def export_xacro(self, interactive: bool = False) -> Optional[et.Element]:
+        if not self.is_execute_ready():
+            return None
+        obj: CrossWorkcell = self.workcell
+        if not obj.OutputPath:
+            # TODO: ask the user for OutputPath.
+            warn('Property `OutputPath` cannot be empty', True)
+            return None
+        robot_et = self._build_xacro_xml()
+        if robot_et is None:
+            return None
 
         template_files = [
             'package.xml',
@@ -274,6 +285,9 @@ class WorkcellProxy(ProxyBase):
         if p != obj.OutputPath:
             obj.OutputPath = p
 
+        ignore: list[str] = []
+        write: list[str] = write_files.copy()
+        overwrite: list[str] = []
         if interactive and fc.GuiUp:
             diag = FileOverwriteConfirmationDialog(
                     output_path, write_files,
@@ -298,9 +312,72 @@ class WorkcellProxy(ProxyBase):
             package_parent,
             package_name=package_name,
             urdf_file=urdf_file,
-            fixed_frame=workcell_root_link,
+            fixed_frame=(obj.RootLink if obj.RootLink else 'NO_ROOT_LINK_SET'),
         )
         return robot_et
+
+    def export_urdf(self, interactive: bool = False) -> Optional[et.Element]:
+        """Export the workcell as pure URDF."""
+        if not self.is_execute_ready():
+            return None
+        obj: CrossWorkcell = self.workcell
+        if not obj.OutputPath:
+            warn('Property `OutputPath` cannot be empty', True)
+            return None
+        xacro_et = self._build_xacro_xml()
+        if xacro_et is None:
+            return None
+        urdf_doc = parseString(et.tostring(xacro_et, encoding='unicode'))
+        process_doc(urdf_doc)
+        urdf_et = et.fromstring(urdf_doc.toxml())
+
+        template_files = [
+            'package.xml',
+            'CMakeLists.txt',
+            'launch/display.launch.py',
+            'rviz/robot_description.rviz',
+        ]
+
+        write_files = template_files + [
+                'meshes/',
+                'urdf/',
+        ]
+
+        # Write out files.
+        p, output_path = get_rel_and_abs_path(obj.OutputPath)
+        if p != obj.OutputPath:
+            obj.OutputPath = p
+
+        ignore: list[str] = []
+        write: list[str] = write_files.copy()
+        overwrite: list[str] = []
+        if interactive and fc.GuiUp:
+            diag = FileOverwriteConfirmationDialog(
+                    output_path, write_files,
+            )
+            ignore, write, overwrite = diag.exec_()
+            diag.close()
+        if set(ignore) == set(write_files):
+            return None
+        elif set(write + overwrite) != set(write_files):
+            warn(tr('Partial selection of files not supported yet'), True)
+            return None
+        package_parent, package_name = split_package_path(output_path)
+        robot_name = ros_name(self.workcell)
+        file_base = get_valid_filename(robot_name)
+        urdf_file = f'{file_base}.urdf'
+        output_path.mkdir(parents=True, exist_ok=True)
+        urdf_path = output_path / f'urdf/{urdf_file}'
+        save_xml(urdf_et, urdf_path)
+        fixed_frame = obj.RootLink if obj.RootLink else 'NO_ROOT_LINK_SET'
+        export_templates(
+            template_files,
+            package_parent,
+            package_name=package_name,
+            urdf_file=urdf_file,
+            fixed_frame=fixed_frame,
+        )
+        return urdf_et
 
 
 class _ViewProviderWorkcell(ProxyBase):

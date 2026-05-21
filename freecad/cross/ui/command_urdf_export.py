@@ -58,6 +58,26 @@ def _supported_object_selected():
     return False
 
 
+def _select_export_format(obj: DO) -> Optional[str]:
+    title = tr('Select export format')
+    if is_workcell(obj):
+        message = tr('Export workcell as:')
+    else:
+        message = tr('Export robot as:')
+    formats = ['URDF', 'Xacro']
+    selected, accepted = QtGui.QInputDialog.getItem(
+        fcgui.getMainWindow(),
+        title,
+        message,
+        formats,
+        0,
+        False,
+    )
+    if not accepted:
+        return None
+    return selected.lower()
+
+
 class _UrdfExportCommand:
     """Command to export the selected objects to URDF."""
 
@@ -119,12 +139,25 @@ class _UrdfExportCommand:
                         ignore_obj_placement=True,
                     ),
                 )
-            elif (
-                is_robot(obj)
-                or is_workcell(obj)
-            ):
+            elif is_robot(obj):
                 if hasattr(obj, 'Proxy'):
-                    xmls.append(obj.Proxy.export_urdf(interactive=True))
+                    export_format = _select_export_format(obj)
+                    if export_format is None:
+                        continue
+                    if export_format == 'xacro':
+                        xmls.append(obj.Proxy.export_xacro(interactive=True))
+                    else:
+                        xmls.append(obj.Proxy.export_urdf(interactive=True))
+                    show_xml = False
+            elif is_workcell(obj):
+                if hasattr(obj, 'Proxy'):
+                    export_format = _select_export_format(obj)
+                    if export_format is None:
+                        continue
+                    if export_format == 'xacro':
+                        xmls.append(obj.Proxy.export_xacro(interactive=True))
+                    else:
+                        xmls.append(obj.Proxy.export_urdf(interactive=True))
                     show_xml = False
             elif (
                 is_xacro_object(obj)

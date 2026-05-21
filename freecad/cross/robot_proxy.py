@@ -950,9 +950,11 @@ class RobotProxy(ProxyBase):
             'rviz/robot_description.rviz',
         ]
 
+        macro_filename = 'robot_macro.xacro'
+        wrapper_filename = 'robot.urdf.xacro'
         xacro_files = [
-            'urdf/robot_macro.xacro',
-            'urdf/robot.urdf.xacro',
+            f'urdf/{macro_filename}',
+            f'urdf/{wrapper_filename}',
         ]
 
         write_files = template_files + [
@@ -979,11 +981,12 @@ class RobotProxy(ProxyBase):
         urdf_xml = self._build_urdf_xml(package_parent, package_name)
         if urdf_xml is None:
             return None
+        macro_name = get_valid_urdf_name(ros_name(self.robot))
         macro_xml = et.fromstring('<robot/>')
         macro_xml.attrib['name'] = get_valid_urdf_name(self.robot.Label)
         macro_xml.attrib['xmlns:xacro'] = XACRO_NS
         macro_et = et.SubElement(macro_xml, f'{{{XACRO_NS}}}macro')
-        macro_et.attrib['name'] = 'robot'
+        macro_et.attrib['name'] = macro_name
         macro_et.attrib['params'] = 'prefix'
         for child in urdf_xml:
             prefixed_child = et.fromstring(et.tostring(child))
@@ -994,18 +997,18 @@ class RobotProxy(ProxyBase):
         xacro_xml.attrib['name'] = get_valid_urdf_name(self.robot.Label)
         xacro_xml.attrib['xmlns:xacro'] = XACRO_NS
         include_et = et.SubElement(xacro_xml, f'{{{XACRO_NS}}}include')
-        include_et.attrib['filename'] = 'robot_macro.xacro'
-        call_et = et.SubElement(xacro_xml, f'{{{XACRO_NS}}}robot')
+        include_et.attrib['filename'] = macro_filename
+        call_et = et.SubElement(xacro_xml, f'{{{XACRO_NS}}}{macro_name}')
         call_et.attrib['prefix'] = ''
 
         output_path.mkdir(parents=True, exist_ok=True)
-        save_xml(macro_xml, output_path / 'urdf/robot_macro.xacro')
-        save_xml(xacro_xml, output_path / 'urdf/robot.urdf.xacro')
+        save_xml(macro_xml, output_path / f'urdf/{macro_filename}')
+        save_xml(xacro_xml, output_path / f'urdf/{wrapper_filename}')
         export_templates(
             template_files,
             package_parent,
             package_name=package_name,
-            urdf_file='robot.urdf.xacro',
+            urdf_file=wrapper_filename,
             fixed_frame=ros_name(self.get_root_link()),
         )
         return xacro_xml

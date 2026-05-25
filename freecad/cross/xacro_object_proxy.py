@@ -28,8 +28,6 @@ import xml.etree.ElementTree as et
 
 import FreeCAD as fc
 
-from xacro import Macro
-
 from .freecad_utils import ProxyBase
 from .freecad_utils import add_property
 from .freecad_utils import is_group
@@ -342,7 +340,7 @@ class XacroObjectProxy(ProxyBase):
         if xo.MainMacro is None:
             # With pure URDF files.
             return
-        macro: Macro = self.xacro.macros[xo.MainMacro]
+        macro: Any = self.xacro.macros[xo.MainMacro]
         for name in macro.params:
             prop_name = get_valid_property_name(name)
             self.param_properties[name] = prop_name

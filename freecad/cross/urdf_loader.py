@@ -6,7 +6,7 @@ from pathlib import Path
 
 from urdf_parser_py.urdf import Robot
 
-from xacro import process_file
+from .xacro_backend import process_file
 
 
 class UrdfLoader:

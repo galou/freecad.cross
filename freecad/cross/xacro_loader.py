@@ -9,20 +9,49 @@ specifying a macro to use and its parameters.
 from __future__ import annotations
 
 from copy import copy
+from dataclasses import dataclass
 from pathlib import Path
+import shlex
 from typing import Any, Optional
 from xml.dom.minidom import Document
+from xml.dom.minidom import Element
 from xml.dom.minidom import parse
 from xml.dom.minidom import parseString
 
 from urdf_parser_py.urdf import Robot
 
-import xacro
-from xacro import Table
-from xacro import eval_all
-from xacro import process_doc
-
 from .ros.utils import get_package_and_file
+from .xacro_backend import process_doc
+
+
+@dataclass
+class MacroDefinition:
+    params: list[str]
+    defaultmap: dict[str, tuple[str, str]]
+
+
+def _extract_macros(xml_doc: Document) -> dict[str, MacroDefinition]:
+    macros: dict[str, MacroDefinition] = {}
+    elements = xml_doc.getElementsByTagName('*')
+    for node in elements:
+        if not isinstance(node, Element):
+            continue
+        if node.tagName not in {'xacro:macro', 'macro'}:
+            continue
+        name = node.getAttribute('name')
+        if not name:
+            continue
+        params = []
+        defaultmap: dict[str, tuple[str, str]] = {}
+        for token in shlex.split(node.getAttribute('params') or ''):
+            if ':=' in token:
+                param_name, default = token.split(':=', 1)
+                params.append(param_name)
+                defaultmap[param_name] = ('', default)
+            else:
+                params.append(token)
+        macros[name] = MacroDefinition(params=params, defaultmap=defaultmap)
+    return macros
 
 
 class Xacro:
@@ -30,22 +59,9 @@ class Xacro:
     def __init__(self, xml_doc: Document, xacro_file: str = ''):
         self.input_xml_doc: Document = xml_doc
         self.input_xacro_file = xacro_file
-        self.macros = Table()
-        self.symbols = Table()
-
         tmp_output_xml_doc = copy(self.input_xml_doc)
-
-        # Initialize xacro, required when using `eval_all()` directly (as
-        # opposed to through calling `process_doc()`).
-        # set substitution args
-        xacro.substitution_args_context['arg'] = {}
-        if not xacro.filestack:
-            if hasattr(xacro, 'init_stacks'):
-                # Humble and newer.
-                xacro.init_stacks(None)
-            else:
-                xacro.restore_filestack([None])
-        eval_all(tmp_output_xml_doc.documentElement, self.macros, self.symbols)
+        self.macros = _extract_macros(tmp_output_xml_doc)
+        self.symbols = {}
 
     def get_macro_names(self):
         return list(self.macros.keys())
@@ -134,7 +150,10 @@ class Xacro:
         """Return the minidom Document of the generated URDF."""
         # Now a xacro, later a URDF.
         out_xml = self.to_xml(robot_name, macro, parameters)
-        process_doc(out_xml)
+        base_dir = None
+        if self.input_xacro_file:
+            base_dir = Path(self.input_xacro_file).expanduser().parent
+        process_doc(out_xml, base_dir=base_dir)
         return out_xml
 
     def to_urdf_string(

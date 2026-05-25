@@ -11,7 +11,7 @@ try:
     from urdf_parser_py.urdf import Box
     from urdf_parser_py.urdf import Cylinder
     from urdf_parser_py.urdf import Joint as UrdfJoint
-    from urdf_parser_py.urdf import Joint as UrdfLink
+    from urdf_parser_py.urdf import Link as UrdfLink
     from urdf_parser_py.urdf import Mesh
     from urdf_parser_py.urdf import Pose
     from urdf_parser_py.urdf import Sphere
@@ -62,6 +62,9 @@ def placement_from_origin(
         origin: Pose,
 ) -> fc.Placement:
     """Return the FreeCAD placement corresponding to URDF origin."""
+    matrix_placement = _placement_from_matrix(origin)
+    if matrix_placement is not None:
+        return matrix_placement
     placement = fc.Placement()
     if origin is None:
         return placement
@@ -70,9 +73,6 @@ def placement_from_origin(
         placement.Base = fc.Vector(origin.position) * 1000.0
     if hasattr(origin, 'rpy'):
         placement.Rotation = rotation_from_rpy(origin.rpy)
-    matrix_placement = _placement_from_matrix(origin)
-    if matrix_placement is not None:
-        return matrix_placement
     return placement
 
 
@@ -265,23 +265,14 @@ def _extract_geometry(geometry: Any) -> Any:
 def _is_box(geometry: Any) -> bool:
     return (
         _safe_isinstance(geometry, Box)
-        or (
-            hasattr(geometry, 'size')
-            and (not hasattr(geometry, 'radius'))
-            and (not hasattr(geometry, 'length'))
-            and (not hasattr(geometry, 'filename'))
-        )
+        or _has_attrs(geometry, ['size'], ['radius', 'filename'])
     )
 
 
 def _is_cylinder(geometry: Any) -> bool:
     return (
         _safe_isinstance(geometry, Cylinder)
-        or (
-            hasattr(geometry, 'radius')
-            and hasattr(geometry, 'length')
-            and (not hasattr(geometry, 'filename'))
-        )
+        or _has_attrs(geometry, ['radius', 'length'], ['filename'])
     )
 
 
@@ -292,11 +283,7 @@ def _is_mesh_geometry(geometry: Any) -> bool:
 def _is_sphere(geometry: Any) -> bool:
     return (
         _safe_isinstance(geometry, Sphere)
-        or (
-            hasattr(geometry, 'radius')
-            and (not hasattr(geometry, 'length'))
-            and (not hasattr(geometry, 'filename'))
-        )
+        or _has_attrs(geometry, ['radius'], ['length', 'filename'])
     )
 
 
@@ -307,6 +294,21 @@ def _safe_isinstance(obj: Any, cls: type) -> bool:
         return isinstance(obj, cls)
     except TypeError:
         return False
+
+
+def _has_attrs(
+        obj: Any,
+        required: list[str],
+        forbidden: list[str] | None = None,
+) -> bool:
+    if obj is None:
+        return False
+    if not all(hasattr(obj, attr) for attr in required):
+        return False
+    forbidden = forbidden or []
+    if any(hasattr(obj, attr) for attr in forbidden):
+        return False
+    return True
 
 
 def _placement_from_matrix(origin: Any) -> fc.Placement | None:

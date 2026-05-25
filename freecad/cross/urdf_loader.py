@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
+import warnings
 
 from xacro import process_file
 
@@ -11,6 +12,8 @@ from xacro import process_file
 YOURDFPY = 'yourdfpy'
 URDF_PARSER_PY = 'urdf_parser_py'
 SUPPORTED_PARSERS = (YOURDFPY, URDF_PARSER_PY)
+# Prefer yourdfpy because it is more robust on real-world URDF inputs and is
+# the parser backend this workbench now prioritizes for import workflows.
 DEFAULT_PARSER = YOURDFPY
 
 
@@ -74,7 +77,15 @@ class ParsedUrdfRobot:
                 root_candidates.discard(joint.child)
         if not root_candidates:
             return None
-        return sorted(root_candidates)[0]
+        # Deterministic fallback if the parser backend does not provide root link
+        # lookup.
+        root_candidates = sorted(root_candidates)
+        if len(root_candidates) > 1:
+            warnings.warn(
+                f'URDF has multiple root-link candidates, selecting '
+                f'"{root_candidates[0]}"',
+            )
+        return root_candidates[0]
 
 
 class UrdfLoader:
@@ -145,7 +156,7 @@ class UrdfLoader:
         from urdf_parser_py.urdf import Robot
         if filename.suffix == '.xacro':
             robot = Robot.from_xml_string(
-                    process_file(filename.expanduser()).toxml(),
+                process_file(filename.expanduser()).toxml(),
             )
         else:
             robot = Robot.from_xml_file(filename)

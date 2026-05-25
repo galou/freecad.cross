@@ -90,6 +90,7 @@ class XacroObjectProxy(ProxyBase):
     # The member is often used in workbenches, particularly in the Draft
     # workbench, to identify the object type.
     Type = 'Cross::XacroObject'
+    _category_of_robot_joint_values = 'RobotJointValues'
 
     def __init__(self, obj: CrossXacroObject):
         super().__init__(
@@ -158,6 +159,13 @@ class XacroObjectProxy(ProxyBase):
             obj, 'App::PropertyPlacement', 'Placement',
             'Base', 'Placement',
         )
+        add_property(
+            obj, 'App::PropertyStringList', '_RobotJointValueProperties',
+            'Internal',
+            'List of mirrored robot joint value properties',
+            [],
+        )
+        obj.setPropertyStatus('_RobotJointValueProperties', ['Hidden'])
 
         self._toggle_editor_mode()
 
@@ -215,6 +223,7 @@ class XacroObjectProxy(ProxyBase):
         xo: CrossXacroObject = self.xacro_object
         if not xo.InputFile:
             self._root_link = ''
+            self._refresh_robot_joint_value_properties()
             return
         input_path = abs_path_from_ros_path(xo.InputFile)
         self.xacro = XacroLoader.load_from_file(input_path)
@@ -224,6 +233,7 @@ class XacroObjectProxy(ProxyBase):
         self._toggle_editor_mode()
         self._add_param_properties()
         self.reset_group()
+        self._refresh_robot_joint_value_properties()
 
     def onChanged(self, obj: CrossXacroObject, prop: str) -> None:
         if prop == 'InputFile':
@@ -240,6 +250,8 @@ class XacroObjectProxy(ProxyBase):
             if robot and (robot.Placement != obj.Placement):
                 # Avoid recursive recompute.
                 robot.Placement = obj.Placement
+        if prop == 'Group':
+            self._refresh_robot_joint_value_properties()
 
     def onDocumentRestored(self, obj: CrossXacroObject):
         """Restore attributes because __init__ is not called on restore.
@@ -307,13 +319,20 @@ class XacroObjectProxy(ProxyBase):
         return [link.name for link in self._urdf_robot.links]
 
     def get_robot(self) -> Optional[CrossRobot]:
+        robots = self.get_robots()
+        if robots:
+            return robots[0]
+        return None
+
+    def get_robots(self) -> list[CrossRobot]:
         if ((not hasattr(self, 'xacro_object'))
                 or (not hasattr(self.xacro_object, 'Group'))):
-            return None
+            return []
+        robots: list[CrossRobot] = []
         for obj in self.xacro_object.Group:
             if is_robot(obj):
-                return obj
-        return None
+                robots.append(obj)
+        return robots
 
     def _toggle_editor_mode(self) -> None:
         """Show/hide properties."""
@@ -378,7 +397,11 @@ class XacroObjectProxy(ProxyBase):
         if xacro_txt == self._old_xacro_file_content:
             return None
         self._old_xacro_file_content = xacro_txt
-        self._urdf_robot = self._generate_urdf(f'{ros_name(xo)}_robot', xo.MainMacro, params)
+        self._urdf_robot = self._generate_urdf(
+            f'{ros_name(xo)}_robot',
+            xo.MainMacro,
+            params,
+        )
         self._root_link = self._urdf_robot.get_root()
         robot = robot_from_urdf(xo.Document, self._urdf_robot)
         robot.Placement = self.xacro_object.Placement
@@ -450,6 +473,63 @@ class XacroObjectProxy(ProxyBase):
         # `xo.Group`.
         for o in objects_in_group:
             xo.removeObject(o)
+
+    def _refresh_robot_joint_value_properties(self) -> None:
+        if not self.is_execute_ready():
+            return
+        xo = self.xacro_object
+        old_props = list(getattr(xo, '_RobotJointValueProperties', []))
+        for prop_name in old_props:
+            if prop_name in xo.PropertiesList:
+                xo.removeProperty(prop_name)
+
+        new_props: list[str] = []
+        for robot in self.get_robots():
+            if not hasattr(robot, 'Proxy'):
+                continue
+            if not robot.Proxy.is_execute_ready():
+                continue
+            robot_name = get_valid_property_name(ros_name(robot))
+            for joint, joint_prop_name in robot.Proxy.joint_variables.items():
+                joint_name = ros_name(joint)
+                prop_name = self._get_unique_robot_joint_property_name(
+                    f'{robot_name}_{joint_prop_name}',
+                    new_props,
+                )
+                help_ = (
+                    f'Joint value "{joint_name}" from robot "{ros_name(robot)}"'
+                )
+                _, used_prop_name = add_property(
+                    xo,
+                    'App::PropertyFloat',
+                    prop_name,
+                    self._category_of_robot_joint_values,
+                    help_,
+                    getattr(robot, joint_prop_name),
+                )
+                xo.setExpression(
+                    used_prop_name,
+                    f'{robot.Name}.{joint_prop_name}',
+                )
+                xo.setPropertyStatus(used_prop_name, ['ReadOnly'])
+                new_props.append(used_prop_name)
+        xo._RobotJointValueProperties = new_props
+
+    def _get_unique_robot_joint_property_name(
+            self,
+            base_name: str,
+            used_names: list[str],
+    ) -> str:
+        prop_name = get_valid_property_name(base_name)
+        suffix = 1
+        while (
+            (prop_name in used_names)
+            or (prop_name in self.xacro_object.PropertiesList)
+        ):
+            prop_name = f'{base_name}_{suffix}'
+            prop_name = get_valid_property_name(prop_name)
+            suffix += 1
+        return prop_name
 
 
 class _ViewProviderXacroObject(ProxyBase):

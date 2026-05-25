@@ -31,8 +31,8 @@ from .wb_utils import export_templates
 from .wb_utils import get_joints
 from .wb_utils import get_rel_and_abs_path
 from .wb_utils import get_valid_urdf_name
-from .wb_utils import get_xacro_chains
-from .wb_utils import get_xacro_object_attachments
+from .wb_utils import get_ros_object_chains
+from .wb_utils import get_ros_object_attachments
 from .wb_utils import get_xacro_objects
 from .wb_utils import get_robots
 from .wb_utils import remove_ros_workspace
@@ -159,7 +159,7 @@ class WorkcellProxy(ProxyBase):
     def place_xacro_objects(self) -> None:
         """Set the `Placement` of all xacro objects and robots."""
         all_objects = self.get_xacro_objects() + self.get_robots()
-        for chain in get_xacro_chains(all_objects, self.get_joints()):
+        for chain in get_ros_object_chains(all_objects, self.get_joints()):
             placement = fc.Placement()
             for attachment in chain:
                 xo = attachment.ros_object
@@ -197,7 +197,7 @@ class WorkcellProxy(ProxyBase):
 
         xacro_objects = self.get_xacro_objects()
         joints = self.get_joints()
-        attachments = get_xacro_object_attachments(xacro_objects, joints)
+        attachments = get_ros_object_attachments(xacro_objects, joints)
 
         # Check that no more than one XacroObject has no parent and whether
         # root link is used in one of the XacroObject.

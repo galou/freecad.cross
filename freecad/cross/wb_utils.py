@@ -290,7 +290,7 @@ def is_subchain(subchain: DOList, chain: DOList) -> bool:
     return True
 
 
-def get_xacro_object_attachments(
+def get_ros_object_attachments(
         ros_objects: list[Union[CrossXacroObject, CrossRobot]],
         joints: list[CrossJoint],
 ) -> list[RosObjectAttachment]:
@@ -315,7 +315,7 @@ def get_xacro_object_attachments(
     return attachments
 
 
-def get_xacro_chains(
+def get_ros_object_chains(
         ros_objects: list[Union[CrossXacroObject, CrossRobot]],
         joints: list[CrossJoint],
 ) -> list[list[RosObjectAttachment]]:
@@ -350,7 +350,7 @@ def get_xacro_chains(
         else:
             return [attachment]
 
-    attachments = get_xacro_object_attachments(ros_objects, joints)
+    attachments = get_ros_object_attachments(ros_objects, joints)
     tip_objects: list[Union[CrossXacroObject, CrossRobot]] = []
     for attachment in attachments:
         if not is_parent(attachment.ros_object, attachments):

@@ -55,7 +55,7 @@ class SupportsStr(Protocol):
 
 @dataclass
 class XacroObjectAttachment:
-    xacro_object: CrossXacroObject
+    xacro_object: Union[CrossXacroObject, CrossRobot]
     attached_to: Optional[CrossLink] = None
     attached_by: Optional[CrossJoint] = None
     # ROS object `attached_to` belongs to.
@@ -182,6 +182,11 @@ def get_xacro_objects(objs: DOList) -> list[CrossXacroObject]:
     return [o for o in objs if is_xacro_object(o)]
 
 
+def get_robots(objs: DOList) -> list[CrossRobot]:
+    """Return only the objects that are Cross::Robot instances."""
+    return [o for o in objs if is_robot(o)]
+
+
 def get_chains(
         links: list[CrossLink],
         joints: list[CrossJoint],
@@ -286,10 +291,10 @@ def is_subchain(subchain: DOList, chain: DOList) -> bool:
 
 
 def get_xacro_object_attachments(
-        xacro_objects: list[CrossXacroObject],
+        xacro_objects: list[Union[CrossXacroObject, CrossRobot]],
         joints: list[CrossJoint],
 ) -> list[XacroObjectAttachment]:
-    """Return attachment details of xacro objects."""
+    """Return attachment details of xacro objects and robots."""
     attachments: list[XacroObjectAttachment] = []
     for xacro_object in xacro_objects:
         attachment = XacroObjectAttachment(xacro_object)
@@ -311,18 +316,18 @@ def get_xacro_object_attachments(
 
 
 def get_xacro_chains(
-        xacro_objects: list[CrossXacroObject],
+        xacro_objects: list[Union[CrossXacroObject, CrossRobot]],
         joints: list[CrossJoint],
 ) -> list[list[XacroObjectAttachment]]:
     """Return the list of chains.
 
-    A chain starts at a xacro object that is not attached to any other xacro
-    object and contains all xacro objects that form an attachment chain, up to
-    the xacro object to which no other xacro object is attached.
+    A chain starts at a xacro object or robot that is not attached to any
+    other xacro object or robot and contains all such objects that form an
+    attachment chain, up to the one to which no other is attached.
 
     """
     def is_parent(
-        xacro_object: CrossXacroObject,
+        xacro_object: Union[CrossXacroObject, CrossRobot],
         attachments: list[XacroObjectAttachment],
     ) -> bool:
         for attachment in attachments:
@@ -331,7 +336,7 @@ def get_xacro_chains(
         return False
 
     def get_chain(
-        xacro_object: CrossXacroObject,
+        xacro_object: Union[CrossXacroObject, CrossRobot],
         attachments: list[XacroObjectAttachment],
     ) -> list[XacroObjectAttachment]:
         for attachment in attachments:
@@ -346,7 +351,7 @@ def get_xacro_chains(
             return [attachment]
 
     attachments = get_xacro_object_attachments(xacro_objects, joints)
-    tip_xacros: list[CrossXacroObject] = []
+    tip_xacros: list[Union[CrossXacroObject, CrossRobot]] = []
     for attachment in attachments:
         if not is_parent(attachment.xacro_object, attachments):
             tip_xacros.append(attachment.xacro_object)

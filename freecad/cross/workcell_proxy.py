@@ -34,11 +34,13 @@ from .wb_utils import get_valid_urdf_name
 from .wb_utils import get_xacro_chains
 from .wb_utils import get_xacro_object_attachments
 from .wb_utils import get_xacro_objects
+from .wb_utils import get_robots
 from .wb_utils import remove_ros_workspace
 from .wb_utils import ros_name
 
 # Stubs and typing hints.
 from .joint import Joint as CrossJoint  # A Cross::Joint, i.e. a DocumentObject with Proxy "Joint". # noqa: E501
+from .robot import Robot as CrossRobot  # A Cross::Robot, i.e. a DocumentObject with Proxy "Robot". # noqa: E501
 from .xacro_object import XacroObject as CrossXacroObject  # A Cross::XacroObject, i.e. a DocumentObject with Proxy "XacroObject". # noqa: E501
 from .workcell import Workcell as CrossWorkcell  # A Cross::Workcell, i.e. a DocumentObject with Proxy "Workcell". # noqa: E501
 VPDO = ForwardRef('FreeCADGui.ViewProviderDocumentObject')  # Don't want to import FreeCADGui here. # noqa: E501
@@ -111,6 +113,11 @@ class WorkcellProxy(ProxyBase):
             return []
         return get_xacro_objects(self.workcell.Group)
 
+    def get_robots(self) -> list[CrossRobot]:
+        if not self.is_execute_ready():
+            return []
+        return get_robots(self.workcell.Group)
+
     def get_joints(self) -> list[CrossJoint]:
         if not self.is_execute_ready():
             return []
@@ -126,9 +133,9 @@ class WorkcellProxy(ProxyBase):
         parent_links: list[str] = ['']
         if self.workcell.RootLink:
             parent_links.append(self.workcell.RootLink)
-        for xacro_object in self.get_xacro_objects():
-            child_links.append(xacro_object.Proxy.root_link)
-            parent_links += xacro_object.Proxy.get_link_names()
+        for obj in self.get_xacro_objects() + self.get_robots():
+            child_links.append(obj.Proxy.root_link)
+            parent_links += obj.Proxy.get_link_names()
         for joint in self.get_joints():
             # Implementation note: setting to a list sets the enumeration.
             if joint.getEnumerationsOfProperty('Child') != child_links:
@@ -140,16 +147,19 @@ class WorkcellProxy(ProxyBase):
                 # Doesn't change the value if old value in the new enum.
                 joint.Parent = parent_links
 
-    def get_xacro_object_with_link(self, link_name: str) -> Optional[CrossXacroObject]:
-        """Return the xacro object containing a given link."""
-        for xacro_object in self.get_xacro_objects():
-            if xacro_object.Proxy.has_link(link_name):
-                return xacro_object
+    def get_xacro_object_with_link(
+            self, link_name: str,
+    ) -> Optional[CrossXacroObject | CrossRobot]:
+        """Return the xacro object or robot containing a given link."""
+        for obj in self.get_xacro_objects() + self.get_robots():
+            if obj.Proxy.has_link(link_name):
+                return obj
         return None
 
     def place_xacro_objects(self) -> None:
-        """Set the `Placement` of all xacro objects."""
-        for chain in get_xacro_chains(self.get_xacro_objects(), self.get_joints()):
+        """Set the `Placement` of all xacro objects and robots."""
+        all_objects = self.get_xacro_objects() + self.get_robots()
+        for chain in get_xacro_chains(all_objects, self.get_joints()):
             placement = fc.Placement()
             for attachment in chain:
                 xo = attachment.xacro_object

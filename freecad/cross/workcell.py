@@ -9,9 +9,10 @@ import FreeCAD as fc
 # Implementation note: The following import is necessary to avoid a circular
 # dependency.
 Joint = NewType('Joint', fc.DocumentObject)
+Robot = NewType('Robot', fc.DocumentObject)
 XacroObject = NewType('XacroObject', fc.DocumentObject)
 
-JointOrXacroObject = Union[Joint, XacroObject]
+JointOrXacroObject = Union[Joint, Robot, XacroObject]
 
 
 class Workcell(fc.DocumentObject):

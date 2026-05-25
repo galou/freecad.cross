@@ -43,6 +43,7 @@ from .wb_utils import get_rel_and_abs_path
 from .wb_utils import get_valid_urdf_name
 from .wb_utils import is_joint
 from .wb_utils import is_robot
+from .wb_utils import is_workcell
 from .wb_utils import joint_quantities_from_si_units
 from .wb_utils import remove_ros_workspace
 from .wb_utils import ros_name
@@ -689,6 +690,22 @@ class RobotProxy(ProxyBase):
             return None
         return chains[0][0]
 
+    @property
+    def root_link(self) -> str:
+        """Return the name of the root link of the robot."""
+        root = self.get_root_link()
+        if root is None:
+            return ''
+        return ros_name(root)
+
+    def get_link_names(self) -> list[str]:
+        """Return the list of link names."""
+        return [ros_name(link) for link in self.get_links()]
+
+    def has_link(self, link_name: str) -> bool:
+        """Return True if the link belongs to the robot."""
+        return self.get_link(link_name) is not None
+
     def get_chains(self) -> list[list[BasicElement]]:
         """Return the list of chains.
 
@@ -1048,10 +1065,20 @@ def make_robot(name, doc: Optional[fc.Document] = None) -> CrossRobot:
     RobotProxy(robot)
 
     if hasattr(fc, 'GuiUp') and fc.GuiUp:
+        import FreeCADGui as fcgui
+
         _ViewProviderRobot(robot.ViewObject)
         robot.ViewObject.ShowReal = True
         robot.ViewObject.ShowVisual = False
         robot.ViewObject.ShowCollision = False
+
+        # Make `robot` part of the selected `Cross::Workcell`.
+        sel = fcgui.Selection.getSelection()
+        if sel:
+            candidate = sel[0]
+            if is_workcell(candidate):
+                robot.adjustRelativeLinks(candidate)
+                candidate.addObject(robot)
 
     doc.recompute()
     return robot

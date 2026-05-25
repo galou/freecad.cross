@@ -231,11 +231,11 @@ class WorkcellProxy(ProxyBase):
 
         includes: list[et.Element] = []
         for attachment in attachments:
-            xacro_object = attachment.ros_object
+            ros_object = attachment.ros_object
             joint = attachment.attached_by
 
             # Add the xacro's children.
-            xacro_et = xacro_object.Proxy.export_urdf()
+            xacro_et = ros_object.Proxy.export_urdf()
             for child_et in xacro_et:
                 if ((child_et.tag == 'xmlns:include')
                         and (child_et.attrib['filename'] not in includes)):
@@ -251,9 +251,9 @@ class WorkcellProxy(ProxyBase):
                     origin = joint.Origin
                 else:
                     parent_link = workcell_root_link
-                    root_link = xacro_object.Proxy.root_link
+                    root_link = ros_object.Proxy.root_link
                     child_link = root_link
-                    origin = xacro_object.Placement
+                    origin = ros_object.Placement
                 joint_et.attrib['name'] = f'{parent_link}_to_{child_link}'
                 joint_et.attrib['type'] = 'fixed'
                 parent_et = et.fromstring('<parent/>')

@@ -54,7 +54,7 @@ class SupportsStr(Protocol):
 
 
 @dataclass
-class XacroObjectAttachment:
+class RosObjectAttachment:
     ros_object: Union[CrossXacroObject, CrossRobot]
     attached_to: Optional[CrossLink] = None
     attached_by: Optional[CrossJoint] = None
@@ -293,11 +293,11 @@ def is_subchain(subchain: DOList, chain: DOList) -> bool:
 def get_xacro_object_attachments(
         ros_objects: list[Union[CrossXacroObject, CrossRobot]],
         joints: list[CrossJoint],
-) -> list[XacroObjectAttachment]:
+) -> list[RosObjectAttachment]:
     """Return attachment details of xacro objects and robots."""
-    attachments: list[XacroObjectAttachment] = []
+    attachments: list[RosObjectAttachment] = []
     for ros_object in ros_objects:
-        attachment = XacroObjectAttachment(ros_object)
+        attachment = RosObjectAttachment(ros_object)
         attachments.append(attachment)
         if not hasattr(ros_object, 'Proxy'):
             continue
@@ -318,7 +318,7 @@ def get_xacro_object_attachments(
 def get_xacro_chains(
         ros_objects: list[Union[CrossXacroObject, CrossRobot]],
         joints: list[CrossJoint],
-) -> list[list[XacroObjectAttachment]]:
+) -> list[list[RosObjectAttachment]]:
     """Return the list of chains.
 
     A chain starts at a xacro object or robot that is not attached to any
@@ -328,7 +328,7 @@ def get_xacro_chains(
     """
     def is_parent(
         ros_object: Union[CrossXacroObject, CrossRobot],
-        attachments: list[XacroObjectAttachment],
+        attachments: list[RosObjectAttachment],
     ) -> bool:
         for attachment in attachments:
             if attachment.attachement_ros_object is ros_object:
@@ -337,8 +337,8 @@ def get_xacro_chains(
 
     def get_chain(
         ros_object: Union[CrossXacroObject, CrossRobot],
-        attachments: list[XacroObjectAttachment],
-    ) -> list[XacroObjectAttachment]:
+        attachments: list[RosObjectAttachment],
+    ) -> list[RosObjectAttachment]:
         for attachment in attachments:
             if attachment.ros_object is ros_object:
                 break
@@ -355,7 +355,7 @@ def get_xacro_chains(
     for attachment in attachments:
         if not is_parent(attachment.ros_object, attachments):
             tip_objects.append(attachment.ros_object)
-    chains: list[list[XacroObjectAttachment]] = []
+    chains: list[list[RosObjectAttachment]] = []
     for ros_object in tip_objects:
         chains.append(get_chain(ros_object, attachments))
     return chains

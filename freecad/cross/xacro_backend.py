@@ -7,6 +7,7 @@ from xml.dom.minidom import Document
 from xml.dom.minidom import parse as parse_xml
 import os
 import re
+import shlex
 import xml.dom
 
 try:
@@ -148,7 +149,7 @@ def _process_includes(doc, base_dir: str):
             with open(filename) as f:
                 included = parse_xml(f)
             for c in _child_elements(included.documentElement):
-                elt.parentNode.insertBefore(c.cloneNode(1), elt)
+                elt.parentNode.insertBefore(c.cloneNode(True), elt)
             elt.parentNode.removeChild(elt)
             elt = None
         else:
@@ -299,7 +300,7 @@ def _eval_text(text: str, symbols):
             IGNORE=r"\s+",
             NUMBER=r"(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?",
             SYMBOL=r"[a-zA-Z_]\w*",
-            OP=r"[\+\-\*/^]",
+            OP=r"[\+\-\*/]",
             LPAREN=r"\(",
             RPAREN=r"\)",
         )
@@ -338,7 +339,7 @@ def _eval_all(root, macros, symbols):
         if node.nodeType == xml.dom.Node.ELEMENT_NODE:
             if node.tagName in macros:
                 body = macros[node.tagName].cloneNode(deep=True)
-                params = body.getAttribute('params').split()
+                params = shlex.split(body.getAttribute('params'))
                 scoped = _Table(symbols)
                 for name, value in node.attributes.items():
                     if name not in params:

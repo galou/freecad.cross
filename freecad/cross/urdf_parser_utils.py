@@ -1,18 +1,28 @@
 # Utility function depending on the `urdf_parser_py` module (provided by ROS).
 
 from pathlib import Path
+from typing import Any
 
 import FreeCAD as fc
 
 import Mesh as fcmesh  # FreeCAD.
 
-from urdf_parser_py.urdf import Box
-from urdf_parser_py.urdf import Cylinder
-from urdf_parser_py.urdf import Joint as UrdfJoint
-from urdf_parser_py.urdf import Joint as UrdfLink
-from urdf_parser_py.urdf import Mesh
-from urdf_parser_py.urdf import Pose
-from urdf_parser_py.urdf import Sphere
+try:
+    from urdf_parser_py.urdf import Box
+    from urdf_parser_py.urdf import Cylinder
+    from urdf_parser_py.urdf import Joint as UrdfJoint
+    from urdf_parser_py.urdf import Joint as UrdfLink
+    from urdf_parser_py.urdf import Mesh
+    from urdf_parser_py.urdf import Pose
+    from urdf_parser_py.urdf import Sphere
+except ModuleNotFoundError:
+    Box = Any
+    Cylinder = Any
+    UrdfJoint = Any
+    UrdfLink = Any
+    Mesh = Any
+    Pose = Any
+    Sphere = Any
 
 from .freecad_utils import add_object
 from .freecad_utils import is_group
@@ -36,13 +46,14 @@ def obj_from_geometry(
         doc_or_group: Doc | DO,
 ) -> tuple[DO | None, Path | None]:
     """Return a FreeCAD object for the URDF shape with the path for meshes."""
-    if isinstance(geometry, Box):
+    geometry = _extract_geometry(geometry)
+    if _is_box(geometry):
         return obj_from_box(geometry, doc_or_group)
-    if isinstance(geometry, Cylinder):
+    if _is_cylinder(geometry):
         return obj_from_cylinder(geometry, doc_or_group)
-    if isinstance(geometry, Mesh):
+    if _is_mesh_geometry(geometry):
         return obj_from_mesh(geometry, doc_or_group)
-    if isinstance(geometry, Sphere):
+    if _is_sphere(geometry):
         return obj_from_sphere(geometry, doc_or_group)
     raise NotImplementedError('Primitive not implemented')
 
@@ -59,6 +70,9 @@ def placement_from_origin(
         placement.Base = fc.Vector(origin.position) * 1000.0
     if hasattr(origin, 'rpy'):
         placement.Rotation = rotation_from_rpy(origin.rpy)
+    matrix_placement = _placement_from_matrix(origin)
+    if matrix_placement is not None:
+        return matrix_placement
     return placement
 
 
@@ -235,3 +249,79 @@ def obj_from_mesh(
     if geometry_scale is not None:
         scale_mesh_object(mesh_obj, geometry_scale)
     return mesh_obj, mesh_path
+
+
+def _extract_geometry(geometry: Any) -> Any:
+    if geometry is None:
+        return None
+    for attr in ('box', 'cylinder', 'mesh', 'sphere'):
+        if hasattr(geometry, attr):
+            child_geometry = getattr(geometry, attr)
+            if child_geometry is not None:
+                return child_geometry
+    return geometry
+
+
+def _is_box(geometry: Any) -> bool:
+    return (
+        _safe_isinstance(geometry, Box)
+        or (
+            hasattr(geometry, 'size')
+            and (not hasattr(geometry, 'radius'))
+            and (not hasattr(geometry, 'length'))
+            and (not hasattr(geometry, 'filename'))
+        )
+    )
+
+
+def _is_cylinder(geometry: Any) -> bool:
+    return (
+        _safe_isinstance(geometry, Cylinder)
+        or (
+            hasattr(geometry, 'radius')
+            and hasattr(geometry, 'length')
+            and (not hasattr(geometry, 'filename'))
+        )
+    )
+
+
+def _is_mesh_geometry(geometry: Any) -> bool:
+    return _safe_isinstance(geometry, Mesh) or hasattr(geometry, 'filename')
+
+
+def _is_sphere(geometry: Any) -> bool:
+    return (
+        _safe_isinstance(geometry, Sphere)
+        or (
+            hasattr(geometry, 'radius')
+            and (not hasattr(geometry, 'length'))
+            and (not hasattr(geometry, 'filename'))
+        )
+    )
+
+
+def _safe_isinstance(obj: Any, cls: type) -> bool:
+    if cls is Any:
+        return False
+    try:
+        return isinstance(obj, cls)
+    except TypeError:
+        return False
+
+
+def _placement_from_matrix(origin: Any) -> fc.Placement | None:
+    if origin is None:
+        return None
+    try:
+        rows = [list(origin[i]) for i in range(4)]
+    except (IndexError, KeyError, TypeError, ValueError):
+        return None
+    if any(len(row) != 4 for row in rows):
+        return None
+    rows[0][3] *= 1000.0  # m to mm.
+    rows[1][3] *= 1000.0
+    rows[2][3] *= 1000.0
+    matrix = fc.Matrix(
+        *rows[0], *rows[1], *rows[2], *rows[3],
+    )
+    return fc.Placement(matrix)

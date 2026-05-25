@@ -147,7 +147,7 @@ class WorkcellProxy(ProxyBase):
                 # Doesn't change the value if old value in the new enum.
                 joint.Parent = parent_links
 
-    def get_xacro_object_with_link(
+    def get_ros_object_with_link(
             self, link_name: str,
     ) -> Optional[CrossXacroObject | CrossRobot]:
         """Return the xacro object or robot containing a given link."""

@@ -294,7 +294,7 @@ def get_ros_object_attachments(
         ros_objects: list[Union[CrossXacroObject, CrossRobot]],
         joints: list[CrossJoint],
 ) -> list[RosObjectAttachment]:
-    """Return attachment details of xacro objects and robots."""
+    """Return attachment details of ROS objects (xacro objects and robots)."""
     attachments: list[RosObjectAttachment] = []
     for ros_object in ros_objects:
         attachment = RosObjectAttachment(ros_object)
@@ -321,9 +321,9 @@ def get_ros_object_chains(
 ) -> list[list[RosObjectAttachment]]:
     """Return the list of chains.
 
-    A chain starts at a xacro object or robot that is not attached to any
-    other xacro object or robot and contains all such objects that form an
-    attachment chain, up to the one to which no other is attached.
+    A chain starts at a ROS object that is not attached to any other ROS object
+    and contains all such objects that form an attachment chain, up to the one
+    to which no other is attached.
 
     """
     def is_parent(

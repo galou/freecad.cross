@@ -526,8 +526,7 @@ class XacroObjectProxy(ProxyBase):
             (prop_name in used_names)
             or (prop_name in self.xacro_object.PropertiesList)
         ):
-            prop_name = f'{base_name}_{suffix}'
-            prop_name = get_valid_property_name(prop_name)
+            prop_name = get_valid_property_name(f'{base_name}_{suffix}')
             suffix += 1
         return prop_name
 

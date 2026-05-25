@@ -12,11 +12,11 @@ Joint = NewType('Joint', fc.DocumentObject)
 Robot = NewType('Robot', fc.DocumentObject)
 XacroObject = NewType('XacroObject', fc.DocumentObject)
 
-JointOrXacroObject = Union[Joint, Robot, XacroObject]
+JointOrRosObject = Union[Joint, Robot, XacroObject]
 
 
 class Workcell(fc.DocumentObject):
-    Group: list[JointOrXacroObject]
+    Group: list[JointOrRosObject]
     OutputPath: str
     RootLink: str
     _Type: str

@@ -162,7 +162,7 @@ class WorkcellProxy(ProxyBase):
         for chain in get_xacro_chains(all_objects, self.get_joints()):
             placement = fc.Placement()
             for attachment in chain:
-                xo = attachment.xacro_object
+                xo = attachment.ros_object
                 joint = attachment.attached_by
                 link = attachment.attached_to
                 if link:
@@ -205,7 +205,7 @@ class WorkcellProxy(ProxyBase):
         for attachment in attachments:
             joint = attachment.attached_by
             if joint is None:
-                xacros_wo_parent.append(attachment.xacro_object)
+                xacros_wo_parent.append(attachment.ros_object)
 
         if obj.RootLink:
             workcell_root_link = obj.RootLink
@@ -231,7 +231,7 @@ class WorkcellProxy(ProxyBase):
 
         includes: list[et.Element] = []
         for attachment in attachments:
-            xacro_object = attachment.xacro_object
+            xacro_object = attachment.ros_object
             joint = attachment.attached_by
 
             # Add the xacro's children.

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from math import degrees
+from pathlib import Path
 from typing import Any, List, Optional, Tuple
 from typing import TYPE_CHECKING
 
@@ -82,9 +83,23 @@ class Color:
 def robot_from_urdf(
         doc: fc.Document,
         urdf_robot: UrdfRobot,
+        filename: Path | str | None,
 ) -> CrossRobot:
-    """Creates a CROSS::Robot from URDF."""
+    """
+    Creates a CROSS::Robot from URDF.
 
+    Args
+    - doc: the FreeCAD document to create the robot in.
+    - urdf_robot: the URDF robot description.
+    - filename: the path to the URDF file, used to resolve relative paths for
+                meshes.
+                Optional for URDF without meshes or where all meshes use the
+                format `package://`.
+    """
+
+    relative_to: Path | None = None
+    if filename is not None:
+        relative_to = Path(filename).parent
     robot, parts_group = _make_robot(doc, urdf_robot.name)
 
     colors = _get_colors(urdf_robot)
@@ -98,14 +113,24 @@ def robot_from_urdf(
         # visual_map[urdf_link.name] = visual_part
         # collision_map[urdf_link.name] = collision_part
         geoms, fc_links = _add_visual(
-                urdf_link, parts_group, ros_link, visual_part, colors,
+            urdf_link,
+            parts_group,
+            ros_link,
+            visual_part,
+            colors,
+            relative_to=relative_to,
         )
         for geom in geoms:
             robot.Proxy.created_objects.append(geom)
         for fc_link in fc_links:
             robot.Proxy.created_objects.append(fc_link)
         geoms, fc_links = _add_collision(
-                urdf_link, parts_group, ros_link, collision_part, colors,
+            urdf_link,
+            parts_group,
+            ros_link,
+            collision_part,
+            colors,
+            relative_to=relative_to,
         )
         for geom in geoms:
             robot.Proxy.created_objects.append(geom)
@@ -396,6 +421,7 @@ def _add_visual(
         ros_link: CrossLink,
         visual_part: AppPart,
         colors: dict[str, Color],
+        relative_to: Path | str | None = None,
 ) -> tuple[DOList, DOList]:
     """Add the visual geometries to a robot.
 
@@ -416,6 +442,7 @@ def _add_visual(
         urdf_link.visuals,
         name_linked_geom,
         colors,
+        relative_to,
     )
 
 
@@ -425,6 +452,7 @@ def _add_collision(
         ros_link: CrossLink,
         collision_part: AppPart,
         colors: dict[str, Color],
+        relative_to: Path | str | None = None,
 ) -> tuple[DOList, DOList]:
     """Add the collision geometries to a robot.
 
@@ -445,6 +473,7 @@ def _add_collision(
         urdf_link.collisions,
         name_linked_geom,
         colors,
+        relative_to,
     )
 
 
@@ -479,11 +508,13 @@ def _add_geometries(
         parts_group: DOG,
         ros_link: DOG,
         part: AppPart,
-        geometries: [VisualList | CollisionList],
+        geometries: VisualList | CollisionList,
         name_linked_geom: str,
         colors: dict[str, Color],
+        relative_to: Path | str | None = None,
 ) -> tuple[DOList, DOList]:
-    """Add the geometries from URDF into `group` and an App::Link to it into `link`.
+    """
+    Add the geometries from URDF into `group` and an App::Link to it into `link`.
 
     `geometries` is either `visuals` or `collisions` and the geometry itself is
     `geometries[?].geometry`.
@@ -504,6 +535,8 @@ def _add_geometries(
                         generated. The final name may then be
                         `name_linked_geom`, `name_linked_geom`001, ...
     - colors: a dictionary {material_name: Color} with the available colors.
+    - relative_to: the path to resolve relative mesh paths, typically the path
+                   to the parent directory of the URDF file.
 
     """
     geom_objs: DOList = []
@@ -511,7 +544,11 @@ def _add_geometries(
     for geometry in geometries:
         # Make the FC object in the group.
         try:
-            geom_obj, _ = obj_from_geometry(geometry.geometry, parts_group)
+            geom_obj, _ = obj_from_geometry(
+                geometry.geometry,
+                parts_group,
+                relative_to
+            )
         except NotImplementedError:
             continue
         if not geom_obj:

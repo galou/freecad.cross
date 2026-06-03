@@ -16,7 +16,7 @@ class UrdfLoader:
         pass
 
     @classmethod
-    def load_from_file(cls, filename: [str | Path]) -> Robot:
+    def load_from_file(cls, filename: str | Path) -> Robot:
         """Load from a URDF file."""
         filename = Path(filename)
         if filename.suffix == '.xacro':
@@ -28,7 +28,7 @@ class UrdfLoader:
         return robot
 
     @classmethod
-    def load_from_string(cls, description: [str | bytes]) -> Robot:
+    def load_from_string(cls, description: str | bytes) -> Robot:
         """Load from an xml string."""
         return Robot.from_xml_string(description)
 

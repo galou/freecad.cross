@@ -34,14 +34,22 @@ Shape = Box | Cylinder | Mesh | Sphere
 def obj_from_geometry(
         geometry: Shape,
         doc_or_group: Doc | DO,
+        relative_to: Path | str | None = None,
 ) -> tuple[DO | None, Path | None]:
-    """Return a FreeCAD object for the URDF shape with the path for meshes."""
+    """
+    Return a FreeCAD object for the URDF shape with the path for meshes.
+
+    Arguments:
+        geometry: The URDF shape.
+        doc_or_group: The FreeCAD document or group to create the object in.
+        relative_to: The path to a directory from which to resolve relative mesh paths.
+    """
     if isinstance(geometry, Box):
         return obj_from_box(geometry, doc_or_group)
     if isinstance(geometry, Cylinder):
         return obj_from_cylinder(geometry, doc_or_group)
     if isinstance(geometry, Mesh):
-        return obj_from_mesh(geometry, doc_or_group)
+        return obj_from_mesh(geometry, doc_or_group, relative_to)
     if isinstance(geometry, Sphere):
         return obj_from_sphere(geometry, doc_or_group)
     raise NotImplementedError('Primitive not implemented')
@@ -156,6 +164,7 @@ def obj_from_cylinder(
 def obj_from_mesh(
         geometry: Mesh,
         doc_or_group: Doc | DO,
+        relative_to: Path | str | None = None,
 ) -> tuple[DO | None, Path | None]:
     """
     Return a document object and the path to the original file.
@@ -166,8 +175,21 @@ def obj_from_mesh(
     If the same file was already imported, return the corresponding existing
     object.
 
+    Arguments:
+        geometry: The URDF mesh shape.
+        doc_or_group: The FreeCAD document or group to create the object in.
+        relative_to: The path to a directory from which to resolve relative
+                     mesh paths.
     """
-    mesh_path = abs_path_from_ros_path(geometry.filename)
+    if relative_to:
+        relative_to = Path(relative_to).expanduser().absolute()
+        if not relative_to.is_dir():
+            warn(
+                f'Provided path {relative_to} is not a directory,'
+                ' assuming a file and taking its parent'
+            )
+            relative_to = relative_to.parent
+    mesh_path = abs_path_from_ros_path(geometry.filename, relative_to)
     if not mesh_path:
         pkg, _ = pkg_and_file_from_ros_path(geometry.filename)
         if pkg:

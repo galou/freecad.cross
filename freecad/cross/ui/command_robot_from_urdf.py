@@ -40,7 +40,7 @@ class _UrdfImportCommand:
             filename = str(dialog.selectedFiles()[0])
             urdf_robot = UrdfLoader.load_from_file(filename)
             doc.openTransaction(tr('Robot from URDF'))
-            robot_from_urdf(doc, urdf_robot)
+            robot_from_urdf(doc, urdf_robot, filename)
             doc.commitTransaction()
             doc.recompute()
             fcgui.SendMsgToActiveView('ViewFit')

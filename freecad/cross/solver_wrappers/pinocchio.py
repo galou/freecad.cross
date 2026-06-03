@@ -68,7 +68,7 @@ def ik(
     except ImportError as e:
         warn(
             "The pinocchio module is required to use the ik() function."
-            " Please install it e.g. with 'pip install pinocchio'."
+            " Please install it e.g. with 'pip install pin'."
             f" The thrown error was: {e}",
             gui=True,
         )

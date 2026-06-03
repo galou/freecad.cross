@@ -52,8 +52,11 @@ def add_path_to_environment_variable(path: [Path | str], env_var: str) -> None:
 def prepend_python_path(path: Path | str) -> None:
     """Add the path to sys.path if existing."""
     path = Path(path).expanduser().absolute()
-    if (str(path) not in sys.path) and path.exists():
-        sys.path.insert(0, str(path))
+    if not path.exists():
+        return
+    if str(path) in sys.path:
+        sys.path.pop(sys.path.index(str(path)))
+    sys.path.insert(0, str(path))
 
 
 def add_python_path(path: Path | str) -> None:

@@ -1,7 +1,7 @@
 import sys
 from pathlib import Path
 
-from ..utils import add_python_path
+from ..utils import prepend_python_path
 
 
 def add_robotpkg_library_path() -> bool:
@@ -19,5 +19,5 @@ def add_robotpkg_library_path() -> bool:
     minor = sys.version_info.minor
     python_ver = f'python{major}.{minor}'
     robotpkg_path = Path(f'/opt/openrobots/lib/{python_ver}/site-packages')
-    add_python_path(robotpkg_path)
+    prepend_python_path(robotpkg_path)
     return robotpkg_path.exists()

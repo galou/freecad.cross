@@ -258,15 +258,16 @@ def pkg_and_file_from_ros_path(
 
 def abs_path_from_ros_path(
         path: str,
-        relative_to: Optional[Path | str] = None,
-) -> Optional[Path]:
+        relative_to: Path | str | None = None,
+) -> Path | None:
     """Return the absolute path to a file given in ROS format.
 
     Return the absolute path to a file given in ROS format.
     Supported formats are:
-    - `package://<package_name>/<relative_file_path>` and
-    - `file://<absolute_file_path>`.
-    - `file://<relative_file_path>` if `relative_to` is given.
+    - `package://<package_name>/<relative_file_path>`,
+    - `file://<absolute_file_path>`,
+    - `file://<relative_file_path>` if `relative_to` is given,
+    - `<file_path>` (treated as `file://<file_path>`).
 
     This is the inverse function of `ros_path_from_abs_path`.
 
@@ -289,7 +290,8 @@ def abs_path_from_ros_path(
             or path.startswith('file://')
         )
     ):
-        return None
+        return abs_path_from_ros_path(f'file://{path}', relative_to)
+
     if path.startswith('package://'):
         pkg, rel_path = pkg_and_file_from_ros_path(path)
         if not pkg:

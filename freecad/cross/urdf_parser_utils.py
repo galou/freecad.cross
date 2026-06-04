@@ -202,6 +202,8 @@ def obj_from_mesh(
     # different format than `package://...`.
     mesh_ros_path = ros_path_from_abs_path(mesh_path.expanduser())
 
+    label2 = mesh_ros_path if mesh_ros_path else str(mesh_path)
+
     # Look for an existing object with the same mesh.
     if is_group(doc_or_group):
         doc = doc_or_group.Document
@@ -211,7 +213,7 @@ def obj_from_mesh(
         group = None
     for obj in doc.Objects:
         if is_mesh(obj):
-            if obj.Label2 == mesh_ros_path:
+            if obj.Label2 == label2:
                 return obj, mesh_path
 
     # Import a new mesh.
@@ -233,14 +235,14 @@ def obj_from_mesh(
             return None, None
         if len(mesh_objects) == 1:
             mesh_object = mesh_objects[0]
-            mesh_object.Label2 = mesh_ros_path
+            mesh_object.Label2 = label2
             if group:
                 group.addObject(mesh_object)
             return mesh_object, mesh_path
         if len(mesh_objects) > 1:
             part = add_object(doc_or_group, 'App::Part', mesh_path.stem)
             part.Label = mesh_path.name
-            part.Label2 = mesh_ros_path
+            part.Label2 = label2
             for mesh_obj in mesh_objects:
                 part.addObject(mesh_obj)
             return part, mesh_path
@@ -248,7 +250,7 @@ def obj_from_mesh(
     raw_mesh = fcmesh.read(str(mesh_path))
     mesh_obj = doc.addObject('Mesh::Feature', mesh_path.name)
     mesh_obj.Label = mesh_path.name
-    mesh_obj.Label2 = mesh_ros_path
+    mesh_obj.Label2 = label2
     if group:
         group.addObject(mesh_obj)
     mesh_obj.Mesh = raw_mesh

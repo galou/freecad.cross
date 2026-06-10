@@ -47,7 +47,8 @@ def _add_fc_links_lod(
         objects: DOList,
         lod: str,
 ) -> list[AppLink]:
-    """Create FreeCAD links to real, visual or collision elements.
+    """
+    Create FreeCAD links to real, visual or collision elements.
 
     Return the list of created FreeCAD link objects.
     The objects are not added to the CROSS::link (it's a group), just to the
@@ -75,7 +76,8 @@ def _add_fc_links_lod(
 
 
 def _skim_links_joints_from(group) -> tuple[DOList, DOList]:
-    """Remove all Cross::Link and Cross::Joint from the list.
+    """
+    Remove all Cross::Link and Cross::Joint from the list.
 
     `group` is a property that looks like a list but behaves differently
     (behaves like a tuple and is a copy of the original property content,
@@ -482,7 +484,8 @@ class LinkProxy(ProxyBase):
         return True
 
     def is_in_chain_to_joint(self, joint: CrossJoint) -> bool:
-        """Return True if `link` is in the chain from base to joint.
+        """
+        Return True if `link` is in the chain from base to joint.
 
         Return True if the link is in the chain from the base link to
         `joint.Parent`.
@@ -581,7 +584,8 @@ class LinkProxy(ProxyBase):
         package_parent: Path,
         package_name: [Path | str],
     ) -> et.ElementTree:
-        """Return the xml for this link.
+        """
+        Return the xml for this link.
 
         Parameters
         ----------
@@ -632,7 +636,8 @@ class LinkProxy(ProxyBase):
         return link_xml
 
     def _fix_lost_fc_links(self) -> None:
-        """Fix linked objects in CROSS links lost on restore.
+        """
+        Fix linked objects in CROSS links lost on restore.
 
         Probably because these elements are restored before the CROSS links.
 
@@ -654,7 +659,8 @@ class LinkProxy(ProxyBase):
             link.addObject(obj)
 
     def _fill_fc_link_lists(self) -> None:
-        """Fill the lists of FreeCAD links.
+        """
+        Fill the lists of FreeCAD links.
 
         The lists `_fc_links_real` and similar are empty on document restore
         and need to be filled up.

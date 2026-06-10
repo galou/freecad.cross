@@ -54,7 +54,8 @@ def assembly_from_urdf(
         doc: fc.Document,
         robot: UrdfRobot,
 ) -> DO:
-    """Creates two "App::Part" objects that mimic Assembly4 assemblies.
+    """
+    Creates two "App::Part" objects that mimic Assembly4 assemblies.
 
     Creates an "App::Part" object that mimics an Assembly4 assembly for the
     visual part of a URDF robot and an "App::Part" that doesn't mimic an
@@ -105,7 +106,8 @@ def _make_assembly_container(
         name: str = 'robot',
         emulate_assembly4: bool = True,
 ) -> tuple[AppPart, DO, DO]:
-    """Create an App::Part.
+    """
+    Create an App::Part.
 
     Return (assembly object, parts group, variable container).
 
@@ -189,7 +191,8 @@ def _make_part(
         doc: fc.Document,
         name: str = 'Part',
 ) -> tuple[DO, DO]:
-    """Create an App::Part.
+    """
+    Create an App::Part.
 
     Emulates an Assembly4 Part by adding a local coordinate system.
 
@@ -216,7 +219,8 @@ def _add_link(
         parts_group: DO,
         name: str,
 ) -> Tuple[DO, DO]:
-    """Add an App::Part to the group and a link to it to the assembly.
+    """
+    Add an App::Part to the group and a link to it to the assembly.
 
     Return the "App::Link" and its first LCS.
 
@@ -262,7 +266,8 @@ def _add_lcs(
         joint_name: str,
         part_is_parent: bool,
 ) -> DO:
-    """Add a coordinate system to a part.
+    """
+    Add a coordinate system to a part.
 
     A link to a part can be provided and the coordinate system will be added to
     the part.
@@ -298,7 +303,8 @@ def _add_joint_lcs(
         link_map: dict[str, DO],
         joint: UrdfJoint,
 ) -> LcsPair:
-    """Add a LCS to the parent and child parts.
+    """
+    Add a LCS to the parent and child parts.
 
     Parameters
     ----------
@@ -322,7 +328,8 @@ def _place_parent_lcs(
         lcs: DO,
         joint: UrdfJoint,
 ) -> None:
-    """Place a coordinate system to correspond to the joint position.
+    """
+    Place a coordinate system to correspond to the joint position.
 
     In an assembly generated from URDF, a joint is represented by 2 local
     coordinate systems (LCS) that are coincident when the joint value is 0.
@@ -368,7 +375,8 @@ def _make_structure(
         joint: UrdfJoint,
         link_map: dict[str, DO],
 ) -> None:
-    """Create the parent-child inheritance.
+    """
+    Create the parent-child inheritance.
 
     The parent-child inheritance is done exclusively by the expression engines
     of the two local coordinate systems (LCS) associated with a joint, one in
@@ -483,7 +491,8 @@ def _make_prismatic_lcs(
         var_name: str,
         child_lcs: DO,
 ) -> None:
-    """Set the expression of a coordinate system.
+    """
+    Set the expression of a coordinate system.
 
     Set the expression engine of a child local coordinate system to correspond
     to a joint of type "prismatic".
@@ -522,7 +531,8 @@ def _make_revolute_lcs(
         var_name: str,
         child_lcs: DO,
 ) -> None:
-    """Set the expression of a coordinate system.
+    """
+    Set the expression of a coordinate system.
 
     Set the expression engine of a child local coordinate system to correspond
     to a joint of type "revolute".
@@ -552,7 +562,8 @@ def _add_visual(
         robot: UrdfRobot,
         link_map: dict[str, DO],
 ) -> None:
-    """Add the visual geometries to an assembly.
+    """
+    Add the visual geometries to an assembly.
 
     Parameters
     ==========
@@ -574,7 +585,8 @@ def _add_collision(
         robot: UrdfRobot,
         link_map: dict[str, DO],
 ) -> None:
-    """Add the collision geometries to an assembly.
+    """
+    Add the collision geometries to an assembly.
 
     Parameters
     ==========
@@ -597,7 +609,8 @@ def _add_visual_geometries(
         link_name: str,
         geometries: VisualList,
 ) -> tuple[list[DO], list[DO]]:
-    """Add the primitive shapes and meshes to a FreeCAD link.
+    """
+    Add the primitive shapes and meshes to a FreeCAD link.
 
     Parameters
     ==========
@@ -619,7 +632,8 @@ def _add_collision_geometries(
         link_name: str,
         geometries: CollisionList,
 ) -> tuple[list[DO], list[DO]]:
-    """Add the primitive shapes and meshes to a link.
+    """
+    Add the primitive shapes and meshes to a link.
 
     Parameters
     ==========
@@ -645,7 +659,8 @@ def _add_geometries(
         link: DO = None,
         name_linked_geom: str = '',
 ) -> tuple[list[DO], list[DO]]:
-    """Add the geometries from URDF into `group` and an App::Link to it into `link`.
+    """
+    Add the geometries from URDF into `group` and an App::Link to it into `link`.
 
     `geometries` is either `visuals` or `collisions` and the geometry itself is
     `geometries[?].geometry`.
@@ -699,7 +714,8 @@ def _collision_at_visual(
         visual_assembly: DO,
         collision_assembly: DO,
 ) -> None:
-    """Make the collision and visual assembly coincident.
+    """
+    Make the collision and visual assembly coincident.
 
     Write expressions for the placement of `collision_assembly` so that it has
     the same pose than `visual_assembly`.

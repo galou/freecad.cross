@@ -1,4 +1,5 @@
-"""Proxy for Cross::Workcell FreeCAD objects
+"""
+Proxy for Cross::Workcell FreeCAD objects
 
 A workcell is a combination of CrossXacroObject and CrossJoint
 

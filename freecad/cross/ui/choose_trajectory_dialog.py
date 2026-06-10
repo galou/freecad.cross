@@ -16,7 +16,8 @@ DO = fc.DocumentObject  # A FreeCAD DocumentObject.
 
 
 class ChooseTrajectoryDialog(QtWidgets.QDialog):
-    """A dialog to choose a trajectory.
+    """
+    A dialog to choose a trajectory.
 
     """
 
@@ -26,7 +27,8 @@ class ChooseTrajectoryDialog(QtWidgets.QDialog):
             robot: Optional[CrossRobot] = None,
             parent: Optional[QtWidgets.QWidget] = None,
     ):
-        """Constructor from the result of yaml.load_all() from DisplayTrajectory.
+        """
+        Constructor from the result of yaml.load_all() from DisplayTrajectory.
 
         Constructor from the result of yaml.load_all() with a multi-doc YAML
         file of moveit_msgs.msg.DisplayTrajectory messages, typically from
@@ -181,7 +183,8 @@ class ChooseTrajectoryDialog(QtWidgets.QDialog):
         self.form.close()
 
     def exec(self) -> int:
-        """Return the 0-based message and trajectory indices.
+        """
+        Return the 0-based message and trajectory indices.
 
         Return (message_index, trajectory_index) if the dialog was accepted, as
         0-based indices.

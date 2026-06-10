@@ -67,7 +67,8 @@ class _ViewProviderPose:
         self.draw()
 
     def on_change(self, event: fpo.events.PropertyChangedEvent) -> None:
-        """Callback when a property changed.
+        """
+        Callback when a property changed.
 
         We need this for properties defined by mother classes.
         """
@@ -231,7 +232,8 @@ def make_pose(
 
 
 def _get_group_separator(link: CrossLink) -> 'coin.SoSeparator':
-    """Return the SoSeparator with all element in `link.Group`.
+    """
+    Return the SoSeparator with all element in `link.Group`.
 
     Elements in `link.Group` are FreeCAD links. Their inventor representation
     contains an SoTransform node with their location in the 3D scene and an
@@ -256,7 +258,8 @@ def _get_group_separator(link: CrossLink) -> 'coin.SoSeparator':
 
 
 def _get_link_separator(link: CrossLink) -> 'coin.SoSeparator':
-    """Return the SoSeparator of the link.
+    """
+    Return the SoSeparator of the link.
 
     Apply the transform `link.MountedPlacement` and add an SoSeparator with all
     elements in `link.Group` and all CROSS::Link objects that are fixed to

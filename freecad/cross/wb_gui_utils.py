@@ -47,7 +47,8 @@ def _get_vhacd_path(self, old_vhacd_path: Path = Path()) -> Path:
 
 
 def guess_vhacd_path() -> Path:
-    """Guess and return the path to the V-HACD executable.
+    """
+    Guess and return the path to the V-HACD executable.
 
     Return an empty path if not found.
 
@@ -70,7 +71,8 @@ def guess_vhacd_path() -> Path:
 
 
 class WbSettingsGetter:
-    """A class to get the settings for this workbench.
+    """
+    A class to get the settings for this workbench.
 
     The settings are stored in the class's attributes
     `ros_workspace` and `vhacd_path`.
@@ -92,7 +94,8 @@ class WbSettingsGetter:
         get_ros_workspace: bool = True,
         get_vhacd_path: bool = True,
     ) -> bool:
-        """Get the settings for this workbench.
+        """
+        Get the settings for this workbench.
 
         Return True if the settings' dialog was confirmed.
 

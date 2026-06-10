@@ -29,7 +29,8 @@ et.register_namespace('xacro', 'http://ros.org/wiki/xacro')
 
 
 def add_path_to_environment_variable(path: [Path | str], env_var: str) -> None:
-    """Add the path to the environment variable if existing.
+    """
+    Add the path to the environment variable if existing.
 
     The environment variable is created if it does not exist.
 
@@ -162,7 +163,8 @@ def get_parent_by_pattern(
         pattern: str,
         type: Optional[str] = None,
 ) -> tuple[Path, str]:
-    """Return the parent directory of the given file containing pattern.
+    """
+    Return the parent directory of the given file containing pattern.
 
     Return the directory that is parent (possibly indirect) of `filepath` and
     that contains the directory or file `pattern` as well as the file path
@@ -201,7 +203,8 @@ def get_parent_by_pattern(
 
 
 def true_then_false(booleans: Iterable[bool]) -> bool:
-    """Return True if no False is found after a True.
+    """
+    Return True if no False is found after a True.
 
     >>> true_then_false([True])
     True

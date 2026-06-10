@@ -13,7 +13,8 @@ def get_global_placement_and_scale(
         object: fc.DocumentObject,
         subobject_fullpath: str,
 ) -> tuple[fc.Placement, fc.Vector]:
-    """Return the global placement and the total scale, respecting links.
+    """
+    Return the global placement and the total scale, respecting links.
     Returns the placement and scale the objects content is related to,
     which means the properties LinkTransform and Scale is respected if
     path points to a link.
@@ -69,7 +70,8 @@ def get_global_placement(
         object: fc.DocumentObject,
         subobject_fullpath: str,
 ) -> fc.Placement:
-    """Return the global placement respecting links.
+    """
+    Return the global placement respecting links.
     Returns the placement the objects content is related to, which means
     the properties LinkTransform is respected if path points to a link.
 

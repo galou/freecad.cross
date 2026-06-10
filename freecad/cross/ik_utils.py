@@ -21,7 +21,8 @@ def get_kinematic_urdf(
         from_link: str,
         to_link: str,
 ) -> str:
-    """Return the URDF of the kinematic chain between two links.
+    """
+    Return the URDF of the kinematic chain between two links.
 
     Visual and collision are not part of the URDF.
     """
@@ -121,7 +122,8 @@ def axis_pose_freecad_from_si_units(
         joint_values: list[float],
         joint_names: list[str],
 ) -> list[float]:
-    """Return the joint-space pose in FreeCAD units.
+    """
+    Return the joint-space pose in FreeCAD units.
 
     Return the robot's joint-space pose in FreeCAD units (millimeters and degrees)
     from a list of joint values in SI units (meters and radians) and associated names.

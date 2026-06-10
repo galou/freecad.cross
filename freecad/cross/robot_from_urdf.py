@@ -158,7 +158,8 @@ def _make_robot(
         doc: fc.Document,
         name: str = 'robot',
 ) -> tuple[CrossRobot, DOG]:
-    """Create a CROSS::Robot
+    """
+    Create a CROSS::Robot
 
     Return (robot object, parts group).
 
@@ -226,7 +227,8 @@ def _add_ros_link(
         robot: CrossRobot,
         parts_group: DOG,
 ) -> Tuple[CrossLink, AppPart, AppPart]:
-    """Add two App::Part to the group and links to them to the robot.
+    """
+    Add two App::Part to the group and links to them to the robot.
 
     - Add an "App::Part" for the visual of each link.
     - Add an "App::Part for the collision of each link.
@@ -283,7 +285,8 @@ def _set_link_inertial(
         ros_link: CrossLink,
         urdf_link: UrdfLink,
 ) -> None:
-    """Set the inertial properties of a Cross::Link.
+    """
+    Set the inertial properties of a Cross::Link.
 
     Parameters
     ----------
@@ -423,7 +426,8 @@ def _add_visual(
         colors: dict[str, Color],
         relative_to: Path | str | None = None,
 ) -> tuple[DOList, DOList]:
-    """Add the visual geometries to a robot.
+    """
+    Add the visual geometries to a robot.
 
     Return the list of objects representing the geometries and the list of
     FreeCAD links.
@@ -454,7 +458,8 @@ def _add_collision(
         colors: dict[str, Color],
         relative_to: Path | str | None = None,
 ) -> tuple[DOList, DOList]:
-    """Add the collision geometries to a robot.
+    """
+    Add the collision geometries to a robot.
 
     Return the list of objects representing the geometries and the list of
     FreeCAD links.

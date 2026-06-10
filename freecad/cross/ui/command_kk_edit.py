@@ -1,4 +1,5 @@
-"""Command to edit the selected robot in Khalil-Kleinfinger representation.
+"""
+Command to edit the selected robot in Khalil-Kleinfinger representation.
 
 Command to edit the selected robot in Khalil-Kleinfinger (KK) representation.
 Denavit-Hartenberg (DH) parameters can also be used to represent the robot.

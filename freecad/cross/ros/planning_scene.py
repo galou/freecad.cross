@@ -19,7 +19,8 @@ from ..freecad_utils import warn
 
 
 def get_planning_scene(timeout_sec=0.0) -> Optional[PlanningSceneMsg]:
-    """Get the current planning scene by calling the ROS server.
+    """
+    Get the current planning scene by calling the ROS server.
 
     Parameters:
         - timeout_sec: Timeout to reach the server and then timeout

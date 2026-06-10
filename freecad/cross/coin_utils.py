@@ -18,7 +18,8 @@ _Shape = Enum('Shape', ['BOX', 'CONE', 'CUBE', 'CYLINDER', 'SPHERE'])
 def transform_from_placement(
         placement: fc.Placement | fc.Vector | fc.Rotation,
 ) -> coin.SoTransform:
-    """Return the SoTransform equivalent to the placement.
+    """
+    Return the SoTransform equivalent to the placement.
 
     # Should show a cone entering a cylinder.
     >>> placement = App.Placement(App.Vector(10, 20, 30), App.Rotation(10, 20, 30))
@@ -56,7 +57,8 @@ def arrow_group(
         color: tuple[float, float, float] = (0.0, 0.0, 1.0),
         scale: float = 1.0,
 ) -> coin.SoSeparator:
-    """Return the SoSeparator of an arrow between two points.
+    """
+    Return the SoSeparator of an arrow between two points.
 
     """
     if len(points) < 2:
@@ -277,7 +279,8 @@ def tcp_group(
         axis_length_mm: float | fc.Units.Quantity = 300.0,
         axis_diameter_ratio_to_length: float = 0.05,
 ) -> coin.SoSeparator:
-    """Return the SoSeparator representing a TCP.
+    """
+    Return the SoSeparator representing a TCP.
 
     Return the SoSeparator representing a Tool Center Point, i.e. 3 cylinder
     representing the frame and a spiky cylinder symbolizing the tool (with the
@@ -328,7 +331,8 @@ def save_separator_to_file(
         filename: Path | str,
         file_format: str = 'iv',
 ) -> None:
-    """Save the content of an SoSeparator to a file in Inventor or VRML format.
+    """
+    Save the content of an SoSeparator to a file in Inventor or VRML format.
 
     Parameters:
     - separator: the content to be saved.

@@ -22,7 +22,8 @@ DO = fc.DocumentObject  # A FreeCAD DocumentObject.
 
 
 class SetJointsDialog(QtGui.QDialog):
-    """A dialog to input DH and KK parameters.
+    """
+    A dialog to input DH and KK parameters.
 
     A dialog to set some of the joint values of the robot passed to the
     constructor.

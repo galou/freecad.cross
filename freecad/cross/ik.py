@@ -30,7 +30,8 @@ def ik(
         transl_tol=1e-6,
         rot_tol=1e-6,
 ) -> list[list[float]]:
-    """Return some solutions to the inverse kinematics of a Robot.
+    """
+    Return some solutions to the inverse kinematics of a Robot.
 
     Compute the joint positions to reach the given target.
     Some algorithms may return multiple solutions.

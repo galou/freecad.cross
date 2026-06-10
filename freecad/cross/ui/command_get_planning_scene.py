@@ -8,7 +8,8 @@ from ..gui_utils import tr
 
 
 class _GetPlanningSceneCommand:
-    """The command definition to get the planning scene from a service.
+    """
+    The command definition to get the planning scene from a service.
 
     The command definition to get the planning scene from a service
     (usually /get_planning_scene).

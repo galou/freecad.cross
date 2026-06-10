@@ -16,7 +16,8 @@ DO = fc.DocumentObject  # A FreeCAD DocumentObject.
 
 
 class KKDialog:
-    """A dialog to input DH and KK parameters.
+    """
+    A dialog to input DH and KK parameters.
 
     A dialog to input Denavit-Hartenberg (DH) and
     Khalil-Kleinfinger (KK) parameters.

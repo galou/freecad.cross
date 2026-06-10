@@ -12,7 +12,8 @@ from ..wb_utils import is_planning_scene_selected
 
 
 class _UpdatePlanningSceneCommand:
-    """The command definition to get the planning scene from a service.
+    """
+    The command definition to get the planning scene from a service.
 
     The command definition to get the planning scene from a service
     (usually /get_planning_scene).

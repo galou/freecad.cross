@@ -33,7 +33,8 @@ def _add_fc_links(
         attached_collision_object: CrossAttachedCollisionObject,
         objects: DOList,
 ) -> list[AppLink]:
-    """Create FreeCAD links to elements in `attached_collision_object.Objects`.
+    """
+    Create FreeCAD links to elements in `attached_collision_object.Objects`.
 
     Return the list of created FreeCAD link objects.
     The objects are not added to the attached_collision_object (it's a group),
@@ -60,7 +61,8 @@ def _add_fc_links(
 
 
 def _skim_links_joints_from(group) -> tuple[DOList, DOList]:
-    """Remove all Cross::Link and Cross::Joint from the list.
+    """
+    Remove all Cross::Link and Cross::Joint from the list.
 
     `group` is a property that looks like a list but behaves differently
     (behaves like a tuple and is a copy of the original property content,
@@ -203,7 +205,8 @@ class AttachedCollisionObjectProxy:
             self.Object.setEditorMode('Placement', [])
 
     def _fix_lost_fc_links(self) -> None:
-        """Fix linked objects in AttachedCollisionObject lost on restore.
+        """
+        Fix linked objects in AttachedCollisionObject lost on restore.
 
         Probably because these elements are restored
         beforAttachedCollisionObject objects.
@@ -222,7 +225,8 @@ class AttachedCollisionObjectProxy:
             aco.addObject(obj)  # aco is a group.
 
     def _fill_fc_link_lists(self) -> None:
-        """Fill the lists of FreeCAD links.
+        """
+        Fill the lists of FreeCAD links.
 
         The list `_fc_links` is empty on document restore
         and needs to be filled up.

@@ -45,7 +45,8 @@ def is_ros_found() -> bool:
 
 
 def add_ros_library_path(ros_distro: str = '') -> bool:
-    """Add necessary paths to sys.path and os.environ['LD_LIBRARY_PATH'].
+    """
+    Add necessary paths to sys.path and os.environ['LD_LIBRARY_PATH'].
 
     If existing:
     - Add $ROS_WORKSPACE/install/lib/{python_ver}/site-packages to sys.path.
@@ -121,7 +122,8 @@ def add_ros_library_path(ros_distro: str = '') -> bool:
 
 
 def get_ros_distro_from_env_or_default() -> str:
-    """Return or guess the ROS distribution.
+    """
+    Return or guess the ROS distribution.
 
     Return the environment variable `ROS_DISTRO` if defined or guess from
     a system package installation in /opt/ros.
@@ -147,7 +149,8 @@ def get_ros_distro_from_env_or_default() -> str:
 
 
 def get_ros_workspace_from_env() -> Path:
-    """Return the content of environment variable ROS_WORKSPACE.
+    """
+    Return the content of environment variable ROS_WORKSPACE.
 
     If not defined, try to guess from environment variable COLCON_PREFIX_PATH.
 
@@ -164,7 +167,8 @@ def get_ros_workspace_from_env() -> Path:
 
 
 def get_ros_workspace_from_file(file_path: Path | str) -> Path:
-    """Return the workspace containing the given file or directory.
+    """
+    Return the workspace containing the given file or directory.
 
     Return Path() if no workspace was found.
 
@@ -183,7 +187,8 @@ def is_in_ros_workspace(path: Path | str) -> bool:
 
 
 def without_ros_workspace(path: Path | str) -> str:
-    """Return the path relative to $ROS_WORKSPACE/src.
+    """
+    Return the path relative to $ROS_WORKSPACE/src.
 
     Return the path as-is if it doesn't start with $ROS_WORKSPACE/src.
 
@@ -199,7 +204,8 @@ def without_ros_workspace(path: Path | str) -> str:
 
 
 def get_package_and_file(file_path: Path | str) -> tuple[str, str]:
-    """Return the package name and relative file path.
+    """
+    Return the package name and relative file path.
 
     For example, if the file path is `$HOME/ros2_ws/src/dir/my_package/file.py`,
     return (`my_package`, `file.py`), supposing that `my_package` is a ROS package.
@@ -260,7 +266,8 @@ def abs_path_from_ros_path(
         path: str,
         relative_to: Path | str | None = None,
 ) -> Path | None:
-    """Return the absolute path to a file given in ROS format.
+    """
+    Return the absolute path to a file given in ROS format.
 
     Return the absolute path to a file given in ROS format.
     Supported formats are:
@@ -308,7 +315,8 @@ def abs_path_from_ros_path(
 def ros_path_from_abs_path(
         path: Path | str,
 ) -> Optional[str]:
-    """Return the ROS path to the given file.
+    """
+    Return the ROS path to the given file.
 
     The ROS path has the following format
     `package://<package_name>/<relative_file_path>`.
@@ -322,7 +330,8 @@ def ros_path_from_abs_path(
 
 
 def split_package_path(package_path: Path | str) -> tuple[Path, str]:
-    """Return the package parent and the package name.
+    """
+    Return the package parent and the package name.
 
     For example, if `package_path` is `/home/user/ros_ws/src/my_pkg`,
     return (Path('/home/user/ros_ws/src'), 'my_pkg').

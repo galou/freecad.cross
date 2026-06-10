@@ -161,7 +161,8 @@ def error(text: str, gui: bool = False) -> None:
 
 
 def strip_subelement(sub_fullpath: str) -> str:
-    """Return sub_fullpath without the last sub-element.
+    """
+    Return sub_fullpath without the last sub-element.
 
     A sub-element is a face, edge or vertex.
     Examples:
@@ -202,7 +203,8 @@ def get_subobjects_by_full_name(
         root_object: DO,
         subobject_fullpath: str,
 ) -> DOList:
-    """Return the list of objects after root_object to the named object.
+    """
+    Return the list of objects after root_object to the named object.
 
     The last part of ``subobject_fullpath`` is then a specific vertex, edge or
     face and is ignored.
@@ -244,7 +246,8 @@ def add_property(
         help_: str,
         default: Any = None,
 ) -> tuple[DO, str]:
-    """Add a dynamic property to the object.
+    """
+    Add a dynamic property to the object.
 
     Return the `App::FeaturePython` object containing the property and the
     real property name.
@@ -283,7 +286,8 @@ def is_derived_from(obj: DO, typeid: str) -> bool:
 
 
 def has_type(obj: DO, typeid: str) -> bool:
-    """Return True if the object has the given type, evaluating also its Proxy.
+    """
+    Return True if the object has the given type, evaluating also its Proxy.
 
     Return True if
     - the object is derived from the given type
@@ -368,7 +372,8 @@ def get_linked_obj(obj: DO, recursive=True) -> Optional[DO]:
 
 
 def first_object_with_volume(obj: DO) -> Optional[DO]:
-    """Return the first object with positive volume.
+    """
+    Return the first object with positive volume.
 
     Return the first object with positive volume from part, body, or link
     (deepest linked body or body in part).
@@ -446,7 +451,8 @@ def add_object(
         type_: str,
         name: str,
 ) -> DO:
-    """Create a new object into the container.
+    """
+    Create a new object into the container.
 
     The object's label will be set `name` but, according to your settings in
     FreeCAD, the label will not be set if there's already an object with that
@@ -467,7 +473,8 @@ def add_object(
 
 
 def get_leafs_and_subnames(obj: DO) -> list[tuple[DO, str]]:
-    """Return all leaf subobjects and their path.
+    """
+    Return all leaf subobjects and their path.
 
     Return a list of (object, path), where path (also called subname) can be
     used to retrieve the physical placement of the object, for example with
@@ -504,7 +511,8 @@ def validate_types(
         types: list[str],
         respect_order: bool | list[bool] = False,
 ) -> DOList:
-    """Sort objects by required types.
+    """
+    Sort objects by required types.
 
     Return a list of objects sorted by the order in `types`.
     If `respect_order` is True, the required type must be in the same order as
@@ -584,7 +592,8 @@ def validate_types(
 
 
 def get_included_files(obj: DO) -> list[fc.Document]:
-    """Return the list of files included in the object.
+    """
+    Return the list of files included in the object.
 
     Return the list of files included in the object, possibly including
     `obj.Document`.
@@ -619,7 +628,8 @@ class ProxyBase(ABC):
         self._properties: list[str] = properties
 
     def is_execute_ready(self, debug=False) -> bool:
-        """Return True if the object and all properties are defined.
+        """
+        Return True if the object and all properties are defined.
 
         Return True if `self` has the attribute `self._object_name` and
         `self._object_name` has all attributes given in `self._properties`.
@@ -690,7 +700,8 @@ def convert_units(
         from_: str,
         to_: str,
 ) -> float:
-    """Convert a value from one unit to another.
+    """
+    Convert a value from one unit to another.
 
     >>> convert_units(1, 'm', 'mm')
     1000.0
@@ -706,7 +717,8 @@ def quantity_as(
         q: fc.Units.Quantity,
         to_: str,
 ) -> float:
-    """Convert a quantity to another unit.
+    """
+    Convert a quantity to another unit.
 
     >>> convert_quantity(fc.Units.Quantity('1 m'), 'mm')
     1000.0
@@ -722,7 +734,8 @@ def quantity_as(
 def unit_type(
         v: [str | fc.Units.Quantity],
 ) -> str:
-    """Return the unit type of a value.
+    """
+    Return the unit type of a value.
 
     return fc.Units.Quantity(v).Unit.Type, e.g. Length, Angle, etc.
 
@@ -751,7 +764,8 @@ class Material:
 def material_from_material_editor(
         card_path: str,
 ) -> Material:
-    """Return the material data from the Material Editor
+    """
+    Return the material data from the Material Editor
 
     Return the material data from the Material Editor
     (FEM -> Model -> Materials -> Material Editor).

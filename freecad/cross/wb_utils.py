@@ -186,7 +186,8 @@ def get_chains(
         links: list[CrossLink],
         joints: list[CrossJoint],
 ) -> list[list[CrossBasicElement]]:
-    """Return the list of chains.
+    """
+    Return the list of chains.
 
     A chain starts at the root link, alternates links and joints, and ends
     at the last joint of the chain.
@@ -215,7 +216,8 @@ def get_chains(
 
 
 def get_chain(link: CrossLink) -> list[CrossBasicElement]:
-    """Return the chain from base link to link, excluded.
+    """
+    Return the chain from base link to link, excluded.
 
     The chain starts with the base link, then alternates a joint and a link.
     The last item is the joint that has `link` as child.
@@ -244,7 +246,8 @@ def get_chain_from_to(
         from_link: str,
         to_link: str,
 ) -> list[CrossBasicElement]:
-    """Return the chain from `from_link` to `to_link`, excluded.
+    """
+    Return the chain from `from_link` to `to_link`, excluded.
 
     Return an empty list if no chain exists between the two links.
     Return an empty list if `to_link` is closer to the base link (root link of
@@ -314,7 +317,8 @@ def get_xacro_chains(
         xacro_objects: list[CrossXacroObject],
         joints: list[CrossJoint],
 ) -> list[list[XacroObjectAttachment]]:
-    """Return the list of chains.
+    """
+    Return the list of chains.
 
     A chain starts at a xacro object that is not attached to any other xacro
     object and contains all xacro objects that form an attachment chain, up to
@@ -378,7 +382,8 @@ def get_valid_urdf_name(name: str) -> str:
 
 
 def get_rel_and_abs_path(path: str) -> tuple[str, Path]:
-    """Return the path relative to src and the absolute path.
+    """
+    Return the path relative to src and the absolute path.
 
     Return the path relative to the `src` folder in the  ROS workspace and
     the absolute path to the file.
@@ -410,7 +415,8 @@ def get_rel_and_abs_path(path: str) -> tuple[str, Path]:
 
 
 def remove_ros_workspace(path) -> str:
-    """Modify `path` to remove $ROS_WORKSPACE/src.
+    """
+    Modify `path` to remove $ROS_WORKSPACE/src.
 
     Return the path relative to `wb_globals.g_ros_workspace / 'src'`.
     Doesn't use any ROS functionalities and, thus, doesn't support finding any
@@ -443,7 +449,8 @@ def export_templates(
         package_parent: [Path | str],
         **keys: SupportsStr,
 ) -> None:
-    """Export generated files.
+    """
+    Export generated files.
 
     Parameters
     ----------
@@ -508,7 +515,8 @@ def _has_meshes_directory(
 def is_selected_from_lambda(
         is_type_fun: Callable[DO, bool],
 ) -> bool:
-    """Return True if the first selected object meets the given criteria.
+    """
+    Return True if the first selected object meets the given criteria.
 
     Return `is_type_fun("first_selected_object")`.
 
@@ -578,7 +586,8 @@ def placement_from_geom_pose(pose: Pose) -> fc.Placement:
 
 
 def placement_from_pose_string(pose: str) -> fc.Placement:
-    """Return a FreeCAD Placement from a string pose `x, y, z; qw, qx, qy, qz`.
+    """
+    Return a FreeCAD Placement from a string pose `x, y, z; qw, qx, qy, qz`.
 
     The pose is a string of 2 semi-colon-separated groups: 3 floats
     representing the position in meters and 4 floats for the orientation
@@ -612,7 +621,8 @@ def placement_from_pose_string(pose: str) -> fc.Placement:
 def joint_quantities_from_si_units(
         joint_values: dict[CrossJoint, float | fc.Units.Quantity],
 ) -> dict[CrossJoint, fc.Units.Quantity]:
-    """Convert joint values in SI units to quantities.
+    """
+    Convert joint values in SI units to quantities.
 
     Convert joint values in SI units (meters and radians) to quantities.
     """
@@ -635,7 +645,8 @@ def joint_quantities_from_si_units(
 def joint_values_si_units_from_freecad(
         joint_values: dict[CrossJoint, float | fc.Units.Quantity],
 ) -> dict[CrossJoint, float]:
-    """Convert joint values in FreeCAD units or as quantities to SI units.
+    """
+    Convert joint values in FreeCAD units or as quantities to SI units.
 
     Convert joint values in FreeCAD units (millimeters and degrees) or as
     quantities to SI units (meters and radians).

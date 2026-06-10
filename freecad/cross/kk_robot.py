@@ -1,4 +1,5 @@
-"""A robot represented with the Khalil-Kleinfinger (KK) model.
+"""
+A robot represented with the Khalil-Kleinfinger (KK) model.
 
 Notations from Khalil, W. & Kleinfinger, J., "A new geometric notation for
 open and closed-loop robots", in Proceedings of the IEEE International
@@ -43,7 +44,8 @@ if TYPE_CHECKING:
 
 @dataclass
 class KKFrame:
-    """A frame of a robot.
+    """
+    A frame of a robot.
 
     The parameters of the Khalil-Kleinfinger notation correspond to the order
     of the applied transforms and are:
@@ -124,7 +126,8 @@ class KKFrame:
 
     @property
     def is_dh_compatible(self):
-        """Check if the joint is compatible with the DH convention.
+        """
+        Check if the joint is compatible with the DH convention.
 
         Check if the joint is compatible with the Denavit-Hartenberg
         convention, i.e. not a tree structure.
@@ -136,7 +139,8 @@ class KKFrame:
         self,
         placement: fc.Placement,
     ) -> None:
-        """Set the joint parameters from a placement.
+        """
+        Set the joint parameters from a placement.
 
         Set the joint parameters from the joint's Origin (in the
         CROSS workbench).
@@ -160,7 +164,8 @@ class KKFrame:
         matrix: ArrayLike,
         axis: Optional[ArrayLike] = None,
     ) -> None:
-        """Set the joint parameters from a transformation matrix.
+        """
+        Set the joint parameters from a transformation matrix.
 
         Set the joint parameters from a transformation matrix between two
         joints.
@@ -213,7 +218,8 @@ class KKFrame:
         self.rz, self.tz, self.tx, self.rx = dh_params
 
     def to_placement(self) -> fc.Placement:
-        """Return the origin of the joint as Placement.
+        """
+        Return the origin of the joint as Placement.
 
         Return the (URDF) origin of the joint as Placement, i.e. the
         placement of the joint frame with respect to the parent link frame.
@@ -252,7 +258,8 @@ class KKFrame:
         return placement
 
     def to_placements(self) -> (fc.Placement, fc.Placement):
-        """Return the two transforms for the joint origin.
+        """
+        Return the two transforms for the joint origin.
 
         Return the (URDF) origin of the joint as Placement, i.e. the
         placement of the joint frame with respect to the parent link frame.
@@ -296,7 +303,8 @@ class KKFrame:
         return pre_placement, placement
 
     def _dh_params_collinear_case(self, origin) -> list[float]:
-        """Return (theta, r, d, ɑ) = (r, 0, 0, 0) for collinear joints.
+        """
+        Return (theta, r, d, ɑ) = (r, 0, 0, 0) for collinear joints.
 
         (theta, r, d, ɑ) is the KK notation, corresponding to the DH notation
         (d, Θ, r, ɑ).
@@ -307,7 +315,8 @@ class KKFrame:
         return dh_params
 
     def _dh_params_parallel_case(self, origin) -> list[float]:
-        """Return (theta, r, d, ɑ) = (theta, r, d, 0) for parallel joints.
+        """
+        Return (theta, r, d, ɑ) = (theta, r, d, 0) for parallel joints.
 
         (theta, r, d, ɑ) is the KK notation, corresponding to the DH notation
         (d, Θ, r, ɑ).
@@ -321,7 +330,8 @@ class KKFrame:
         return dh_params
 
     def _dh_params_intersection_case(self, origin, axis) -> list[float]:
-        """Return (theta, r, d, ɑ) = (theta, r, 0, ɑ) for intersecting joints.
+        """
+        Return (theta, r, d, ɑ) = (theta, r, 0, ɑ) for intersecting joints.
 
         (theta, r, d, ɑ) is the KK notation, corresponding to the DH notation
         (d, Θ, r, ɑ).
@@ -359,7 +369,8 @@ class KKFrame:
         return dh_params
 
     def _dh_params_skew_case(self, origin, direction):
-        """Return (theta, r, d, ɑ) for the general case.
+        """
+        Return (theta, r, d, ɑ) for the general case.
 
         (theta, r, d, ɑ) is the KK notation, corresponding to the DH notation
         (d, Θ, r, ɑ).
@@ -402,7 +413,8 @@ class KKFrame:
 
 @dataclass
 class DHFrame:
-    """A Denavit-Hartenberg frame of a robot.
+    """
+    A Denavit-Hartenberg frame of a robot.
 
     The parameters of the Denavit-Hartenberg notation correspond to the order
     of the applied transforms and are:
@@ -447,7 +459,8 @@ class DHFrame:
 
 @dataclass
 class KKRobot:
-    """A robot represented with the Khalil-Kleinfinger (KK) model.
+    """
+    A robot represented with the Khalil-Kleinfinger (KK) model.
 
     - The base will beconsidered as link 0.
     - The numbers of links and joints are increasing
@@ -476,7 +489,8 @@ class KKRobot:
 
     @property
     def is_dh_compatible(self):
-        """Check if the robot is compatible with the DH convention.
+        """
+        Check if the robot is compatible with the DH convention.
 
         Check if the robot is compatible with the Denavit-Hartenberg
         convention, i.e. not a tree structure.
@@ -514,7 +528,8 @@ class KKRobot:
         self,
         robot: CrossRobot,
     ) -> bool:
-        """Set all parameters to a CROSS::Robot.
+        """
+        Set all parameters to a CROSS::Robot.
 
         Does NOT open any transaction.
 
@@ -598,7 +613,8 @@ class KKRobot:
         self,
         robot: CrossRobot,
     ) -> None:
-        """Add the missing joints and links to the robot.
+        """
+        Add the missing joints and links to the robot.
 
         Only DH parameters supported for now.
 

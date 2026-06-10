@@ -245,7 +245,8 @@ class TrajectoryProxy:
                   message_index: int = 0,
                   trajectory_index: int = 0,
                   ) -> None:
-        """Load a trajectory from a multi-doc YAML file.
+        """
+        Load a trajectory from a multi-doc YAML file.
 
         Such files are generated with `ros2 topic echo`.
 
@@ -271,7 +272,8 @@ class TrajectoryProxy:
             display_trajectory: dict[str, Any],
             trajectory_index: int = 0,
     ) -> None:
-        """Load a trajectory from a `DisplayTrajectory` message as dict.
+        """
+        Load a trajectory from a `DisplayTrajectory` message as dict.
 
         `display_trajectory` must contain:
             - `trajectory` with a list of `JointTrajectory` messages as dict,
@@ -324,7 +326,8 @@ class TrajectoryProxy:
         return f'start_{prop_name}'
 
     def _add_joint(self, name: str) -> None:
-        """Add `q0` and `start_q0` properties for joint `q0`.
+        """
+        Add `q0` and `start_q0` properties for joint `q0`.
 
         Add `q0` and `start_q0` properties for joint `q0` to the trajectory.
 

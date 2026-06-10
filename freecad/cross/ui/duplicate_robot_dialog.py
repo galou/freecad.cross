@@ -4,7 +4,8 @@ import FreeCADGui as fcgui
 
 
 class DuplicateRobotDialog:
-    """A dialog to get the parameters for robot duplication.
+    """
+    A dialog to get the parameters for robot duplication.
 
     """
 

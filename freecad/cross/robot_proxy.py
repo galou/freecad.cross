@@ -1,4 +1,5 @@
-"""Proxy for Cross::Robot FreeCAD objects
+"""
+Proxy for Cross::Robot FreeCAD objects
 
 A robot is a combination of Cross::Link and Cross::Joint objects that can be
 exported as URDF file.
@@ -64,7 +65,8 @@ def _add_joint_variable(
         joint: CrossJoint,
         category: str,
 ) -> str:
-    """Add a property for the actuator value to `robot` and return its name.
+    """
+    Add a property for the actuator value to `robot` and return its name.
 
     Add a property starting with "joint.Label" to represent the actuation
     value of a joint. Supported types are 'prismatic', 'revolute', and
@@ -310,7 +312,8 @@ class RobotProxy(ProxyBase):
             self.compute_poses()
 
     def onDocumentRestored(self, obj):
-        """Handle the object after a document restore.
+        """
+        Handle the object after a document restore.
 
         Required by FreeCAD.
 
@@ -346,7 +349,8 @@ class RobotProxy(ProxyBase):
             link.Proxy.update_fc_links()
 
     def _cleanup_group(self) -> Optional[DO]:
-        """Remove the objects not supported by CROSS::Robot.
+        """
+        Remove the objects not supported by CROSS::Robot.
 
         Actually removes only one object but recursion provoked by modifying
         `Group` will take care of removing the remaining unsupported objects.
@@ -401,7 +405,8 @@ class RobotProxy(ProxyBase):
         return (obj in robot_objects) and len(set(obj.InList) - set(robot_objects)) == 0
 
     def delete_created_objects(self) -> None:
-        """Delete all objects created for the Robot object.
+        """
+        Delete all objects created for the Robot object.
 
         Objects that are used somewhere else should not be deleted but they are
         removed from `created_objects`.
@@ -501,7 +506,8 @@ class RobotProxy(ProxyBase):
             self,
             joint_values: dict[CrossJoint, float | fc.Units.Quantity],
     ) -> None:
-        """Set the joint values from values in meters and radians.
+        """
+        Set the joint values from values in meters and radians.
 
         Set the joint values of the robot from values in meters and radians or
         from FreeCAD's `Quantity` objects.
@@ -540,7 +546,8 @@ class RobotProxy(ProxyBase):
         return
 
     def compute_poses(self) -> None:
-        """Set `Placement` of CROSS objects.
+        """
+        Set `Placement` of CROSS objects.
 
         Compute and set the pose of all joints, links, attached collision
         objects, and sensors in the same frame as the robot.
@@ -651,7 +658,8 @@ class RobotProxy(ProxyBase):
         return [o for o in chain if o in actuated_joints]
 
     def get_link(self, name: str) -> Optional[CrossLink]:
-        """Return the link with ROS name `name`.
+        """
+        Return the link with ROS name `name`.
 
         The ROS name is the object's description, or its label if the
         description is empty.
@@ -666,7 +674,8 @@ class RobotProxy(ProxyBase):
         return None
 
     def get_joint(self, name: str) -> Optional[CrossJoint]:
-        """Return the joint with ROS name `name`.
+        """
+        Return the joint with ROS name `name`.
 
         The ROS name is the object's description, or its label if the
         description is empty.
@@ -690,7 +699,8 @@ class RobotProxy(ProxyBase):
         return chains[0][0]
 
     def get_chains(self) -> list[list[BasicElement]]:
-        """Return the list of chains.
+        """
+        Return the list of chains.
 
         A chain starts at the root link, alternates links and joints, and ends
         at the last link of the chain.
@@ -709,7 +719,8 @@ class RobotProxy(ProxyBase):
         return get_chains(links, joints)
 
     def get_links_fixed_with(self, link_name: str) -> list[CrossLink]:
-        """Return the list of links fixed with the specified link.
+        """
+        Return the list of links fixed with the specified link.
 
         The order of the links can be considered as arbitrary.
         If not empty, the returned list contains the specified link itself.
@@ -756,7 +767,8 @@ class RobotProxy(ProxyBase):
         return list(out_links)
 
     def get_transform(self, from_link: str, to_link: str) -> Optional[fc.Placement]:
-        """Return the current transform between two links.
+        """
+        Return the current transform between two links.
 
         Return the current transform, i.e. with the current joint values,
         from link `from_link` to link `to_link`.

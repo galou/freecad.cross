@@ -45,7 +45,8 @@ class CrossWorkbench(fcgui.Workbench):
         return 'Gui::PythonWorkbench'
 
     def Initialize(self):
-        """This function is called at the first activation of the workbench.
+        """
+        This function is called at the first activation of the workbench.
 
         This is the place to import all the commands.
 

@@ -24,7 +24,8 @@ def coin_from_planning_scene_msg(
         plane_sides_mm: float,
         subframe_length_mm: [float | fc.Units.Quantity] = 100.0,
 ) -> coin.SoSeparator:
-    """Convert a moveit_msgs.msg.PlanningScene to Coin3D.
+    """
+    Convert a moveit_msgs.msg.PlanningScene to Coin3D.
 
     Only the world is considered for now, not the robot state.
 
@@ -54,7 +55,8 @@ def coin_from_planning_scene_world(
         plane_sides_mm: float,
         subframe_length_mm: [float | fc.Units.Quantity] = 100.0,
 ) -> coin.SoSeparator:
-    """Convert a moveit_msgs.msg.PlanningSceneWorld to Coin3D.
+    """
+    Convert a moveit_msgs.msg.PlanningSceneWorld to Coin3D.
 
     Only the collision objects are considered for now, not the octomap.
 
@@ -113,7 +115,8 @@ def coin_from_primitive(
         primitive: SolidPrimitive,
         pose: Pose,
 ) -> coin.SoSeparator:
-    """Convert a shape_msgs.msg.SolidPrimitive to Coin3D.
+    """
+    Convert a shape_msgs.msg.SolidPrimitive to Coin3D.
 
     Parameters:
     - primitive: Shape to represent.
@@ -151,7 +154,8 @@ def coin_from_primitive(
 
 
 def transform_from_pose(pose: Pose) -> coin.SoTransform:
-    """Convert a geometry_msgs.msg.Pose to an SoTransform.
+    """
+    Convert a geometry_msgs.msg.Pose to an SoTransform.
 
     Parameters:
     - pose: geometry_msgs.msg.Pose
@@ -180,7 +184,8 @@ def transform_from_pose(pose: Pose) -> coin.SoTransform:
 
 
 def str_from_pose(pose: Pose) -> str:
-    """Return a string representation of a geometry_msgs.msg.Pose.
+    """
+    Return a string representation of a geometry_msgs.msg.Pose.
 
     Parameters:
     - pose: geometry_msgs.msg.Pose to represent as a string.
@@ -195,8 +200,9 @@ def str_from_pose(pose: Pose) -> str:
     )
 
 
-def box_from_primitive(primitive: SolidPrimitive) -> coin.SoSeparator:
-    """Convert a shape_msgs.msg.SolidPrimitive with type=BOX to coin.
+def coin_box_from_primitive(primitive: SolidPrimitive) -> coin.SoSeparator:
+    """
+    Convert a shape_msgs.msg.SolidPrimitive with type=BOX to coin.
 
     Parameters:
 
@@ -231,8 +237,9 @@ def box_from_primitive(primitive: SolidPrimitive) -> coin.SoSeparator:
     return sep
 
 
-def sphere_from_primitive(primitive: SolidPrimitive) -> coin.SoSeparator:
-    """Convert a shape_msgs.msg.SolidPrimitive with type=SPHERE to coin.
+def coin_sphere_from_primitive(primitive: SolidPrimitive) -> coin.SoSeparator:
+    """
+    Convert a shape_msgs.msg.SolidPrimitive with type=SPHERE to coin.
 
     Parameters:
 
@@ -263,8 +270,9 @@ def sphere_from_primitive(primitive: SolidPrimitive) -> coin.SoSeparator:
     return sep
 
 
-def cylinder_from_primitive(primitive: SolidPrimitive) -> coin.SoSeparator:
-    """Convert a shape_msgs.msg.SolidPrimitive with type=CYLINDER to coin.
+def coin_cylinder_from_primitive(primitive: SolidPrimitive) -> coin.SoSeparator:
+    """
+    Convert a shape_msgs.msg.SolidPrimitive with type=CYLINDER to coin.
 
     Parameters:
 
@@ -305,8 +313,9 @@ def cylinder_from_primitive(primitive: SolidPrimitive) -> coin.SoSeparator:
     return sep
 
 
-def cone_from_primitive(primitive: SolidPrimitive) -> coin.SoSeparator:
-    """Convert a shape_msgs.msg.SolidPrimitive with type=CONE to coin.
+def coin_cone_from_primitive(primitive: SolidPrimitive) -> coin.SoSeparator:
+    """
+    Convert a shape_msgs.msg.SolidPrimitive with type=CONE to coin.
 
     Parameters:
 
@@ -352,7 +361,8 @@ def coin_from_mesh(
     mesh_msg: Mesh,
     pose: Pose,
 ) -> coin.SoSeparator:
-    """Convert a shape_msgs.msg.Mesh to Coin3D nodes.
+    """
+    Convert a shape_msgs.msg.Mesh to Coin3D nodes.
 
     Parameters:
     - mesh_msg: shape_msgs.msg.Mesh.
@@ -399,7 +409,8 @@ def coin_from_plane(
     pose: Pose,
     side_mm: float,
 ) -> coin.SoSeparator:
-    """Convert a shape_msgs.msg.Plane to Coin3D.
+    """
+    Convert a shape_msgs.msg.Plane to Coin3D.
 
     Parameters:
     - plane_msg: shape_msgs.msg.Plane Plane.
@@ -461,7 +472,8 @@ def coin_from_subframe(
     pose: Pose,
     axis_length_mm: [float | fc.Units.Quantity] = 100.0,
 ) -> coin.SoSeparator:
-    """Return a SoSeparator represent a frame.
+    """
+    Return a SoSeparator represent a frame.
 
     Parameters:
     - subfname_name: Subframe name.

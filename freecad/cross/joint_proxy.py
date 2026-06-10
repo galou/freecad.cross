@@ -248,7 +248,8 @@ class JointProxy(ProxyBase):
         self,
         joint_value: Optional[float] = None,
     ) -> fc.Placement:
-        """Return the transform due to actuation.
+        """
+        Return the transform due to actuation.
 
         Parameters
         ----------

@@ -110,7 +110,8 @@ def _make_robot(
         doc: fc.Document,
         name: str = 'robot',
 ) -> tuple[CrossRobot, DOG]:
-    """Create a CROSS::Robot
+    """
+    Create a CROSS::Robot
 
     Return (robot object, parts group).
 
@@ -267,7 +268,8 @@ def _make_link_parts(
         kk_frame: SymoroKKFrame,
         cylinder_diameter_mm: float = 20.0,
         ) -> (Part, Part):
-    """Return the parts representing a KK frame.
+    """
+    Return the parts representing a KK frame.
 
     Return the part fixed to the antecedent frame and the part
     fixed to the current frame (i.e. moving with its associated
@@ -336,7 +338,8 @@ def _make_link_parts(
 
 
 def _leafs(antecedents: list[int]) -> list[int]:
-    """Return the indices of the leafs in the tree.
+    """
+    Return the indices of the leafs in the tree.
 
     >>> leafs([])
     []

@@ -126,7 +126,8 @@ class SetJointsManualInputTable(QtGui.QTableWidget):
         self, change_values: bool,
         target_units: dict[str, str],
     ) -> None:
-        """Convert the values in the table to meters and radians.
+        """
+        Convert the values in the table to meters and radians.
 
         The keys of `target_units` must be in the set {'Length', 'Angle'}.
 
@@ -158,7 +159,8 @@ class SetJointsManualInputTable(QtGui.QTableWidget):
 
 
 def dnd(values, old_index, drop_index):
-    """Reorder elements by drag and drop.
+    """
+    Reorder elements by drag and drop.
 
     "dnd" stands for "drag and drop".
     `drop_index` is the index where the element at `old_index`

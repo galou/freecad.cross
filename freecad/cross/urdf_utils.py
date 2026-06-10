@@ -49,7 +49,8 @@ class XmlForExport:
 
 
 def quaternion_matrix(quaternion: QuatList) -> ArrayLike:
-    """Return the homogeneous rotation matrix from quaternion.
+    """
+    Return the homogeneous rotation matrix from quaternion.
 
     The quaternion must have the format (qx, qy, qz, qw).
 
@@ -74,7 +75,8 @@ def quaternion_matrix(quaternion: QuatList) -> ArrayLike:
 
 
 def euler_from_matrix(matrix) -> Rpy:
-    """Convert a 3x3 rotation matrix to Euler angles (X, Y, Z) in fixed frame.
+    """
+    Convert a 3x3 rotation matrix to Euler angles (X, Y, Z) in fixed frame.
 
     This Euler angle convention is the one used in URDF format.
 
@@ -101,7 +103,8 @@ def euler_from_matrix(matrix) -> Rpy:
 
 
 def rpy_from_quaternion(q: QuatList) -> Rpy:
-    """Convert quaternion to rpy (URDF convention).
+    """
+    Convert quaternion to rpy (URDF convention).
 
     The quaternion must have the format (qx, qy, qz, qw).
 
@@ -112,7 +115,8 @@ def rpy_from_quaternion(q: QuatList) -> Rpy:
 
 
 def rotation_from_rpy(rpy: Rpy) -> fc.Rotation:
-    """Convert rpy (URDF convention) to a FreeCAD's rotation (quaternion).
+    """
+    Convert rpy (URDF convention) to a FreeCAD's rotation (quaternion).
 
     Cf. `rpy_from_quaternion` for the "inverse" function.
 
@@ -145,7 +149,8 @@ def urdf_origin_from_placement(p: fc.Placement) -> et.Element:
 
 
 def urdf_geometry_box(length_x: float, length_y: float, length_z: float) -> et.Element:
-    """Return an xml element 'geometry' with a box.
+    """
+    Return an xml element 'geometry' with a box.
 
     Lengths must be given in meters.
 
@@ -163,7 +168,8 @@ def urdf_box_placement_from_object(
         box: PartBox,
         placement: Optional[fc.Placement] = None,
 ) -> fc.Placement:
-    """Return the FreeCAD placement of the box center.
+    """
+    Return the FreeCAD placement of the box center.
 
     Return the placement of the box center for a FreeCAD box with the placement
     at its lower-left-bottom point.
@@ -185,7 +191,8 @@ def urdf_box_placement_from_object(
 
 
 def urdf_geometry_sphere(radius: float) -> et.Element:
-    """Return an xml element 'geometry' with a sphere.
+    """
+    Return an xml element 'geometry' with a sphere.
 
     The radius must be given in meters.
 
@@ -203,7 +210,8 @@ def urdf_sphere_placement_from_object(
         sphere: PartSphere,
         placement: Optional[fc.Placement] = None,
 ) -> fc.Placement:
-    """Return the FreeCAD placement of the sphere center.
+    """
+    Return the FreeCAD placement of the sphere center.
 
     Return the placement of the sphere center for a FreeCAD sphere.
 
@@ -216,7 +224,8 @@ def urdf_sphere_placement_from_object(
 
 
 def urdf_geometry_cylinder(radius: float, length: float) -> et.Element:
-    """Return an xml element 'geometry' with a cylinder.
+    """
+    Return an xml element 'geometry' with a cylinder.
 
     Lengths must be given in meters.
 
@@ -234,7 +243,8 @@ def urdf_cylinder_placement_from_object(
         cyl: PartCyl,
         placement: Optional[fc.Placement] = None,
 ) -> fc.Placement:
-    """Return the FreeCAD placement of the cylinder center.
+    """
+    Return the FreeCAD placement of the cylinder center.
 
     Return the placement of the cylinder center for a FreeCAD cylinder with the
     placement at the center of its bottom disc.
@@ -255,7 +265,8 @@ def _urdf_generic_from_box(
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False,
 ) -> et.Element:
-    """Return the xml element for visual or collision for a FreeCAD's box.
+    """
+    Return the xml element for visual or collision for a FreeCAD's box.
 
     Parameters
     ----------
@@ -300,7 +311,8 @@ def urdf_visual_from_box(
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False,
 ) -> et.Element:
-    """Return the xml element for visual for a FreeCAD's box.
+    """
+    Return the xml element for visual for a FreeCAD's box.
 
     Parameters
     ----------
@@ -327,7 +339,8 @@ def urdf_collision_from_box(
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False,
 ) -> et.Element:
-    """Return the xml element for collision for a FreeCAD's box.
+    """
+    Return the xml element for collision for a FreeCAD's box.
 
     Parameters
     ----------
@@ -355,7 +368,8 @@ def _urdf_generic_from_sphere(
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False,
 ) -> et.Element:
-    """Return the xml element for visual or collision for a FreeCAD's sphere.
+    """
+    Return the xml element for visual or collision for a FreeCAD's sphere.
 
     Parameters
     ----------
@@ -397,7 +411,8 @@ def urdf_visual_from_sphere(
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False,
 ) -> et.Element:
-    """Return the xml element for visual for a FreeCAD's sphere.
+    """
+    Return the xml element for visual for a FreeCAD's sphere.
 
     Parameters
     ----------
@@ -424,7 +439,8 @@ def urdf_collision_from_sphere(
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False,
 ) -> et.Element:
-    """Return the xml element for collision for a FreeCAD's sphere.
+    """
+    Return the xml element for collision for a FreeCAD's sphere.
 
     Parameters
     ----------
@@ -452,7 +468,8 @@ def _urdf_generic_from_cylinder(
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False,
 ) -> et.Element:
-    """Return the xml element for visual or collision for a FreeCAD's cylinder.
+    """
+    Return the xml element for visual or collision for a FreeCAD's cylinder.
 
     Parameters
     ----------
@@ -497,7 +514,8 @@ def urdf_visual_from_cylinder(
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False,
 ) -> et.Element:
-    """Return the xml element for visual for a FreeCAD's cylinder.
+    """
+    Return the xml element for visual for a FreeCAD's cylinder.
 
     Parameters
     ----------
@@ -524,7 +542,8 @@ def urdf_collision_from_cylinder(
         placement: fc.Placement = fc.Placement(),
         ignore_obj_placement: bool = False,
 ) -> et.Element:
-    """Return the xml element for collision for a FreeCAD's cylinder.
+    """
+    Return the xml element for collision for a FreeCAD's cylinder.
 
     Parameters
     ----------
@@ -546,7 +565,8 @@ def urdf_collision_from_cylinder(
 
 
 def urdf_geometry_mesh(mesh_name: str, package_name: str) -> et.Element:
-    """Return an xml element 'geometry' with a mesh.
+    """
+    Return an xml element 'geometry' with a mesh.
 
     Parameters
     ----------
@@ -571,7 +591,8 @@ def _urdf_generic_mesh(
         generic: str,
         placement: fc.Placement = fc.Placement(),
 ) -> et.Element:
-    """Return the xml element for visual or collision mesh for a FreeCAD object.
+    """
+    Return the xml element for visual or collision mesh for a FreeCAD object.
 
     The URDF just contains a reference to the object.
     The mesh is not exported.
@@ -601,7 +622,8 @@ def urdf_visual_mesh(
         package_name: str,
         placement: fc.Placement = fc.Placement(),
 ) -> et.Element:
-    """Return the xml element for visual mesh for a FreeCAD object.
+    """
+    Return the xml element for visual mesh for a FreeCAD object.
 
     The URDF just contains a reference to the object.
     The mesh is not exported.
@@ -626,7 +648,8 @@ def urdf_collision_mesh(
         package_name: str,
         placement: fc.Placement = fc.Placement(),
 ) -> et.Element:
-    """Return the xml element for collision mesh for a FreeCAD object.
+    """
+    Return the xml element for collision mesh for a FreeCAD object.
 
     The URDF just contains a reference to the mesh.
     The mesh is not exported.
@@ -665,7 +688,8 @@ def _urdf_generic_from_object(
         package_name: Optional[str] = None,
         placement: Optional[fc.Placement] = None,
 ) -> list[XmlForExport]:
-    """Return the xml elements for visual or collision for a FreeCAD object.
+    """
+    Return the xml elements for visual or collision for a FreeCAD object.
 
     For meshes, the URDF just contains a reference to the object, the mesh is
     not exported here.
@@ -758,7 +782,8 @@ def urdf_visual_from_object(
         package_name: Optional[str] = None,
         placement: Optional[fc.Placement] = None,
 ) -> list[XmlForExport]:
-    """Return the xml element for visual for a FreeCAD object.
+    """
+    Return the xml element for visual for a FreeCAD object.
 
     For meshes, the URDF just contains a reference to the object, the mesh is
     not exported.
@@ -784,7 +809,8 @@ def urdf_collision_from_object(
         package_name: str = '',
         placement: Optional[fc.Placement] = None,
 ) -> list[XmlForExport]:
-    """Return the xml element for collision for a FreeCAD object.
+    """
+    Return the xml element for collision for a FreeCAD object.
 
     For meshes, the URDF just contains a reference to the object, the mesh is
     not exported.
@@ -838,7 +864,8 @@ def export_group_with_lcs(
     group: fc.DocumentObjectGroup,
     package_path: [str | Path],
 ) -> bool:
-    """Export a group containing a link to an assembly and links to LCS.
+    """
+    Export a group containing a link to an assembly and links to LCS.
 
     Export a group containing a link to an assembly and links to local
     coordinate systems (LCS). Each LCS represent a joint. The assembly is a

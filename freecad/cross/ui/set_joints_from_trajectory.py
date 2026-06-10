@@ -20,7 +20,8 @@ class SetJointsFromTrajectory(QtWidgets.QTableWidget):
             robot: Optional[CrossRobot] = None,
             parent: Optional[QtWidgets.QWidget] = None,
     ):
-        """Constructor from a trajectory dictionary (RobotTrajectory).
+        """
+        Constructor from a trajectory dictionary (RobotTrajectory).
 
         Constructor from a trajectory dictionary, equivalent to a
         moveit_msgs/RobotTrajectory message.
@@ -49,7 +50,8 @@ class SetJointsFromTrajectory(QtWidgets.QTableWidget):
 
     @point_index.setter
     def point_index(self, point_index: int) -> None:
-        """Set the 0-based point index of the point to display.
+        """
+        Set the 0-based point index of the point to display.
 
         Set the 0-based point index of the point to display and fill the table.
 
@@ -102,7 +104,8 @@ class SetJointsFromTrajectory(QtWidgets.QTableWidget):
             self.robot.Document.recompute()
 
     def _set_row(self, row: int, joint_name: str, joint_value: float) -> None:
-        """Populate with name and joint value.
+        """
+        Populate with name and joint value.
 
         Populate the first column of the table with the joint names, the
         second column with the joint values.

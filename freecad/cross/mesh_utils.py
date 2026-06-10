@@ -64,7 +64,8 @@ def save_mesh_dae(
 def read_mesh(
         filename: Path | str,
 ) -> fcmesh.Mesh:
-    """Read a mesh from a file.
+    """
+    Read a mesh from a file.
 
     All files format supported by the Mesh module are supported.
 
@@ -91,7 +92,8 @@ def save_mesh(
     obj: DO,
     filename: Path | str,
 ) -> None:
-    """Save the mesh of a FreeCAD object into a file.
+    """
+    Save the mesh of a FreeCAD object into a file.
 
     The type of the exported file is determined by the Mesh module.
     See the Mesh module for a list of supported formats.
@@ -129,7 +131,8 @@ def read_obj_dae(
 
 
 def scale_mesh_object(obj: DO, scale_factor: float | Iterable[float]) -> None:
-    """Scale a mesh object in place.
+    """
+    Scale a mesh object in place.
 
     Parameters
     ----------
@@ -161,7 +164,8 @@ def scale_mesh_object(obj: DO, scale_factor: float | Iterable[float]) -> None:
 def get_simplified_mesh(
         obj: DO,
 ) -> fcmesh.Mesh:
-    """Create a simplified mesh from a FreeCAD object.
+    """
+    Create a simplified mesh from a FreeCAD object.
 
     Create an approximate-convex-decomposition mesh with V-HACD.
 

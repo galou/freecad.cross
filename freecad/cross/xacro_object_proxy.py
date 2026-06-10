@@ -1,4 +1,5 @@
-"""Proxy for a XacroObject that reads a xacro file and outputs a xacro file
+"""
+Proxy for a XacroObject that reads a xacro file and outputs a xacro file
 including it.
 
 Can read:
@@ -162,7 +163,8 @@ class XacroObjectProxy(ProxyBase):
         self._toggle_editor_mode()
 
     def has_link(self, link_name: str) -> bool:
-        """Return True if the link belongs to the xacro object.
+        """
+        Return True if the link belongs to the xacro object.
 
         The link_name is the full name after macro expansion.
 
@@ -172,7 +174,8 @@ class XacroObjectProxy(ProxyBase):
         return link_name in self._urdf_robot.link_map
 
     def get_link(self, link_name: str) -> Optional[CrossLink]:
-        """Return True if the link belongs to the xacro object.
+        """
+        Return True if the link belongs to the xacro object.
 
         The link_name is the full name after macro expansion.
 
@@ -202,7 +205,8 @@ class XacroObjectProxy(ProxyBase):
         return None
 
     def execute(self, obj: CrossXacroObject) -> None:
-        """Update the embedded robot.
+        """
+        Update the embedded robot.
 
         Called on recompute(), this method is mandatory for scripted objects.
 
@@ -242,7 +246,8 @@ class XacroObjectProxy(ProxyBase):
                 robot.Placement = obj.Placement
 
     def onDocumentRestored(self, obj: CrossXacroObject):
-        """Restore attributes because __init__ is not called on restore.
+        """
+        Restore attributes because __init__ is not called on restore.
 
         This method is called on document restore, i.e. when the document is
         opened.

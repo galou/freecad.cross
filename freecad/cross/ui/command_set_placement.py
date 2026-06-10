@@ -35,7 +35,8 @@ def get_relative_placement(
 
 
 class _SetCROSSPlacementCommand:
-    """Command to set the placement of a Link or a Joint.
+    """
+    Command to set the placement of a Link or a Joint.
 
     Command to set the mounted placement of a Link or the Origin of a Joint.
 

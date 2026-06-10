@@ -5,7 +5,8 @@ from ..utils import prepend_python_path
 
 
 def add_robotpkg_library_path() -> bool:
-    """Add necessary paths to sys.path.
+    """
+    Add necessary paths to sys.path.
 
     If existing:
     - Add /opt/openrobots/lib/python?.?/site-packages to sys.path.

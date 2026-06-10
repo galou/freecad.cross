@@ -118,7 +118,8 @@ def obj_from_box(
         geometry: Box,
         doc_or_group: Doc | DO,
 ) -> tuple[DO, None]:
-    """Return a `Part::Box` object and None.
+    """
+    Return a `Part::Box` object and None.
 
     Return a `Part::Box` object for the URDF shape.
     The second element of the tuple is None for API consistency.
@@ -146,7 +147,8 @@ def obj_from_cylinder(
         geometry: Cylinder,
         doc_or_group: Doc | DO,
 ) -> tuple[DO, None]:
-    """Return a `Part::Cylinder` object and None.
+    """
+    Return a `Part::Cylinder` object and None.
 
     Return a `Part::Cylinder` object for the URDF shape.
     The second element of the tuple is None for API consistency.

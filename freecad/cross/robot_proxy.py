@@ -857,7 +857,7 @@ class RobotProxy(ProxyBase):
             )
             ignore, write, overwrite = diag.exec_()
             diag.close()
-        if set(ignore) == set(write_files):
+        if interactive and (set(ignore) == set(write_files)):
             # No files to write.
             return
         elif set(write + overwrite) != set(write_files):

@@ -971,8 +971,7 @@ class RobotProxy(ProxyBase):
         self,
         doc: 'GltfDocument',
         link: CrossLink,
-        translation: Optional[list] = None,
-        rotation: Optional[list] = None,
+        placement: fc.Placement | None = None,
     ) -> int:
         """Recursively build glTF nodes for *link* and its descendants.
 
@@ -986,27 +985,21 @@ class RobotProxy(ProxyBase):
             The :class:`~freecad.cross.gltf_utils.GltfDocument` being built.
         link:
             The CROSS link to add to the scene graph.
-        translation:
-            Translation ``[x, y, z]`` in **metres** derived from the parent
-            joint's ``Origin``.  Pass ``None`` for the root link.
-        rotation:
-            Rotation quaternion ``[x, y, z, w]`` derived from the parent
-            joint's ``Origin``.  Pass ``None`` for the root link.
+        placement:
+            Absolute placement of the link frame in the robot root frame.
+            Pass ``None`` for the root link.
 
         Returns
         -------
         The glTF node index for *link*.
 
         """
+        placement = placement or fc.Placement()
         if not hasattr(link, 'Proxy') or not link.Proxy.is_execute_ready():
             return doc.add_node(name=ros_name(link))
 
         # Create the link node with its visual-mesh children.
-        node_idx = link.Proxy.export_gltf(doc)
-
-        # Apply the transform contributed by the parent joint.
-        if translation is not None and rotation is not None:
-            doc.set_node_transform(node_idx, translation, rotation)
+        node_idx = link.Proxy.export_gltf(doc, placement)
 
         # Recursively process child links via joints that list this link as
         # their parent.
@@ -1021,9 +1014,10 @@ class RobotProxy(ProxyBase):
                 continue
             if not (hasattr(joint, 'Proxy') and joint.Proxy):
                 continue
-            trans, rot = joint.Proxy.export_gltf()
             child_node_idx = self._build_gltf_subtree(
-                doc, child_link, trans, rot,
+                doc,
+                child_link,
+                placement * joint.Origin,
             )
             doc.append_child_to_node(node_idx, child_node_idx)
 

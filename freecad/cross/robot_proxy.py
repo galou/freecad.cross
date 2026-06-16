@@ -912,7 +912,8 @@ class RobotProxy(ProxyBase):
         return xml
 
     def export_gltf(self, interactive: bool = False) -> Optional[dict]:
-        """Export the robot as a glTF file, writing it to disk.
+        """
+        Export the robot as a glTF file, writing it to disk.
 
         The resulting scene hierarchy mirrors the kinematic chain: each link
         becomes a glTF node whose child nodes are the visual meshes plus any
@@ -973,11 +974,13 @@ class RobotProxy(ProxyBase):
         link: CrossLink,
         placement: fc.Placement | None = None,
     ) -> int:
-        """Recursively build glTF nodes for *link* and its descendants.
+        """
+        Recursively build glTF nodes for *link* and its descendants.
 
-        Creates a node for *link* (including visual mesh child nodes), sets
-        its transform from the parent joint's ``Origin``, and repeats for
-        every child link reachable via joints.
+        Creates a node for *link* (including visual mesh child nodes) and
+        repeats for every child link reachable via joints. The cumulative
+        placement of each link is baked into its mesh geometry because some
+        importers discard child-node transforms when re-importing glTF.
 
         Parameters
         ----------

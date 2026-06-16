@@ -218,11 +218,16 @@ class GltfDocument:
         indices: list[int] = []
         idx = 0
         for facet in raw_mesh.Facets:
+            n = placement.Rotation.multVec(facet.Normal)
+            try:
+                n.normalize()
+            except fc.Base.FreeCADError:
+                # Zero-length normal, skipping.
+                continue
             for pt in facet.Points:
                 # Transform with `placement`.
                 p = placement.multVec(fc.Vector(pt[0], pt[1], pt[2]))
                 positions.extend(list(p * FC_TO_GLTF_LENGTH))
-                n = facet.Normal
                 normals.extend([n.x, n.y, n.z])
             indices.extend([idx, idx + 1, idx + 2])
             idx += 3

@@ -662,12 +662,10 @@ class LinkProxy(ProxyBase):
         The glTF node index for this link.
 
         """
-        from .gltf_utils import GltfDocument  # noqa: F401 (type-check import)
-
         link = self.link
         visual_node_indices: list[int] = []
 
-        for obj in link.Visual:
+        for i, obj in enumerate(link.Visual):
             current_doc = fc.activeDocument()
             tmp_doc = fc.newDocument(hidden=True, temp=True)
             try:
@@ -681,7 +679,7 @@ class LinkProxy(ProxyBase):
                     if mesh_idx is None:
                         continue
                     vis_node_idx = doc.add_node(
-                        name=f'{ros_name(link)}_visual_{copy.Label}',
+                        name=f'{ros_name(link)}_visual_{i + 1}',
                         mesh_idx=mesh_idx,
                     )
                     visual_node_indices.append(vis_node_idx)

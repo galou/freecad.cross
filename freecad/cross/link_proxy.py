@@ -641,11 +641,13 @@ class LinkProxy(ProxyBase):
         doc: 'GltfDocument',
         placement: fc.Placement = fc.Placement(),
     ) -> int:
-        """Add this link to a glTF document and return the node index.
+        """
+        Add this link to a glTF document and return the node index.
 
         Creates glTF mesh nodes for each visual element and groups them under
-        a single link node.  The link node itself has no transform; the parent
-        joint's transform is applied by :meth:`RobotProxy.export_gltf`.
+        a single link node. The link and parent-joint placements are baked into
+        the exported mesh geometry so that importers that flatten or ignore
+        child-node transforms still reconstruct the same static robot pose.
 
         Parameters
         ----------
@@ -669,7 +671,11 @@ class LinkProxy(ProxyBase):
             current_doc = fc.activeDocument()
             tmp_doc = fc.newDocument(hidden=True, temp=True)
             try:
-                copied_objects = deep_copy_object(obj, tmp_doc, link.MountedPlacement)
+                copied_objects = deep_copy_object(
+                    obj,
+                    tmp_doc,
+                    link.MountedPlacement,
+                )
                 for copy in copied_objects:
                     mesh_idx = doc.add_mesh_from_fc_object(copy, placement)
                     if mesh_idx is None:

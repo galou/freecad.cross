@@ -52,6 +52,10 @@ _GLTF_GENERATOR = (
 
 _SQRT2_OVER_2 = math.sqrt(2.0) / 2.0
 
+# To convert from mm (FreeCAD) to metres (glTF).
+# gltf_length = fc_length * FC_TO_GLTF_LENGTH
+FC_TO_GLTF_LENGTH = 1e-3
+
 # Quaternion [x, y, z, w] for a rotation of −90° about the X axis.
 # Applying this rotation transforms a FreeCAD/ROS Z-up coordinate frame into
 # glTF's Y-up coordinate frame:
@@ -73,8 +77,7 @@ def placement_to_gltf_trs(
     - rotation is a quaternion [x, y, z, w].
 
     """
-    t = placement.Base
-    translation = [t.x * 1e-3, t.y * 1e-3, t.z * 1e-3]
+    translation = list(placement.Base * FC_TO_GLTF_LENGTH)
     q = placement.Rotation.Q  # FreeCAD returns (x, y, z, w).
     rotation = [q[0], q[1], q[2], q[3]]
     return translation, rotation
@@ -220,10 +223,9 @@ class GltfDocument:
         idx = 0
         for facet in raw_mesh.Facets:
             for pt in facet.Points:
-                # Transform from the object's local frame to its parent frame
-                # and convert from mm (FreeCAD) to metres (glTF).
+                # Transform with `placement`.
                 p = placement.multVec(fc.Vector(pt[0], pt[1], pt[2]))
-                positions.extend([p.x * 1e-3, p.y * 1e-3, p.z * 1e-3])
+                positions.extend(list(p * FC_TO_GLTF_LENGTH))
                 n = facet.Normal
                 normals.extend([n.x, n.y, n.z])
             indices.extend([idx, idx + 1, idx + 2])

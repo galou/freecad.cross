@@ -165,6 +165,7 @@ class GltfDocument:
     def add_mesh_from_fc_object(
         self,
         obj: fc.DocumentObject,
+        placement: fc.Placement | None = None,
     ) -> Optional[int]:
         """Tessellate *obj* and add it as a glTF mesh.
 
@@ -178,6 +179,8 @@ class GltfDocument:
         obj:
             A FreeCAD document object that has a ``Shape`` or ``Mesh``
             attribute.
+        placement:
+            Additional placement applied after the object's own placement.
 
         Returns
         -------
@@ -189,7 +192,7 @@ class GltfDocument:
         except ImportError:
             return None
 
-        placement: fc.Placement = getattr(obj, 'Placement', fc.Placement())
+        placement = placement or fc.Placement()
 
         try:
             if hasattr(obj, 'Shape'):

@@ -636,7 +636,11 @@ class LinkProxy(ProxyBase):
         )
         return link_xml
 
-    def export_gltf(self, doc: 'GltfDocument') -> int:
+    def export_gltf(
+        self,
+        doc: 'GltfDocument',
+        placement: fc.Placement = fc.Placement(),
+    ) -> int:
         """Add this link to a glTF document and return the node index.
 
         Creates glTF mesh nodes for each visual element and groups them under
@@ -648,6 +652,8 @@ class LinkProxy(ProxyBase):
         doc:
             A :class:`~freecad.cross.gltf_utils.GltfDocument` to add nodes
             and mesh geometry to.
+        placement:
+            Absolute placement of the link frame in the robot root frame.
 
         Returns
         -------
@@ -665,7 +671,7 @@ class LinkProxy(ProxyBase):
             try:
                 copied_objects = deep_copy_object(obj, tmp_doc, link.MountedPlacement)
                 for copy in copied_objects:
-                    mesh_idx = doc.add_mesh_from_fc_object(copy)
+                    mesh_idx = doc.add_mesh_from_fc_object(copy, placement)
                     if mesh_idx is None:
                         continue
                     vis_node_idx = doc.add_node(

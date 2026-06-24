@@ -100,7 +100,7 @@ def deep_copy_part(
         copy_of_shape.Shape = part.Shape
         copy_of_shape.Placement = placement * copy_of_shape.Placement
         objects.append(copy_of_shape)
-    mesh_copies = get_placed_mesh_copies(part)
+    mesh_copies = get_placed_mesh_copies(part, doc)
     for mesh in mesh_copies:
         mesh.Placement = placement * mesh.Placement
     objects += mesh_copies

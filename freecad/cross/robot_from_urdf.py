@@ -83,7 +83,7 @@ class Color:
 def robot_from_urdf(
         doc: fc.Document,
         urdf_robot: UrdfRobot,
-        filename: Path | str | None,
+        filename: Path | str | None = None,
 ) -> CrossRobot:
     """
     Creates a CROSS::Robot from URDF.

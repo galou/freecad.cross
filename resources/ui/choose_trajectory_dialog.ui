@@ -17,7 +17,7 @@
    <item>
     <widget class="QLabel" name="model_label">
      <property name="text">
-      <string>TextLabel</string>
+      <string>Model</string>
      </property>
     </widget>
    </item>
@@ -33,6 +33,9 @@
       </item>
       <item>
        <widget class="QSpinBox" name="message_number_spin_box">
+        <property name="toolTip">
+         <string>Which DisplayTrajectory message to use</string>
+        </property>
         <property name="minimum">
          <number>1</number>
         </property>
@@ -53,6 +56,9 @@
       </item>
       <item>
        <widget class="QSpinBox" name="traj_number_spin_box">
+        <property name="toolTip">
+         <string>Which RobotTrajectory from field trajectory to use</string>
+        </property>
         <property name="minimum">
          <number>1</number>
         </property>
@@ -83,6 +89,9 @@
       </item>
       <item>
        <widget class="QSpinBox" name="point_number_spin_box">
+        <property name="toolTip">
+         <string>Which JointTrajectoryPoint to use from the choosen trajectory.joint_trajectory</string>
+        </property>
         <property name="minimum">
          <number>1</number>
         </property>

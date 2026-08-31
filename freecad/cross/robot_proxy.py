@@ -296,7 +296,6 @@ class RobotProxy(ProxyBase):
         # self.reset_group()
 
     def onChanged(self, obj: CrossRobot, prop: str) -> None:
-        # print(f'{obj.Name}.onChanged({prop})') # DEBUG
         if not self.is_execute_ready():
             return
         if prop in ['Group']:
@@ -1109,7 +1108,7 @@ class _ViewProviderRobot(ProxyBase):
     def setupContextMenu(self, vobj: VPDO, menu: QMenu) -> None:
         action = menu.addAction("Load trajectories from YAML...")
         action.triggered.connect(
-                lambda function=self.load_trajectories_from_yaml, argument=vobj: function(argument),
+                lambda: self.load_trajectories_from_yaml(vobj),
         )
 
     def doubleClicked(self, vobj: VPDO):

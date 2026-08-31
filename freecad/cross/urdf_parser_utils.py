@@ -249,13 +249,18 @@ def obj_from_mesh(
                 part.addObject(mesh_obj)
             return part, mesh_path
     # else other format.
-    raw_mesh = fcmesh.read(str(mesh_path))
+    raw_mesh = None
+    try:
+        raw_mesh = fcmesh.read(str(mesh_path))
+    except:
+        warn(f'Cannot read mesh file {mesh_path}')
     mesh_obj = doc.addObject('Mesh::Feature', mesh_path.name)
     mesh_obj.Label = mesh_path.name
     mesh_obj.Label2 = label2
     if group:
         group.addObject(mesh_obj)
-    mesh_obj.Mesh = raw_mesh
+    if raw_mesh:
+        mesh_obj.Mesh = raw_mesh
     if mesh_path.suffix.lower() in ['.stl', '.obj']:
         scale_mesh_object(mesh_obj, 1000.0)  # m to mm.
     if geometry_scale is not None:

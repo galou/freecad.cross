@@ -19,13 +19,20 @@
      <layout class="QHBoxLayout" name="horizontalLayout">
       <item>
        <widget class="QSlider" name="index_slider">
+        <property name="maximum">
+         <number>10000000</number>
+        </property>
         <property name="orientation">
          <enum>Qt::Horizontal</enum>
         </property>
        </widget>
       </item>
       <item>
-       <widget class="QSpinBox" name="index_spin_box"/>
+       <widget class="QSpinBox" name="index_spin_box">
+        <property name="maximum">
+         <number>10000000</number>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>

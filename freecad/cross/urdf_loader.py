@@ -31,11 +31,3 @@ class UrdfLoader:
     def load_from_string(cls, description: str | bytes) -> Robot:
         """Load from an xml string."""
         return Robot.from_xml_string(description)
-
-    @classmethod
-    def load_from_parameter_server(
-        cls,
-        key: str = 'robot_description',
-    ) -> Robot:
-        """Load from ROS parameter server."""
-        return Robot.from_parameter_server(key)

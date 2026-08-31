@@ -178,11 +178,3 @@ class XacroLoader:
     def load_from_string(cls, description: [str | bytes]) -> Xacro:
         """Load from an xml string."""
         return Xacro(parseString(description))
-
-    @classmethod
-    def load_from_parameter_server(
-        cls,
-        key: str = 'robot_description',
-    ) -> Xacro:
-        """Load from ROS parameter server."""
-        return Xacro(parseString(Robot.from_parameter_server(key).to_xml_string()))

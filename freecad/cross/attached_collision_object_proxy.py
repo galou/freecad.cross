@@ -167,7 +167,7 @@ class AttachedCollisionObjectProxy:
 
     @placement.observer
     def on_placement_changed(self, event: fpo.events.PropertyChangedEvent) -> None:
-        if not self.placement.isSame(event.new_value, tol=1e-6):
+        if not self.placement.isSame(event.new_value, 1e-6):
             # Avoid recursion.
             self.placement = event.new_value
         for fclink in self.Object.Group:
@@ -175,7 +175,7 @@ class AttachedCollisionObjectProxy:
                 # Should not happen.
                 continue
             link_placement = fclink.LinkedObject.Placement * self.placement
-            if not fclink.LinkPlacement.isSame(link_placement, tol=1e-6):
+            if not fclink.LinkPlacement.isSame(link_placement, 1e-6):
                 # Avoid recursion.
                 fclink.LinkPlacement = link_placement
 

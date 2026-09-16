@@ -30,8 +30,6 @@ class _MoveCartesianCommand:
         robot = objs[0]
         diag = MoveCartesianDialog(robot, fcgui.getMainWindow())
         diag.exec_()
-        diag.close()
-        doc.recompute()
 
 
 fcgui.addCommand('MoveCartesian', _MoveCartesianCommand())

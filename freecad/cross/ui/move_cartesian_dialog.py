@@ -49,10 +49,10 @@ class MoveCartesianDialog(QtGui.QDialog):
         self._update_buttons_state()
 
     def exec_(self) -> int:
-        return self.form.exec_()
+        return super().exec_()
 
     def close(self) -> None:
-        self.form.close()
+        super().close()
 
     def _set_up_gui(self) -> None:
         self.form.button_box.setFocusPolicy(QtCore.Qt.NoFocus)
@@ -151,7 +151,7 @@ class MoveCartesianDialog(QtGui.QDialog):
         except Exception as exc:
             doc.abortTransaction()
             with suppress(Exception):
-                self.robot.Proxy.set_joint_values(wb_si_from_fc(previous_joint_values))
+                self.robot.Proxy.set_joint_values(previous_joint_values)
                 doc.recompute()
             self._set_result_text(str(exc))
             return

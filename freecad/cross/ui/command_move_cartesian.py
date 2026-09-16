@@ -28,12 +28,10 @@ class _MoveCartesianCommand:
         if not doc or not objs:
             return
         robot = objs[0]
-        doc.openTransaction(tr('Move Cartesian'))
         diag = MoveCartesianDialog(robot, fcgui.getMainWindow())
         diag.exec_()
         diag.close()
         doc.recompute()
-        doc.commitTransaction()
 
 
 fcgui.addCommand('MoveCartesian', _MoveCartesianCommand())

@@ -137,15 +137,25 @@ class MoveCartesianDialog(QtGui.QDialog):
             return
 
         chain_joints, joint_values = solution
-        first_sol_si_dict = wb_si_from_fc(
-            {joint: value for joint, value in zip(chain_joints, joint_values)},
-        )
-        self.robot.Proxy.set_joint_values(first_sol_si_dict)
-        self.robot.Document.recompute()
+        applied_joint_values_fc = {
+            joint: value for joint, value in zip(chain_joints, joint_values)
+        }
+        first_sol_si_dict = wb_si_from_fc(applied_joint_values_fc)
+        doc = self.robot.Document
+        doc.openTransaction(tr('Move Cartesian step'))
+        try:
+            self.robot.Proxy.set_joint_values(first_sol_si_dict)
+            doc.recompute()
+        except Exception as exc:
+            doc.abortTransaction()
+            self._set_result_text(str(exc))
+            return
+        doc.commitTransaction()
         self._set_result_text(
-            '\n'.join(
+            tr('IK solution (mm/deg):') + '\n'
+            + '\n'.join(
                 f'{ros_name(joint)} = {value:g}{self._joint_unit_suffix(joint)}'
-                for joint, value in zip(chain_joints, joint_values)
+                for joint, value in applied_joint_values_fc.items()
             ),
         )
 

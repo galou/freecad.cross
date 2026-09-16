@@ -145,6 +145,9 @@
       </item>
       <item row="0" column="1">
        <widget class="QPushButton" name="x_minus_push_button">
+        <property name="toolTip">
+         <string>Move X negative</string>
+        </property>
         <property name="text">
          <string>-</string>
         </property>
@@ -152,6 +155,9 @@
       </item>
       <item row="0" column="2">
        <widget class="QPushButton" name="x_plus_push_button">
+        <property name="toolTip">
+         <string>Move X positive</string>
+        </property>
         <property name="text">
          <string>+</string>
         </property>
@@ -166,6 +172,9 @@
       </item>
       <item row="1" column="1">
        <widget class="QPushButton" name="y_minus_push_button">
+        <property name="toolTip">
+         <string>Move Y negative</string>
+        </property>
         <property name="text">
          <string>-</string>
         </property>
@@ -173,6 +182,9 @@
       </item>
       <item row="1" column="2">
        <widget class="QPushButton" name="y_plus_push_button">
+        <property name="toolTip">
+         <string>Move Y positive</string>
+        </property>
         <property name="text">
          <string>+</string>
         </property>
@@ -187,6 +199,9 @@
       </item>
       <item row="2" column="1">
        <widget class="QPushButton" name="z_minus_push_button">
+        <property name="toolTip">
+         <string>Move Z negative</string>
+        </property>
         <property name="text">
          <string>-</string>
         </property>
@@ -194,6 +209,9 @@
       </item>
       <item row="2" column="2">
        <widget class="QPushButton" name="z_plus_push_button">
+        <property name="toolTip">
+         <string>Move Z positive</string>
+        </property>
         <property name="text">
          <string>+</string>
         </property>
@@ -208,6 +226,9 @@
       </item>
       <item row="3" column="1">
        <widget class="QPushButton" name="a_minus_push_button">
+        <property name="toolTip">
+         <string>Move A negative</string>
+        </property>
         <property name="text">
          <string>-</string>
         </property>
@@ -215,6 +236,9 @@
       </item>
       <item row="3" column="2">
        <widget class="QPushButton" name="a_plus_push_button">
+        <property name="toolTip">
+         <string>Move A positive</string>
+        </property>
         <property name="text">
          <string>+</string>
         </property>
@@ -229,6 +253,9 @@
       </item>
       <item row="4" column="1">
        <widget class="QPushButton" name="b_minus_push_button">
+        <property name="toolTip">
+         <string>Move B negative</string>
+        </property>
         <property name="text">
          <string>-</string>
         </property>
@@ -236,6 +263,9 @@
       </item>
       <item row="4" column="2">
        <widget class="QPushButton" name="b_plus_push_button">
+        <property name="toolTip">
+         <string>Move B positive</string>
+        </property>
         <property name="text">
          <string>+</string>
         </property>
@@ -250,6 +280,9 @@
       </item>
       <item row="5" column="1">
        <widget class="QPushButton" name="c_minus_push_button">
+        <property name="toolTip">
+         <string>Move C negative</string>
+        </property>
         <property name="text">
          <string>-</string>
         </property>
@@ -257,6 +290,9 @@
       </item>
       <item row="5" column="2">
        <widget class="QPushButton" name="c_plus_push_button">
+        <property name="toolTip">
+         <string>Move C positive</string>
+        </property>
         <property name="text">
          <string>+</string>
         </property>

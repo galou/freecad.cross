@@ -145,6 +145,12 @@
       </item>
       <item row="0" column="1">
        <widget class="QPushButton" name="x_minus_push_button">
+        <property name="accessibleName">
+         <string>Move X negative</string>
+        </property>
+        <property name="accessibleDescription">
+         <string>Move the selected end-effector in the negative X direction</string>
+        </property>
         <property name="toolTip">
          <string>Move X negative</string>
         </property>
@@ -155,6 +161,12 @@
       </item>
       <item row="0" column="2">
        <widget class="QPushButton" name="x_plus_push_button">
+        <property name="accessibleName">
+         <string>Move X positive</string>
+        </property>
+        <property name="accessibleDescription">
+         <string>Move the selected end-effector in the positive X direction</string>
+        </property>
         <property name="toolTip">
          <string>Move X positive</string>
         </property>
@@ -172,6 +184,12 @@
       </item>
       <item row="1" column="1">
        <widget class="QPushButton" name="y_minus_push_button">
+        <property name="accessibleName">
+         <string>Move Y negative</string>
+        </property>
+        <property name="accessibleDescription">
+         <string>Move the selected end-effector in the negative Y direction</string>
+        </property>
         <property name="toolTip">
          <string>Move Y negative</string>
         </property>
@@ -182,6 +200,12 @@
       </item>
       <item row="1" column="2">
        <widget class="QPushButton" name="y_plus_push_button">
+        <property name="accessibleName">
+         <string>Move Y positive</string>
+        </property>
+        <property name="accessibleDescription">
+         <string>Move the selected end-effector in the positive Y direction</string>
+        </property>
         <property name="toolTip">
          <string>Move Y positive</string>
         </property>
@@ -199,6 +223,12 @@
       </item>
       <item row="2" column="1">
        <widget class="QPushButton" name="z_minus_push_button">
+        <property name="accessibleName">
+         <string>Move Z negative</string>
+        </property>
+        <property name="accessibleDescription">
+         <string>Move the selected end-effector in the negative Z direction</string>
+        </property>
         <property name="toolTip">
          <string>Move Z negative</string>
         </property>
@@ -209,6 +239,12 @@
       </item>
       <item row="2" column="2">
        <widget class="QPushButton" name="z_plus_push_button">
+        <property name="accessibleName">
+         <string>Move Z positive</string>
+        </property>
+        <property name="accessibleDescription">
+         <string>Move the selected end-effector in the positive Z direction</string>
+        </property>
         <property name="toolTip">
          <string>Move Z positive</string>
         </property>
@@ -226,6 +262,12 @@
       </item>
       <item row="3" column="1">
        <widget class="QPushButton" name="a_minus_push_button">
+        <property name="accessibleName">
+         <string>Move A negative</string>
+        </property>
+        <property name="accessibleDescription">
+         <string>Rotate the selected end-effector negatively about X</string>
+        </property>
         <property name="toolTip">
          <string>Move A negative</string>
         </property>
@@ -236,6 +278,12 @@
       </item>
       <item row="3" column="2">
        <widget class="QPushButton" name="a_plus_push_button">
+        <property name="accessibleName">
+         <string>Move A positive</string>
+        </property>
+        <property name="accessibleDescription">
+         <string>Rotate the selected end-effector positively about X</string>
+        </property>
         <property name="toolTip">
          <string>Move A positive</string>
         </property>
@@ -253,6 +301,12 @@
       </item>
       <item row="4" column="1">
        <widget class="QPushButton" name="b_minus_push_button">
+        <property name="accessibleName">
+         <string>Move B negative</string>
+        </property>
+        <property name="accessibleDescription">
+         <string>Rotate the selected end-effector negatively about Y</string>
+        </property>
         <property name="toolTip">
          <string>Move B negative</string>
         </property>
@@ -263,6 +317,12 @@
       </item>
       <item row="4" column="2">
        <widget class="QPushButton" name="b_plus_push_button">
+        <property name="accessibleName">
+         <string>Move B positive</string>
+        </property>
+        <property name="accessibleDescription">
+         <string>Rotate the selected end-effector positively about Y</string>
+        </property>
         <property name="toolTip">
          <string>Move B positive</string>
         </property>
@@ -280,6 +340,12 @@
       </item>
       <item row="5" column="1">
        <widget class="QPushButton" name="c_minus_push_button">
+        <property name="accessibleName">
+         <string>Move C negative</string>
+        </property>
+        <property name="accessibleDescription">
+         <string>Rotate the selected end-effector negatively about Z</string>
+        </property>
         <property name="toolTip">
          <string>Move C negative</string>
         </property>
@@ -290,6 +356,12 @@
       </item>
       <item row="5" column="2">
        <widget class="QPushButton" name="c_plus_push_button">
+        <property name="accessibleName">
+         <string>Move C positive</string>
+        </property>
+        <property name="accessibleDescription">
+         <string>Rotate the selected end-effector positively about Z</string>
+        </property>
         <property name="toolTip">
          <string>Move C positive</string>
         </property>

@@ -168,25 +168,18 @@ class MoveCartesianDialog(QtGui.QDialog):
         axis = self.AXES[axis_name]
         if axis_name in ('X', 'Y', 'Z'):
             step = self.form.linear_step_spin_box.value() * direction
-            delta = self._translation_frame_rotation(current).multVec(axis) * step
+            delta = self._selected_frame_rotation(current).multVec(axis) * step
             return fc.Placement(current.Base + delta, current.Rotation)
 
         step = self.form.angular_step_spin_box.value() * direction
         if self.form.tool_radio_button.isChecked():
             target_rotation = current.Rotation * fc.Rotation(axis, step)
         else:
-            world_axis = self._rotation_frame_rotation(current).multVec(axis)
+            world_axis = self._selected_frame_rotation(current).multVec(axis)
             target_rotation = fc.Rotation(world_axis, step) * current.Rotation
         return fc.Placement(current.Base, target_rotation)
 
-    def _translation_frame_rotation(self, current: fc.Placement) -> fc.Rotation:
-        if self.form.global_radio_button.isChecked():
-            return fc.Rotation()
-        if self.form.robot_radio_button.isChecked():
-            return self.robot.Placement.Rotation
-        return current.Rotation
-
-    def _rotation_frame_rotation(self, current: fc.Placement) -> fc.Rotation:
+    def _selected_frame_rotation(self, current: fc.Placement) -> fc.Rotation:
         if self.form.global_radio_button.isChecked():
             return fc.Rotation()
         if self.form.robot_radio_button.isChecked():
@@ -198,6 +191,10 @@ class MoveCartesianDialog(QtGui.QDialog):
         target: fc.Placement,
         end_effector: str,
     ) -> tuple[list[CrossJoint], list[float]] | None:
+        root_link = self.robot.Proxy.get_root_link()
+        if not root_link:
+            self._set_result_text(tr('The robot has no root link.'))
+            return None
         chain_joints = self.robot.Proxy.get_actuated_joints_to(end_effector)
         if not chain_joints:
             self._set_result_text(tr('No actuated joint chain was found for the end-effector.'))
@@ -206,7 +203,7 @@ class MoveCartesianDialog(QtGui.QDialog):
         try:
             sols = ik(
                 robot=self.robot,
-                from_link=chain_joints[0].Parent,
+                from_link=ros_name(root_link),
                 to_link=end_effector,
                 target=target,
             )

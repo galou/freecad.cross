@@ -177,8 +177,13 @@ class MoveCartesianDialog(QtGui.QDialog):
             return fc.Placement(current.Base + delta, current.Rotation)
 
         step = self.form.angular_step_spin_box.value() * direction
-        world_axis = self._selected_frame_rotation(current).multVec(axis)
-        target_rotation = fc.Rotation(world_axis, step) * current.Rotation
+        frame_rotation = self._selected_frame_rotation(current)
+        target_rotation = (
+            frame_rotation
+            * fc.Rotation(axis, step)
+            * frame_rotation.inverted()
+            * current.Rotation
+        )
         return fc.Placement(current.Base, target_rotation)
 
     def _selected_frame_rotation(self, current: fc.Placement) -> fc.Rotation:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from contextlib import suppress
 from functools import partial
 
 import FreeCAD as fc
@@ -140,6 +141,7 @@ class MoveCartesianDialog(QtGui.QDialog):
         applied_joint_values_fc = {
             joint: value for joint, value in zip(chain_joints, joint_values)
         }
+        previous_joint_values = dict(self.robot.Proxy.get_joint_values())
         first_sol_si_dict = wb_si_from_fc(applied_joint_values_fc)
         doc = self.robot.Document
         doc.openTransaction(tr('Move Cartesian step'))
@@ -148,6 +150,9 @@ class MoveCartesianDialog(QtGui.QDialog):
             doc.recompute()
         except Exception as exc:
             doc.abortTransaction()
+            with suppress(Exception):
+                self.robot.Proxy.set_joint_values(wb_si_from_fc(previous_joint_values))
+                doc.recompute()
             self._set_result_text(str(exc))
             return
         doc.commitTransaction()
@@ -172,11 +177,8 @@ class MoveCartesianDialog(QtGui.QDialog):
             return fc.Placement(current.Base + delta, current.Rotation)
 
         step = self.form.angular_step_spin_box.value() * direction
-        if self.form.tool_radio_button.isChecked():
-            target_rotation = current.Rotation * fc.Rotation(axis, step)
-        else:
-            world_axis = self._selected_frame_rotation(current).multVec(axis)
-            target_rotation = fc.Rotation(world_axis, step) * current.Rotation
+        world_axis = self._selected_frame_rotation(current).multVec(axis)
+        target_rotation = fc.Rotation(world_axis, step) * current.Rotation
         return fc.Placement(current.Base, target_rotation)
 
     def _selected_frame_rotation(self, current: fc.Placement) -> fc.Rotation:

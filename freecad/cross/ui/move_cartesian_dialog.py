@@ -214,7 +214,7 @@ class MoveCartesianDialog(QtGui.QDialog):
                 to_link=end_effector,
                 target=target,
             )
-        except (ImportError, TypeError, ValueError, RuntimeError) as exc:
+        except Exception as exc:
             self._set_result_text(str(exc))
             return None
         if not sols:

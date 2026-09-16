@@ -177,7 +177,7 @@
          <string>+</string>
         </property>
         <property name="shortcut">
-         <string>X</string>
+         <string>Alt+Shift+X</string>
         </property>
        </widget>
       </item>
@@ -222,7 +222,7 @@
          <string>+</string>
         </property>
         <property name="shortcut">
-         <string>Y</string>
+         <string>Alt+Shift+Y</string>
         </property>
        </widget>
       </item>
@@ -267,7 +267,7 @@
          <string>+</string>
         </property>
         <property name="shortcut">
-         <string>Z</string>
+         <string>Alt+Shift+Z</string>
         </property>
        </widget>
       </item>
@@ -312,7 +312,7 @@
          <string>+</string>
         </property>
         <property name="shortcut">
-         <string>A</string>
+         <string>Alt+Shift+A</string>
         </property>
        </widget>
       </item>
@@ -357,7 +357,7 @@
          <string>+</string>
         </property>
         <property name="shortcut">
-         <string>B</string>
+         <string>Alt+Shift+B</string>
         </property>
        </widget>
       </item>
@@ -402,7 +402,7 @@
          <string>+</string>
         </property>
         <property name="shortcut">
-         <string>C</string>
+         <string>Alt+Shift+C</string>
         </property>
        </widget>
       </item>

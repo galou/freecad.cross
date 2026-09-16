@@ -39,6 +39,7 @@ Compatible with ROS2 (for now).
 - Combine several xacros files (i.e. also URDF) into a workcell and export them as a xacro file.
 - Get the current planning scene (relies on the /get_planning_scene service of type `moveit_msgs/srv/GetPlanningScene`)
 - Define a pose and possibly bring a specific link to it. All links that are fixed to this link will follow but the inverse kinematic solutions are not shown.
+- Move a leaf-link end-effector by Cartesian steps in the Global, Robot, or Tool frame and inspect the resulting IK solution.
 
 ## Installation
 

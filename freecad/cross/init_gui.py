@@ -9,6 +9,7 @@ from .ui import command_cylinder_from_bounding_box  # noqa: F401
 from .ui import command_duplicate_robot # noqa: F401
 from .ui import command_get_planning_scene  # noqa: F401
 from .ui import command_kk_edit  # noqa: F401
+from .ui import command_move_cartesian  # noqa: F401
 from .ui import command_new_attached_collision_object  # noqa: F401
 from .ui import command_new_joint  # noqa: F401
 from .ui import command_new_lidar2d  # noqa: F401
@@ -69,6 +70,7 @@ class CrossWorkbench(fcgui.Workbench):
             'NewPose',  # Defined in ./ui/command_new_pose.py.
             'NewTrajectory',  # Defined in ./ui/command_new_trajectory.py.
             'KKEdit',  # Defined in ./ui/command_kk_edit.py.
+            'MoveCartesian',  # Defined in ./ui/command_move_cartesian.py.
             'SetJoints',  # Defined in ./ui/command_set_joints.py.
             'SetMaterial',  # Defined in ./ui/command_set_material.py.
             'CalculateMassAndInertia',  # Defined in ./ui/command_calculate_mass_and_inertia.py.
@@ -95,6 +97,7 @@ class CrossWorkbench(fcgui.Workbench):
                 'KKEdit',  # Defined in ./ui/command_kk_edit.py.
                 'DuplicateRobot',  # Defined in ./ui/command_duplicate_robot.py.
                 'BringRobotToPose',  # Defined in ./ui/command_bring_robot_to_pose.py.
+                'MoveCartesian',  # Defined in ./ui/command_move_cartesian.py.
                 'Separator',
                 # Mesh simplification.
                 'SimplifyMesh',  # Defined in ./ui/command_simplify_mesh.py.

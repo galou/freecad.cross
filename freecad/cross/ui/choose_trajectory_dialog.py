@@ -58,10 +58,11 @@ class ChooseTrajectoryDialog(QtWidgets.QDialog):
         """Set up the GUI."""
         display_trajectory = self._yamls[self._message_index] if self._yamls else None
         t_idx = self._trajectory_index
-        robot_trajectory = (display_trajectory['trajectory'][t_idx]
-                            if (display_trajectory and (t_idx >= 0))
-                            else None
-                            )
+        robot_trajectory = (
+                display_trajectory['trajectory'][t_idx]
+                if (display_trajectory and (t_idx >= 0))
+                else None
+        )
         start_state = display_trajectory['trajectory_start'] if display_trajectory else None
         self.table_joint_values = SetJointsFromTrajectory(
                 trajectory=robot_trajectory,

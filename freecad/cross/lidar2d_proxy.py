@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+import math
 from typing import NewType
 from typing import Optional
 from typing import TYPE_CHECKING
 
 import FreeCAD as fc
+from PySide.QtWidgets import QFileDialog
 
 from pivy import coin
 import numpy as np
@@ -47,6 +50,12 @@ class Lidar2dViewProxy:
                 'Transparency of the representation in the 3D view'
             ),
     )
+
+    def on_context_menu(
+            self,
+            event: fpo.events.ContextMenuEventmenu,
+            ) -> None:
+        event.menu.addAction('Save LaserScan to YAML...', self.save_laser_scan)
 
     def on_start(self) -> None:
         # Set the transparency to a range of 0-100 with a step of 1.
@@ -123,6 +132,101 @@ class Lidar2dViewProxy:
         line_set.vertexProperty = vertex_property
 
         root.addChild(sep)
+
+    def save_laser_scan(self) -> None:
+        import FreeCADGui as fcgui
+        import yaml
+
+        filename, _ = QFileDialog.getSaveFileName(
+                fcgui.getMainWindow(),
+                'Save LaserScan to YAML',
+                f'{self.Object.Name}.yaml',
+                'YAML files (*.yaml *.yml);;All files (*.*)',
+        )
+        if not filename:
+            return
+
+        obj = self.Object
+        angle_min = float(obj.AngleMin.getValueAs('rad'))
+        angle_max = float(obj.AngleMax.getValueAs('rad'))
+        angle_increment = float(obj.AngleIncrement.getValueAs('rad'))
+        range_min = float(obj.RangeMin.Value)
+        range_max = float(obj.RangeMax.Value)
+        if (
+                angle_increment <= 0.0
+                or angle_max < angle_min
+                or range_min < 0.0
+                or range_max < range_min
+        ):
+            warn('Invalid LiDAR angle or range settings; cannot save LaserScan', True)
+            return
+
+        count = int(round((angle_max - angle_min) / angle_increment)) + 1
+        angles = [angle_min + i * angle_increment for i in range(count)]
+        placement = obj.Placement
+        origin = placement.Base
+        rotation = placement.Rotation
+        origin_coin = coin.SbVec3f(origin.x, origin.y, origin.z)
+
+        scene = fcgui.activeDocument().activeView().getSceneGraph()
+        view = self.ViewObject
+        root = view.RootNode
+        root.removeAllChildren()
+        try:
+            viewport = coin.SbViewportRegion(1, 1)
+            ranges = []
+            for angle in angles:
+                direction = rotation.multVec(fc.Vector(
+                        math.cos(angle),
+                        math.sin(angle),
+                        0.0,
+                ))
+                pick = coin.SoRayPickAction(viewport)
+                pick.setRay(
+                        origin_coin,
+                        coin.SbVec3f(direction.x, direction.y, direction.z),
+                        range_min,
+                        range_max,
+                )
+                pick.apply(scene)
+                point = pick.getPickedPoint()
+                if point is None:
+                    ranges.append(float('inf'))
+                else:
+                    hit = point.getPoint()
+                    distance = math.sqrt(
+                            (hit[0] - origin.x) ** 2
+                            + (hit[1] - origin.y) ** 2
+                            + (hit[2] - origin.z) ** 2
+                    )
+                    ranges.append(distance / 1000.0)
+        finally:
+            self._redraw()
+
+        now = datetime.now(timezone.utc).timestamp_ns() if hasattr(
+                datetime.now(timezone.utc), 'timestamp_ns'
+        ) else None
+        if now is None:
+            import time
+            now = time.time_ns()
+        seconds, nanoseconds = divmod(now, 1_000_000_000)
+        scan = {
+                'header': {
+                    'stamp': {'sec': seconds, 'nanosec': nanoseconds},
+                    'frame_id': obj.Name,
+                },
+                'angle_min': angle_min,
+                'angle_max': angle_max,
+                'angle_increment': angle_increment,
+                'time_increment': 0.0,
+                'scan_time': 0.0,
+                'range_min': range_min / 1000.0,
+                'range_max': range_max / 1000.0,
+                'ranges': ranges,
+                'intensities': [],
+        }
+        with open(filename, 'w', encoding='utf-8') as scan_file:
+            yaml.safe_dump(scan, scan_file, sort_keys=False)
 
 
 @fpo.proxy(

@@ -1,6 +1,10 @@
 from __future__ import annotations
 
+from math import cos
+from math import pi
 from math import sin
+from math import sqrt
+from random import random
 import time
 from typing import NewType
 from typing import Optional
@@ -137,6 +141,7 @@ class UltrasoundViewProxy:
         range_max = float(obj.RangeMax.Value)
         if (
                 detection_angle < 0.0
+                or detection_angle > 2.0 * pi
                 or range_min < 0.0
                 or range_max < range_min
                 or range_max <= 0.0
@@ -148,31 +153,43 @@ class UltrasoundViewProxy:
         origin = placement.Base
         rotation = placement.Rotation
         origin_coin = coin.SbVec3f(origin.x, origin.y, origin.z)
-        direction = rotation.multVec(fc.Vector(1.0, 0.0, 0.0))
 
         scene = fcgui.activeDocument().activeView().getSceneGraph()
         root = self.ViewObject.RootNode
         root.removeAllChildren()
         try:
-            pick = coin.SoRayPickAction(coin.SbViewportRegion(1, 1))
-            pick.setRay(
-                    origin_coin,
-                    coin.SbVec3f(direction.x, direction.y, direction.z),
-                    range_min,
-                    range_max,
-            )
-            pick.apply(scene)
-            point = pick.getPickedPoint()
-            if point is None:
-                measured_range = float('inf')
-            else:
+            measured_range = float('inf')
+            half_angle = detection_angle / 2.0
+            cos_half_angle = cos(half_angle)
+            n_rays = 20
+            for _ in range(n_rays):
+                cos_theta = 1.0 - random() * (1.0 - cos_half_angle)
+                sin_theta = sqrt(1.0 - cos_theta * cos_theta)
+                azimuth = 2.0 * pi * random()
+                local_direction = fc.Vector(
+                        cos_theta,
+                        sin_theta * cos(azimuth),
+                        sin_theta * sin(azimuth),
+                )
+                direction = rotation.multVec(local_direction)
+                pick = coin.SoRayPickAction(coin.SbViewportRegion(1, 1))
+                pick.setRay(
+                        origin_coin,
+                        coin.SbVec3f(direction.x, direction.y, direction.z),
+                        range_min,
+                        range_max,
+                )
+                pick.apply(scene)
+                point = pick.getPickedPoint()
+                if point is None:
+                    continue
                 hit = point.getPoint()
-                distance = (
+                distance = sqrt(
                         (hit[0] - origin.x) ** 2
                         + (hit[1] - origin.y) ** 2
                         + (hit[2] - origin.z) ** 2
-                ) ** 0.5
-                measured_range = distance / 1000.0
+                )
+                measured_range = min(measured_range, distance / 1000.0)
         finally:
             self._redraw()
 

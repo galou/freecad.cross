@@ -1,11 +1,13 @@
 from __future__ import annotations
 
 from math import sin
+import time
 from typing import NewType
 from typing import Optional
 from typing import TYPE_CHECKING
 
 import FreeCAD as fc
+from PySide.QtWidgets import QFileDialog
 
 from pivy import coin
 
@@ -61,6 +63,12 @@ class UltrasoundViewProxy:
     def on_object_change(self) -> None:
         self._redraw()
 
+    def on_context_menu(
+            self,
+            event: fpo.events.ContextMenuEvent,
+            ) -> None:
+        event.menu.addAction('Save Range to YAML...', self.save_range)
+
     def _redraw(self) -> None:
         """Draw the rays."""
 
@@ -109,6 +117,80 @@ class UltrasoundViewProxy:
         sep.addChild(cone)
 
         root.addChild(sep)
+
+    def save_range(self) -> None:
+        import FreeCADGui as fcgui
+        import yaml
+
+        filename, _ = QFileDialog.getSaveFileName(
+                fcgui.getMainWindow(),
+                'Save Range to YAML',
+                f'{self.Object.Name}.yaml',
+                'YAML files (*.yaml *.yml);;All files (*.*)',
+        )
+        if not filename:
+            return
+
+        obj = self.Object
+        detection_angle = float(obj.DetectionAngle.getValueAs('rad'))
+        range_min = float(obj.RangeMin.Value)
+        range_max = float(obj.RangeMax.Value)
+        if (
+                detection_angle < 0.0
+                or range_min < 0.0
+                or range_max < range_min
+                or range_max <= 0.0
+        ):
+            warn('Invalid Ultrasound angle or range settings; cannot save Range', True)
+            return
+
+        placement = obj.Placement
+        origin = placement.Base
+        rotation = placement.Rotation
+        origin_coin = coin.SbVec3f(origin.x, origin.y, origin.z)
+        direction = rotation.multVec(fc.Vector(1.0, 0.0, 0.0))
+
+        scene = fcgui.activeDocument().activeView().getSceneGraph()
+        root = self.ViewObject.RootNode
+        root.removeAllChildren()
+        try:
+            pick = coin.SoRayPickAction(coin.SbViewportRegion(1, 1))
+            pick.setRay(
+                    origin_coin,
+                    coin.SbVec3f(direction.x, direction.y, direction.z),
+                    range_min,
+                    range_max,
+            )
+            pick.apply(scene)
+            point = pick.getPickedPoint()
+            if point is None:
+                measured_range = float('inf')
+            else:
+                hit = point.getPoint()
+                distance = (
+                        (hit[0] - origin.x) ** 2
+                        + (hit[1] - origin.y) ** 2
+                        + (hit[2] - origin.z) ** 2
+                ) ** 0.5
+                measured_range = distance / 1000.0
+        finally:
+            self._redraw()
+
+        now = time.time_ns()
+        seconds, nanoseconds = divmod(now, 1_000_000_000)
+        range_message = {
+                'header': {
+                    'stamp': {'sec': seconds, 'nanosec': nanoseconds},
+                    'frame_id': obj.Name,
+                },
+                'radiation_type': 0,
+                'field_of_view': detection_angle,
+                'min_range': range_min / 1000.0,
+                'max_range': range_max / 1000.0,
+                'range': measured_range,
+        }
+        with open(filename, 'w', encoding='utf-8') as range_file:
+            yaml.safe_dump(range_message, range_file, sort_keys=False)
 
 
 @fpo.proxy(

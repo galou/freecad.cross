@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from datetime import datetime, timezone
 import math
+import time
 from typing import NewType
 from typing import Optional
 from typing import TYPE_CHECKING
@@ -53,7 +53,7 @@ class Lidar2dViewProxy:
 
     def on_context_menu(
             self,
-            event: fpo.events.ContextMenuEventmenu,
+            event: fpo.events.ContextMenuEvent,
             ) -> None:
         event.menu.addAction('Save LaserScan to YAML...', self.save_laser_scan)
 
@@ -162,7 +162,12 @@ class Lidar2dViewProxy:
             return
 
         count = int(round((angle_max - angle_min) / angle_increment)) + 1
-        angles = [angle_min + i * angle_increment for i in range(count)]
+        angles = np.linspace(angle_min, angle_max, count, endpoint=True)
+        scan_angle_increment = (
+                (angle_max - angle_min) / (count - 1)
+                if count > 1
+                else angle_increment
+        )
         placement = obj.Placement
         origin = placement.Base
         rotation = placement.Rotation
@@ -203,12 +208,7 @@ class Lidar2dViewProxy:
         finally:
             self._redraw()
 
-        now = datetime.now(timezone.utc).timestamp_ns() if hasattr(
-                datetime.now(timezone.utc), 'timestamp_ns'
-        ) else None
-        if now is None:
-            import time
-            now = time.time_ns()
+        now = time.time_ns()
         seconds, nanoseconds = divmod(now, 1_000_000_000)
         scan = {
                 'header': {
@@ -217,7 +217,7 @@ class Lidar2dViewProxy:
                 },
                 'angle_min': angle_min,
                 'angle_max': angle_max,
-                'angle_increment': angle_increment,
+                'angle_increment': scan_angle_increment,
                 'time_increment': 0.0,
                 'scan_time': 0.0,
                 'range_min': range_min / 1000.0,

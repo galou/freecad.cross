@@ -9,6 +9,7 @@ import FreeCAD as fc
 from pivy import coin
 
 from .coin_utils import transform_from_placement
+from .freecad_utils import error
 from .freecad_utils import warn
 from .wb_utils import ICON_PATH
 from .wb_utils import is_link
@@ -21,6 +22,10 @@ if TYPE_CHECKING and hasattr(fc, 'GuiUp') and fc.GuiUp:
     from FreeCADGui import ViewProviderDocumentObject as VPDO
 else:
     VPDO = NewType('VPDO', object)
+
+# Width in pixels of the images rendered from the camera, the height is
+# deduced from the field of view.
+IMAGE_WIDTH = 640
 
 
 @fpo.view_proxy(
@@ -75,6 +80,122 @@ class RgbCameraViewProxy:
 
     def on_object_change(self) -> None:
         self._redraw()
+
+    def on_context_menu(self, event: fpo.events.ContextMenuEvent) -> None:
+        event.menu.addAction('Save Camera Image...', self.save_image_dialog)
+
+    def save_image_dialog(self) -> None:
+        # Import late to avoid slowing down workbench start-up.
+        import FreeCADGui as fcgui
+        from PySide.QtWidgets import QFileDialog  # FreeCAD's PySide
+
+        filename, _ = QFileDialog.getSaveFileName(
+            fcgui.getMainWindow(),
+            'Save the image seen by the camera',
+            f'{self.Object.Label}.png',
+            'Images (*.png *.jpg *.bmp);;All files (*.*)',
+        )
+        if not filename:
+            return
+        self.save_image(filename)
+
+    def save_image(self, filename: str, width: int = IMAGE_WIDTH) -> bool:
+        """Render the scene seen by the camera and save it to `filename`.
+
+        The height of the image is deduced from `width` and the fields of
+        view.
+
+        """
+        image = self.render_image(width)
+        if image is None:
+            return False
+        if not image.save(filename):
+            error(f'Cannot save the image to "{filename}"', True)
+            return False
+        return True
+
+    def render_image(self, width: int = IMAGE_WIDTH):
+        """Render the scene seen by the camera and return it as QImage.
+
+        The scene is the one displayed in the 3D view, without the frustum of
+        this camera.
+        The camera looks along its z-axis, with the image's x-axis along the
+        camera's x-axis and the image's y-axis along the camera's y-axis
+        (i.e. ROS' optical frame convention).
+
+        Return None on failure.
+
+        """
+        import math
+
+        from PySide.QtGui import QImage  # FreeCAD's PySide
+
+        obj = self.Object
+        views = self.ViewObject.Document.mdiViewsOfType('Gui::View3DInventor')
+        if not views:
+            error('No 3D view to render the camera image from', True)
+            return None
+        scene_graph = views[0].getSceneGraph()
+
+        tan_half_hfov = math.tan(obj.HFov.getValueAs('rad').Value / 2.0)
+        tan_half_vfov = math.tan(obj.VFov.getValueAs('rad').Value / 2.0)
+        if tan_half_hfov <= 0.0 or tan_half_vfov <= 0.0:
+            error('The fields of view of the camera must be in ]0, 180[ deg', True)
+            return None
+        height = max(1, round(width * tan_half_vfov / tan_half_hfov))
+
+        # Coin cameras look along their -z-axis with the image's up along
+        # their y-axis.
+        rotation = obj.Placement.Rotation * fc.Rotation(fc.Vector(1, 0, 0), 180)
+        coin_rotation = coin.SbRotation(*rotation.Q)
+        camera = coin.SoPerspectiveCamera()
+        camera.position.setValue(coin.SbVec3f(*obj.Placement.Base))
+        camera.orientation.setValue(coin_rotation)
+        # Leave the camera alone, i.e. don't let Coin adapt the field of
+        # view to the viewport.
+        camera.viewportMapping.setValue(coin.SoCamera.LEAVE_ALONE)
+        camera.aspectRatio.setValue(tan_half_hfov / tan_half_vfov)
+        camera.heightAngle.setValue(2.0 * math.atan(tan_half_vfov))
+
+        # A headlight.
+        light_sep = coin.SoTransformSeparator()
+        light_rotation = coin.SoRotation()
+        light_rotation.rotation.setValue(coin_rotation)
+        light_sep.addChild(light_rotation)
+        light_sep.addChild(coin.SoDirectionalLight())
+
+        root = coin.SoSeparator()
+        root.ref()
+        root.addChild(camera)
+        root.addChild(light_sep)
+        root.addChild(scene_graph)
+
+        viewport = coin.SbViewportRegion(width, height)
+        renderer = coin.SoOffscreenRenderer(viewport)
+        renderer.setComponents(coin.SoOffscreenRenderer.RGB)
+        renderer.setBackgroundColor(coin.SbColor(*_get_background_color()))
+
+        # Hide the frustum, which would occlude the view.
+        self.ViewObject.RootNode.removeAllChildren()
+        try:
+            # Clip the scene between 1 mm and its farthest point.
+            camera.nearDistance.setValue(1.0)
+            camera.farDistance.setValue(_get_far_distance(root, viewport, camera))
+            ok = renderer.render(root)
+        finally:
+            self._redraw()
+            root.unref()
+        if not ok:
+            error('Rendering of the camera image failed', True)
+            return None
+
+        # `copy()` because the QImage doesn't own the buffer.
+        image = QImage(
+            renderer.getBuffer(), width, height, width * 3,
+            QImage.Format_RGB888,
+        ).copy()
+        # OpenGL's origin is at the bottom left.
+        return image.mirrored(False, True)
 
     def _redraw(self) -> None:
         """Draw the frustum."""
@@ -184,6 +305,42 @@ class RgbCameraProxy:
             default=70,
             description='Vertical field of view of the camera',
     )
+
+
+def _get_background_color() -> tuple[float, float, float]:
+    """Return the simple background color of FreeCAD's 3D views."""
+    param = fc.ParamGet('User parameter:BaseApp/Preferences/View')
+    # Packed as 0xRRGGBBAA, default is FreeCAD's.
+    rgba = param.GetUnsigned('BackgroundColor', 0x333333ff)
+    return (
+        ((rgba >> 24) & 0xff) / 255.0,
+        ((rgba >> 16) & 0xff) / 255.0,
+        ((rgba >> 8) & 0xff) / 255.0,
+    )
+
+
+def _get_far_distance(
+        root: coin.SoNode,
+        viewport: coin.SbViewportRegion,
+        camera: coin.SoCamera,
+) -> float:
+    """Return a far clipping distance that includes the whole scene."""
+    default_distance = 1e6  # mm.
+    action = coin.SoGetBoundingBoxAction(viewport)
+    action.apply(root)
+    bbox = action.getBoundingBox()
+    if bbox.isEmpty():
+        return default_distance
+    position = camera.position.getValue()
+    corners = [
+        coin.SbVec3f(x, y, z)
+        for x in (bbox.getMin()[0], bbox.getMax()[0])
+        for y in (bbox.getMin()[1], bbox.getMax()[1])
+        for z in (bbox.getMin()[2], bbox.getMax()[2])
+    ]
+    distance = max((c - position).length() for c in corners)
+    # Margin to avoid clipping the farthest point.
+    return max(distance * 1.01, 10.0)
 
 
 def make_rgb_camera(

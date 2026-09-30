@@ -69,7 +69,6 @@ class RgbCameraViewProxy:
         # Set the transparency to a range of 0-100 with a step of 1.
         # Implementation note: getter is an int, setter can be (val, min, max, step).
         self.transparency = (self.transparency, 0, 100, 1)
-        self._redraw()
 
     def on_change(self) -> None:
         self._redraw()

@@ -19,12 +19,15 @@
   include the path to this library in /opt/robotpkg/....
   -->
   <!--<depend>pin</depend>-->
+  <depend>urdf-parser-py</depend>
+  <depend>xacro</depend>
 
   <content>
     <workbench>
       <classname>CrossWorkbench</classname>
-	  <subdirectory>freecad/cross</subdirectory>
-	  <pythonmin>3.8</pythonmin>
+      <subdirectory>freecad/cross</subdirectory>
+      <pythonmin>3.11</pythonmin>
+      <conflict type="addon">RobotCAD</conflict>
     </workbench>
   </content>
 

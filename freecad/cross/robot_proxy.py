@@ -9,6 +9,7 @@ exported as URDF file.
 from __future__ import annotations
 
 from math import radians
+from pathlib import Path
 from typing import ForwardRef, List, Optional, Union, cast
 import xml.etree.ElementTree as et
 
@@ -1114,6 +1115,10 @@ class _ViewProviderRobot(ProxyBase):
         action.triggered.connect(
                 lambda: self.load_trajectories_from_yaml(vobj),
         )
+        action = menu.addAction("Load trajectories from ROS bag...")
+        action.triggered.connect(
+                lambda: self.load_trajectories_from_rosbag(vobj),
+        )
 
     def doubleClicked(self, vobj: VPDO):
         gui_doc = vobj.Document
@@ -1165,6 +1170,125 @@ class _ViewProviderRobot(ProxyBase):
 
         vobj.Object.Document.recompute()
         fcgui.runCommand('Std_ToggleFreeze', 0)
+
+    def load_trajectories_from_rosbag(self, vobj: VPDO) -> None:
+        # Import late to avoid slowing down workbench start-up.
+        import FreeCADGui as fcgui
+        from . import rosbag_utils
+        from .ui.choose_topics_dialog import ChooseTopicsDialog
+
+        if not rosbag_utils._g_imports_ok:
+            warn(
+                'ROS 2 packages (rosbag2_py, rclpy) not available,'
+                ' source ROS before starting FreeCAD',
+                True,
+            )
+            return
+
+        dialog = QFileDialog(
+            fcgui.getMainWindow(),
+            'Select a ROS bag directory, its metadata.yaml, or a file in it',
+        )
+        # The non-native dialog lets the user select either a file or a
+        # directory, by switching the mode on the current selection.
+        dialog.setOption(QFileDialog.DontUseNativeDialog, True)
+        dialog.setFileMode(QFileDialog.ExistingFile)
+        dialog.setNameFilter('ROS bag (*.yaml *.mcap *.db3);;All files (*)')
+
+        def on_current_changed(path: str) -> None:
+            dialog.setFileMode(
+                QFileDialog.Directory if Path(path).is_dir()
+                else QFileDialog.ExistingFile,
+            )
+            dialog.setOption(QFileDialog.ShowDirsOnly, False)
+
+        dialog.currentChanged.connect(on_current_changed)
+        if dialog.exec_():
+            path = str(dialog.selectedFiles()[0])
+        else:
+            return
+
+        try:
+            bag_dir, metadata = rosbag_utils.find_bag(path)
+        except RuntimeError as e:
+            warn(str(e), True)
+            return
+
+        topics = rosbag_utils.compatible_topics(metadata)
+        if not topics:
+            warn(
+                f'No topic of type {", ".join(rosbag_utils.COMPATIBLE_TYPES)}'
+                f' in "{bag_dir}"',
+                True,
+            )
+            return
+
+        selected_topics = ChooseTopicsDialog(
+                topics,
+                fcgui.getMainWindow(),
+        ).selected_topics()
+        if not selected_topics:
+            return
+
+        trajectories = self.load_trajectories_from_bag(
+                vobj.Object, bag_dir, metadata, selected_topics,
+        )
+
+        fcgui.Selection.clearSelection()
+        for traj_obj in trajectories:
+            fcgui.Selection.addSelection(traj_obj)
+        fcgui.runCommand('Std_ToggleFreeze', 0)
+
+    def load_trajectories_from_bag(
+            self,
+            robot: CrossRobot,
+            bag_dir: Union[Path, str],
+            metadata: dict,
+            topics: list[str],
+    ) -> list[fc.DocumentObject]:
+        """
+        Create trajectories from the given topics of a ROS bag.
+
+        Create one trajectory per `JointState` topic, one per
+        `JointTrajectory` message, and one per `RobotTrajectory` in each
+        `DisplayTrajectory` message.
+
+        """
+        # Import late to avoid slowing down workbench start-up.
+        from . import rosbag_utils
+        from .trajectory_proxy import make_trajectory
+
+        try:
+            messages = rosbag_utils.read_messages(bag_dir, metadata, topics)
+        except RuntimeError as e:
+            warn(f'Cannot read "{bag_dir}": {e}', True)
+            return []
+
+        doc = robot.Document
+        trajectories: list[fc.DocumentObject] = []
+
+        def new_trajectory(topic: str) -> fc.DocumentObject:
+            traj_obj = make_trajectory(f'Trajectory_{topic}', doc)
+            traj_obj.Robot = robot
+            trajectories.append(traj_obj)
+            return traj_obj
+
+        for topic, (type_, msgs) in messages.items():
+            if type_ == rosbag_utils.JOINT_STATE_TYPE:
+                if msgs:
+                    new_trajectory(topic).Proxy.load_joint_states(msgs)
+            elif type_ == rosbag_utils.JOINT_TRAJECTORY_TYPE:
+                for msg in msgs:
+                    new_trajectory(topic).Proxy.load_joint_trajectory_msg(msg)
+            elif type_ == rosbag_utils.DISPLAY_TRAJECTORY_TYPE:
+                for msg in msgs:
+                    for robot_traj in msg.trajectory:
+                        new_trajectory(topic).Proxy.load_robot_trajectory_msg(
+                                robot_traj, msg.trajectory_start,
+                        )
+
+        doc.recompute()
+        return trajectories
 
 
 def make_robot(name, doc: Optional[fc.Document] = None) -> CrossRobot:

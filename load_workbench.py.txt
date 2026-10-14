@@ -46,6 +46,7 @@ from freecad.cross.robot_from_kk import *
 from freecad.cross.robot_from_topic import *
 from freecad.cross.robot_from_urdf import *
 from freecad.cross.robot_proxy import *
+from freecad.cross.rosbag_utils import *
 from freecad.cross.ros.node import *
 from freecad.cross.ros.planning_scene import *
 from freecad.cross.ros.robot_description import *

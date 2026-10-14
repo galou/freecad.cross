@@ -222,19 +222,23 @@ class TrajectoryProxy:
             if joint_name not in traj.keys():
                 setattr(self.Object, prop_name, [])
         for n in traj.keys():
-            prop_name = self._joint_map[n]
+            prop_name = self._joint_map.get(n)
             # Verify that the joint belongs to the robot (i.e. exists as
             # property of the trajectory).
-            if not hasattr(self.Object, prop_name):
-                warn(f'Ignoring positions for unknown joint: {n}', True)
+            if (prop_name is None) or (not hasattr(self.Object, prop_name)):
+                warn(f'Ignoring positions for unknown joint: {n}', False)
                 continue
             setattr(self.Object, prop_name, traj[n])
         for n, pos in start_state.items():
+            prop_name = self._joint_map.get(n)
+            if prop_name is None:
+                warn(f'Ignoring start state for unknown joint: {n}', False)
+                continue
             start_prop_name = self._start_state_property_name(prop_name)
             if not hasattr(self.Object, start_prop_name):
-                warn(f'Ignoring start state for unknown joint: {n}', True)
+                warn(f'Ignoring start state for unknown joint: {n}', False)
                 continue
-            setattr(self.Object, start_prop_name, start_state[n])
+            setattr(self.Object, start_prop_name, pos)
         # TODO: reactivate callbacks on property change.
         # Reset the point index (value, min, max, step).
         self.point_index = (0, 0, self.point_count - 1, 1)
@@ -314,6 +318,56 @@ class TrajectoryProxy:
         robot_state.joint_state.position = js['position']
 
         self.update_trajectory(traj, robot_state)
+
+    def load_joint_trajectory_msg(self, msg: JointTrajectory) -> None:
+        """Load a trajectory from a `JointTrajectory` message."""
+        if not _g_imports_ok:
+            warn('ROS messages could not be imported, giving up', True)
+            return
+        self.update_trajectory(msg)
+
+    def load_robot_trajectory_msg(
+            self,
+            robot_trajectory: Any,
+            start_state: Optional[RobotState] = None,
+    ) -> None:
+        """
+        Load a trajectory from a `RobotTrajectory` message.
+
+        `start_state` is typically `trajectory_start` from a
+        `DisplayTrajectory` message.
+
+        """
+        if not _g_imports_ok:
+            warn('ROS messages could not be imported, giving up', True)
+            return
+        self.update_trajectory(robot_trajectory.joint_trajectory, start_state)
+
+    def load_joint_states(self, msgs: list[Any]) -> None:
+        """
+        Load a trajectory from a list of `JointState` messages.
+
+        Each message gives one trajectory point. A joint missing in a message
+        keeps its value from the previous message.
+
+        """
+        if not _g_imports_ok:
+            warn('ROS messages could not be imported, giving up', True)
+            return
+        joint_names: list[str] = []
+        for msg in msgs:
+            for n in msg.name:
+                if n not in joint_names:
+                    joint_names.append(n)
+        traj = JointTrajectory()
+        traj.joint_names = joint_names
+        last_positions = {n: 0.0 for n in joint_names}
+        for msg in msgs:
+            last_positions.update(zip(msg.name, msg.position))
+            point = JointTrajectoryPoint()
+            point.positions = [last_positions[n] for n in joint_names]
+            traj.points.append(point)
+        self.update_trajectory(traj)
 
     def _set_editor_mode(self) -> None:
         if self.robot and (self.point_count > 0):

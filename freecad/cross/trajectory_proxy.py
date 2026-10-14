@@ -1,7 +1,11 @@
-# A trajectory object to store and replay trajectories as list of joint-space
-# points.
-#
-# This file is part of the CROSS workbench for FreeCAD.
+"""
+A trajectory object to store and replay trajectories.
+
+A trajectory object to store and replay trajectories as list of joint-space
+points.
+
+This file is part of the CROSS workbench for FreeCAD.
+"""
 
 from __future__ import annotations
 
@@ -10,7 +14,6 @@ from typing import Any
 from typing import NewType
 from typing import Optional
 from typing import TYPE_CHECKING
-from typing import Union
 
 import FreeCAD as fc
 
@@ -245,7 +248,7 @@ class TrajectoryProxy:
         self._set_editor_mode()
 
     def load_yaml(self,
-                  file: Union[Path, str],
+                  file: Path | str,
                   message_index: int = 0,
                   trajectory_index: int = 0,
                   ) -> None:

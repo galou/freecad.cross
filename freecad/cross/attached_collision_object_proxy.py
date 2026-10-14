@@ -126,6 +126,12 @@ class AttachedCollisionObjectProxy:
             description='The objects to attach',
     )
 
+    origin = fpo.PropertyPlacement(
+            name='Origin',
+            section='Elements',
+            description='The offset of the attached objects relative to the link frame',
+    )
+
     placement = fpo.PropertyPlacement(
             name='Placement',
             section='Internal',
@@ -167,17 +173,17 @@ class AttachedCollisionObjectProxy:
 
     @placement.observer
     def on_placement_changed(self, event: fpo.events.PropertyChangedEvent) -> None:
-        if not self.placement.isSame(event.new_value, 1e-6):
+        if self.placement.isSame(event.old_value, 1e-6):
             # Avoid recursion.
-            self.placement = event.new_value
-        for fclink in self.Object.Group:
-            if not is_freecad_link(fclink):
-                # Should not happen.
-                continue
-            link_placement = fclink.LinkedObject.Placement * self.placement
-            if not fclink.LinkPlacement.isSame(link_placement, 1e-6):
-                # Avoid recursion.
-                fclink.LinkPlacement = link_placement
+            return
+        self._update_child_placements()
+
+    @origin.observer
+    def on_origin_changed(self, event: fpo.events.PropertyChangedEvent) -> None:
+        if self.origin.isSame(event.old_value, 1e-6):
+            # Avoid recursion.
+            return
+        self._update_child_placements()
 
     @property
     def robot(self) -> Optional[CrossRobot]:
@@ -295,6 +301,16 @@ class AttachedCollisionObjectProxy:
         doc = aco.Document
         for o in old_fc_links:
             doc.removeObject(o.Name)
+
+    def _update_child_placements(self) -> None:
+        for fclink in self.Object.Group:
+            if not is_freecad_link(fclink):
+                # Should not happen.
+                continue
+            link_placement = fclink.LinkedObject.Placement * self.placement * self.origin
+            if not fclink.LinkPlacement.isSame(link_placement, 1e-6):
+                # Avoid recursion.
+                fclink.LinkPlacement = link_placement
 
 
 def make_attached_collision_object(

@@ -34,6 +34,16 @@
         </property>
        </widget>
       </item>
+      <item>
+       <widget class="QLabel" name="time_label">
+        <property name="toolTip">
+         <string>Time from start of the current trajectory point</string>
+        </property>
+        <property name="text">
+         <string>t = - s</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </widget>
    </item>

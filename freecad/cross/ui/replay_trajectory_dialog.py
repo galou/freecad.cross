@@ -36,6 +36,7 @@ class ReplayTrajectoryDialog:
             self.max_point_index = self.trajectory.Proxy.point_count - 1
         except AttributeError as e:
             warn(f'Internal error, please report: {e}')
+        self._update_time_label()
 
     def _set_icons(self) -> None:
         self.form.play_button.setIcon(
@@ -71,6 +72,7 @@ class ReplayTrajectoryDialog:
         self.form.index_slider.setValue(point_index)
         self.form.index_slider.blockSignals(False)
         self._update_trajectory()
+        self._update_time_label()
 
     def _on_slider_changed(self) -> None:
         point_index = self.form.index_slider.value()
@@ -94,6 +96,13 @@ class ReplayTrajectoryDialog:
             self.trajectory.Document.recompute()
         except AttributeError as e:
             warn(f'Internal error, please report: {e}')
+
+    def _update_time_label(self) -> None:
+        times = getattr(self.trajectory, 'TimeFromStart', [])
+        if 0 <= self.point_index < len(times):
+            self.form.time_label.setText(f't = {times[self.point_index]:.3f} s')
+        else:
+            self.form.time_label.setText('t = - s')
 
     def _toggle_button_activation(self) -> None:
         if self.point_index == 0:

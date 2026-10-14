@@ -130,6 +130,12 @@ class TrajectoryProxy:
             mode=fpo.PropertyEditorMode.Hidden,
     )
 
+    time_from_start = fpo.PropertyFloatList(
+            name='TimeFromStart',
+            section='Trajectory',
+            description='The time from start of each trajectory point, in s',
+    )
+
     def __init__(self):
         super().__init__()
 
@@ -212,9 +218,11 @@ class TrajectoryProxy:
             traj: dict[str, list[float]] = {}
             for n in trajectory.joint_names:
                 traj[n] = []
+            times: list[float] = []
             for p in trajectory.points:
                 for n, pos in zip(trajectory.joint_names, p.positions):
                     traj[n].append(pos)
+                times.append(_duration_to_seconds(p.time_from_start))
         except AttributeError as e:
             warn(f'Invalid trajectory message: {e}', True)
             return
@@ -242,6 +250,7 @@ class TrajectoryProxy:
                 warn(f'Ignoring start state for unknown joint: {n}', False)
                 continue
             setattr(self.Object, start_prop_name, pos)
+        self.time_from_start = times
         # TODO: reactivate callbacks on property change.
         # Reset the point index (value, min, max, step).
         self.point_index = (0, 0, self.point_count - 1, 1)
@@ -313,6 +322,9 @@ class TrajectoryProxy:
         for point in joint_traj['points']:
             traj_point = JointTrajectoryPoint()
             traj_point.positions = point['positions']
+            time_from_start = point.get('time_from_start', {})
+            traj_point.time_from_start.sec = time_from_start.get('sec', 0)
+            traj_point.time_from_start.nanosec = time_from_start.get('nanosec', 0)
             traj.points.append(traj_point)
 
         robot_state = RobotState()
@@ -351,7 +363,8 @@ class TrajectoryProxy:
         Load a trajectory from a list of `JointState` messages.
 
         Each message gives one trajectory point. A joint missing in a message
-        keeps its value from the previous message.
+        keeps its value from the previous message. The time from start is
+        computed from the header stamps, relative to the first message.
 
         """
         if not _g_imports_ok:
@@ -365,10 +378,14 @@ class TrajectoryProxy:
         traj = JointTrajectory()
         traj.joint_names = joint_names
         last_positions = {n: 0.0 for n in joint_names}
+        start_ns = _time_to_nanoseconds(msgs[0].header.stamp) if msgs else 0
         for msg in msgs:
             last_positions.update(zip(msg.name, msg.position))
             point = JointTrajectoryPoint()
             point.positions = [last_positions[n] for n in joint_names]
+            ns = _time_to_nanoseconds(msg.header.stamp) - start_ns
+            point.time_from_start.sec = ns // 1_000_000_000
+            point.time_from_start.nanosec = ns % 1_000_000_000
             traj.points.append(point)
         self.update_trajectory(traj)
 
@@ -425,6 +442,16 @@ class TrajectoryProxy:
         state = start_state
         state.update(positions)
         self.robot.Proxy.set_joint_values(state)
+
+
+def _time_to_nanoseconds(time: Any) -> int:
+    """Return a `builtin_interfaces/Time` or `Duration` in ns."""
+    return time.sec * 1_000_000_000 + time.nanosec
+
+
+def _duration_to_seconds(duration: Any) -> float:
+    """Return a `builtin_interfaces/Duration` in s."""
+    return _time_to_nanoseconds(duration) * 1e-9
 
 
 def make_trajectory(

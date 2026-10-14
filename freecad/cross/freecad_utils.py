@@ -399,7 +399,10 @@ def first_object_with_volume(obj: DO) -> Optional[DO]:
 
 def is_lcs(obj: DO) -> bool:
     """Return True if the object is a 'PartDesign::CoordinateSystem'."""
-    return is_derived_from(obj, 'PartDesign::CoordinateSystem') or is_derived_from(obj, 'Part::LocalCoordinateSystem')
+    return (
+        is_derived_from(obj, 'PartDesign::CoordinateSystem')
+        or is_derived_from(obj, 'Part::LocalCoordinateSystem')
+    )
 
 
 def has_placement(obj: DO) -> bool:

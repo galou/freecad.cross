@@ -138,7 +138,10 @@ class AttachedCollisionObjectProxy:
             description='Placement of elements in the robot frame',
     )
 
-    def __init__(self):
+    def on_create(self):
+        self._set_editor_modes()
+
+    def on_start(self):
         # List to keep track of the objects that were added to the
         # AttachedCollisionObject.
         self._fc_links: DOList = []
@@ -146,10 +149,6 @@ class AttachedCollisionObjectProxy:
         # Save the robot to speed-up `self.robot`.
         self._robot: Optional[CrossRobot] = None
 
-    def on_create(self):
-        self._set_editor_modes()
-
-    def on_start(self):
         self._fix_lost_fc_links()
         self._fill_fc_link_lists()
 

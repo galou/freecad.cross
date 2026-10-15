@@ -50,6 +50,32 @@ else:
     VPDO = NewType('VPDO', object)
 
 
+def _property_map_update(
+    prop_map: dict[str, str],
+    update: dict[str, str],
+) -> dict[str, str]:
+    """Update a read-only property map.
+
+    Work-around limited support for map properties in FreeCAD.
+    """
+    prop_map_copy = prop_map  # A copy
+    prop_map_copy.update(update)
+    return prop_map_copy
+
+
+def _property_map_pop(
+    prop_map: dict[str, str],
+    key: str
+) -> (dict[str, str], Optional[str]):
+    """Pop a property name from a read-only property map.
+
+    Work-around limited support for map properties in FreeCAD.
+    """
+    prop_map_copy = prop_map  # A copy
+    value = prop_map_copy.pop(key)
+    return prop_map_copy, value
+
+
 @fpo.view_proxy(
         icon=str(ICON_PATH / 'trajectory.svg'),
 )
@@ -136,26 +162,20 @@ class TrajectoryProxy:
             description='The time from start of each trajectory point, in s',
     )
 
-    def __init__(self):
-        super().__init__()
-
-        # The map of joint names to FreeCAD properties, {joint_name: property}.
-        # It's more practical than a property `App::PropertyMap` because the
-        # property cannot be updated with indexing or `merge()`.
-        self._joint_map: dict[str, str] = {}
-
-    def on_create(self):
-        self._set_editor_mode()
+    # It's less practical than a Python dict because the
+    # property cannot be updated with indexing or `update()`.
+    # TODO: this should be solved in `fpo.py`.
+    joint_map = fpo.PropertyMap(
+            name='JointMap',
+            section='Internal',
+            description='The map of joint names to FreeCAD properties, {joint_name: property}',
+            mode=fpo.PropertyMode.ReadOnly + fpo.PropertyMode.Hidden,
+    )
 
     def on_execute(self):
+        self._set_editor_mode()
         if is_robot(self.robot):
             self._update_robot_joint_values()
-
-    def on_serialize(self, event: fpo.events.SerializeEvent) -> None:
-        event.state['_joint_map'] = self._joint_map
-
-    def on_deserialize(self, event: fpo.events.DeserializeEvent) -> None:
-        self._joint_map = event.state['_joint_map']
 
     @robot.observer
     def on_robot_changed(self, event: fpo.events.PropertyChangedEvent) -> None:
@@ -164,21 +184,21 @@ class TrajectoryProxy:
             self.robot = None
             # Implementation note, do not return here but later.
         if not self.robot:
-            self._joint_map.clear()
+            self.joint_map = {}
             return
-        # We do not clear `self._joint_map` because we want to keep the
+        # We do not clear `self.joint_map` because we want to keep the
         # values for the joints that are still present in the new robot.
         new_joint_names = [ros_name(j)
                            for j in self.robot.Proxy.get_joints()
                            if not j.Proxy.is_fixed()]
         # Remove joints not present in the new robot.
-        for name in self._joint_map.keys():
+        for name in self.joint_map.keys():
             if name not in new_joint_names:
-                self._joint_map.pop(name)
+                self.joint_map = _property_map_pop(self.joint_map, name)[0]
                 self.Object.remove_property(name)
         # Add missing properties.
         for name in new_joint_names:
-            if name not in self._joint_map:
+            if name not in self.joint_map:
                 self._add_joint(name)
         self._set_editor_mode()
 
@@ -197,7 +217,7 @@ class TrajectoryProxy:
     @property
     def point_count(self) -> int:
         count = 0
-        for name, prop in self._joint_map.items():
+        for name, prop in self.joint_map.items():
             count = max(count, len(getattr(self.Object, prop)))
         return count
 
@@ -229,11 +249,11 @@ class TrajectoryProxy:
 
         # TODO: deactivate callbacks on property change.
         # Reset joint values not used in the trajectory.
-        for joint_name, prop_name in self._joint_map.items():
+        for joint_name, prop_name in self.joint_map.items():
             if joint_name not in traj.keys():
                 setattr(self.Object, prop_name, [])
         for n in traj.keys():
-            prop_name = self._joint_map.get(n)
+            prop_name = self.joint_map.get(n)
             # Verify that the joint belongs to the robot (i.e. exists as
             # property of the trajectory).
             if (prop_name is None) or (not hasattr(self.Object, prop_name)):
@@ -241,7 +261,7 @@ class TrajectoryProxy:
                 continue
             setattr(self.Object, prop_name, traj[n])
         for n, pos in start_state.items():
-            prop_name = self._joint_map.get(n)
+            prop_name = self.joint_map.get(n)
             if prop_name is None:
                 warn(f'Ignoring start state for unknown joint: {n}', False)
                 continue
@@ -420,22 +440,23 @@ class TrajectoryProxy:
                 'Start State',
                 f'The default position of `{name}`',
                 )
-        self._joint_map[name] = prop_name
+        # self.joint_map[name] = prop_name
+        self.joint_map = _property_map_update(self.joint_map, {name: prop_name})
 
     def _update_robot_joint_values(self):
         if not self.robot:
             return
-        joint_names = self._joint_map.keys()
+        joint_names = self.joint_map.keys()
         # Get the current trajectory point.
-        positions = {self.robot.Proxy.get_joint(n): getattr(self.Object, self._joint_map[n])[self.point_index]
+        positions = {self.robot.Proxy.get_joint(n): getattr(self.Object, self.joint_map[n])[self.point_index]
                      for n in joint_names
-                     if len(getattr(self.Object, self._joint_map[n])) > self.point_index}
+                     if len(getattr(self.Object, self.joint_map[n])) > self.point_index}
         if not positions:
             return
         # Get defaults from the robot state.
         start_state = {self.robot.Proxy.get_joint(n): getattr(
                               self.Object,
-                              self._start_state_property_name(self._joint_map[n]),
+                              self._start_state_property_name(self.joint_map[n]),
                           )
                        for n in joint_names}
         # Add missing joint values.

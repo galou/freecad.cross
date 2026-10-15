@@ -254,50 +254,89 @@ def make_pose(
     return obj
 
 
-def _coin_separator_from_object(obj: 'fc.DocumentObject') -> 'coin.SoSeparator':
-    """Return an independent SoSeparator for the visual representation of obj.
+def _get_leaf_objects(
+        fc_link: 'fc.DocumentObject',
+) -> list[tuple['fc.DocumentObject', 'fc.Matrix']]:
+    """Return the objects with a shape or a mesh displayed by fc_link.
 
-    Uses writeInventor() on the Shape or Mesh attribute to create independent
-    coin nodes, entirely unrelated to obj's own view provider scene graph.
-    This ensures that visibility or display-mode changes on obj (or any robot
-    that contains it) do not affect the returned separator.
+    Return a list of (object, matrix), where matrix is the transform of the
+    object's geometry, without the object's own placement, in the frame of
+    fc_link. Links (respecting `LinkTransform`) and containers (e.g.
+    `App::Part`) are resolved recursively. Hidden children of containers are
+    skipped.
 
-    The object's Placement is applied as an SoTransform so that the geometry
-    appears at the same position as in obj's own view.
+    """
+    from .freecad_utils import is_derived_from
+    from .freecad_utils import is_mesh
 
-    Returns an empty separator when obj has neither a usable Shape nor a Mesh.
+    leaves: list[tuple['fc.DocumentObject', 'fc.Matrix']] = []
+
+    def add_leaves(subname: str) -> None:
+        if subname:
+            obj, matrix, _ = fc_link.getSubObject(
+                subname, retType=2, transform=False,
+            )
+        else:
+            obj, matrix = fc_link, fc.Matrix()
+        # `transform=False` excludes the placement of `obj`, already in
+        # `matrix`, but not the placement of the linked object if
+        # `obj.LinkTransform` is True.
+        linked, linked_matrix = obj.getLinkedObject(True, fc.Matrix(), False)
+        # Implementation note: `App::Part` has a `Shape` attribute.
+        if is_derived_from(linked, 'Part::Feature') or is_mesh(linked):
+            leaves.append((linked, matrix * linked_matrix))
+            return
+        for child_subname in obj.getSubObjects():
+            child = fc_link.getSubObject(subname + child_subname, retType=1)
+            if child is not None and child.Visibility:
+                add_leaves(subname + child_subname)
+
+    add_leaves('')
+    return leaves
+
+
+def _coin_node_from_object(obj: 'fc.DocumentObject') -> Optional['coin.SoNode']:
+    """Return independent coin nodes for the geometry of obj.
+
+    Uses writeInventor() on the shape or mesh to create independent coin
+    nodes, entirely unrelated to the view provider scene graph of obj. This
+    ensures that visibility or display-mode changes on obj (or any robot that
+    contains it) do not affect the returned node.
+
+    The placement of obj is not applied.
+
+    Returns None when obj has neither a usable shape nor a mesh.
 
     Implementation note: writeInventor() in FreeCAD returns a str. The
     encoding branch in the buffer conversion handles the hypothetical future
     case where the method returns bytes instead.
 
     """
+    import Part
     from pivy import coin
-    from .coin_utils import transform_from_placement
     from .freecad_utils import is_mesh
 
-    sep = coin.SoSeparator()
-
     inventor_str = None
-    if hasattr(obj, 'Shape') and not obj.Shape.isNull():
-        inventor_str = obj.Shape.writeInventor()
+    shape = Part.getShape(obj, transform=False)
+    if not shape.isNull():
+        inventor_str = shape.writeInventor()
     elif (
         is_mesh(obj)
-        and hasattr(obj, 'Mesh')
         and obj.Mesh is not None
         and obj.Mesh.CountFacets > 0
     ):
-        inventor_str = obj.Mesh.writeInventor()
+        mesh = obj.Mesh.copy()
+        # writeInventor() applies the mesh placement, which is the placement
+        # of the mesh object.
+        mesh.Placement = fc.Placement()
+        inventor_str = mesh.writeInventor()
 
     if not inventor_str:
-        return sep
+        return None
 
     inventor_bytes: bytes = (
         inventor_str.encode() if isinstance(inventor_str, str) else inventor_str
     )
-
-    if hasattr(obj, 'Placement'):
-        sep.addChild(transform_from_placement(obj.Placement))
 
     coin_input = coin.SoInput()
     coin_input.setBuffer(inventor_bytes)
@@ -308,8 +347,31 @@ def _coin_separator_from_object(obj: 'fc.DocumentObject') -> 'coin.SoSeparator':
             ' link geometry will not be shown in the Pose view',
             False,
         )
-        return sep
-    sep.addChild(node)
+    return node
+
+
+def _coin_separator_from_object(fc_link: 'fc.DocumentObject') -> 'coin.SoSeparator':
+    """Return an independent SoSeparator for the geometry of fc_link.
+
+    `fc_link` is an element of `CrossLink.Group`, i.e. an `App::Link` whose
+    `LinkPlacement` locates it in the 3D scene.
+
+    The geometry is expressed in the frame of fc_link, i.e. the placement of
+    fc_link is not applied, as in the scene graph of fc_link.
+
+    """
+    from pivy import coin
+    from .coin_utils import transform_from_placement
+
+    sep = coin.SoSeparator()
+    for obj, matrix in _get_leaf_objects(fc_link):
+        node = _coin_node_from_object(obj)
+        if node is None:
+            continue
+        leaf_sep = coin.SoSeparator()
+        leaf_sep.addChild(transform_from_placement(fc.Placement(matrix)))
+        leaf_sep.addChild(node)
+        sep.addChild(leaf_sep)
     return sep
 
 
@@ -324,13 +386,9 @@ def _coin_separator_from_link(link: CrossLink) -> 'coin.SoSeparator':
     """
     from pivy import coin
     from .coin_utils import transform_from_placement
-    from .freecad_utils import get_linked_obj
 
     sep = coin.SoSeparator()
     sep.addChild(transform_from_placement(link.MountedPlacement))
     for fc_link in link.Group:
-        linked = get_linked_obj(fc_link, recursive=True)
-        if linked is None:
-            continue
-        sep.addChild(_coin_separator_from_object(linked))
+        sep.addChild(_coin_separator_from_object(fc_link))
     return sep

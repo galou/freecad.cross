@@ -49,8 +49,32 @@ class _ViewProviderPose:
             default=500.0,  # mm.
     )
 
+    use_original_colors = fpo.PropertyBool(
+            name='UseOriginalColors',
+            section='ROS Display Options',
+            description=(
+                'Whether to show the end-effector with the colors of its'
+                ' visual elements or with `ShapeAppearance`'
+            ),
+            default=True,
+    )
+
     shaded_display_mode = fpo.DisplayMode(name='Shaded', is_default=True)
     wireframe_display_mode = fpo.DisplayMode(name='Wireframe')
+
+    @shaded_display_mode.builder
+    def _shaded_display_mode_builder(self, vobj: VP) -> 'coin.SoSeparator':
+        from pivy import coin
+
+        self._shaded_node = coin.SoSeparator()
+        return self._shaded_node
+
+    @wireframe_display_mode.builder
+    def _wireframe_display_mode_builder(self, vobj: VP) -> 'coin.SoSeparator':
+        from pivy import coin
+
+        self._wireframe_node = coin.SoSeparator()
+        return self._wireframe_node
 
     def on_object_change(self) -> None:
         """Callback when the data object changes."""
@@ -66,13 +90,18 @@ class _ViewProviderPose:
         """Callback when the `AxisLength` property changed."""
         self.draw()
 
+    @use_original_colors.observer
+    def _use_original_colors_onchange(self) -> None:
+        """Callback when the `UseOriginalColors` property changed."""
+        self.draw()
+
     def on_change(self, event: fpo.events.PropertyChangedEvent) -> None:
         """
         Callback when a property changed.
 
         We need this for properties defined by mother classes.
         """
-        if event.property_name == 'Visibility':
+        if event.property_name in ('Visibility', 'ShapeAppearance'):
             self.draw()
 
     def draw(self) -> None:
@@ -83,23 +112,21 @@ class _ViewProviderPose:
         vobj: VP = self.ViewObject
         obj: CrossPose = vobj.Object
 
-        if not hasattr(vobj, 'RootNode'):
+        if not hasattr(self, '_shaded_node'):
+            # Display modes not built yet.
             return
-        root = vobj.RootNode
-        root.removeAllChildren()
-
-        shaded = coin.SoSeparator()
-        root.addChild(shaded)
+        shaded = self._shaded_node
+        shaded.removeAllChildren()
         style = coin.SoDrawStyle()
         style.style = coin.SoDrawStyle.LINES
-        wireframe = coin.SoSeparator()
+        wireframe = self._wireframe_node
+        wireframe.removeAllChildren()
         wireframe.addChild(style)
-        root.addChild(wireframe)
 
         if not vobj.Visibility:
             return
+        # `obj.Placement` is applied by the transform of `vobj.RootNode`.
         sep = coin.SoSeparator()
-        sep.addChild(transform_from_placement(obj.Placement))
         sep.addChild(
             tcp_group(
             tcp_length_mm=0.66 * vobj.AxisLength,
@@ -114,9 +141,13 @@ class _ViewProviderPose:
             robot_proxy = obj.Robot.Proxy
             link = robot_proxy.get_link(obj.EndEffector)
             if link is not None:
-                # TODO: only works if robot at null joint-space pose.
-                # TODO: get the correct transform.
                 link_sep = coin.SoSeparator()
+                if not self.use_original_colors:
+                    material = _coin_material_from_object(obj)
+                    if material is not None:
+                        # Ignore the materials of the visual elements.
+                        material.setOverride(True)
+                        link_sep.addChild(material)
                 if link.Proxy.is_execute_ready():
                     robot = link.Proxy.get_robot()
                     if robot is None:
@@ -124,6 +155,12 @@ class _ViewProviderPose:
                         # happen).
                         link_sep.addChild(_coin_separator_from_link(link))
                     else:
+                        # The pose is the frame of the end-effector in the
+                        # URDF sense, but `link.Placement` includes
+                        # `link.MountedPlacement` in a robot.
+                        link_sep.addChild(
+                            transform_from_placement(link.MountedPlacement),
+                        )
                         for fixed_with_link in robot.Proxy.get_links_fixed_with(
                                 ros_name(link),
                         ):
@@ -232,8 +269,6 @@ def make_pose(
 
     if hasattr(fc, 'GuiUp') and fc.GuiUp:
         import FreeCADGui as fcgui
-
-        _ViewProviderPose(obj.ViewObject)
 
         # Set `obj.Robot` and possibly `obj.EndEffector` if the selected
         # object is a robot or a link.
@@ -350,6 +385,29 @@ def _coin_node_from_object(obj: 'fc.DocumentObject') -> Optional['coin.SoNode']:
     return node
 
 
+def _coin_material_from_object(obj: 'fc.DocumentObject') -> Optional['coin.SoMaterial']:
+    """Return the SoMaterial from `obj.ViewObject.ShapeAppearance`.
+
+    Only the first material is used, i.e. colors per face are not supported.
+    Return None if obj has no `ShapeAppearance`.
+
+    """
+    from pivy import coin
+
+    appearance = getattr(getattr(obj, 'ViewObject', None), 'ShapeAppearance', None)
+    if not appearance:
+        return None
+    fc_material = appearance[0]
+    material = coin.SoMaterial()
+    material.ambientColor = fc_material.AmbientColor[:3]
+    material.diffuseColor = fc_material.DiffuseColor[:3]
+    material.specularColor = fc_material.SpecularColor[:3]
+    material.emissiveColor = fc_material.EmissiveColor[:3]
+    material.shininess = fc_material.Shininess
+    material.transparency = fc_material.Transparency
+    return material
+
+
 def _coin_separator_from_object(fc_link: 'fc.DocumentObject') -> 'coin.SoSeparator':
     """Return an independent SoSeparator for the geometry of fc_link.
 
@@ -370,6 +428,9 @@ def _coin_separator_from_object(fc_link: 'fc.DocumentObject') -> 'coin.SoSeparat
             continue
         leaf_sep = coin.SoSeparator()
         leaf_sep.addChild(transform_from_placement(fc.Placement(matrix)))
+        material = _coin_material_from_object(obj)
+        if material is not None:
+            leaf_sep.addChild(material)
         leaf_sep.addChild(node)
         sep.addChild(leaf_sep)
     return sep
@@ -378,8 +439,8 @@ def _coin_separator_from_object(fc_link: 'fc.DocumentObject') -> 'coin.SoSeparat
 def _coin_separator_from_link(link: CrossLink) -> 'coin.SoSeparator':
     """Return an independent SoSeparator for the visual elements of link.
 
-    Applies link.MountedPlacement as the first transform, then calls
-    _coin_separator_from_object() for each element in link.Group. The result
+    Calls _coin_separator_from_object() for each element in link.Group, with
+    the placement of the element relative to `link.Placement`. The result
     shares no scene graph nodes with the Robot's representation, so hiding the
     Robot (or any of its links) does not affect the returned separator.
 
@@ -388,7 +449,15 @@ def _coin_separator_from_link(link: CrossLink) -> 'coin.SoSeparator':
     from .coin_utils import transform_from_placement
 
     sep = coin.SoSeparator()
-    sep.addChild(transform_from_placement(link.MountedPlacement))
     for fc_link in link.Group:
-        sep.addChild(_coin_separator_from_object(fc_link))
+        fc_link_sep = coin.SoSeparator()
+        # `fc_link.Placement` is `link.Placement` in a robot and
+        # `link.Placement * link.MountedPlacement` otherwise.
+        fc_link_sep.addChild(
+            transform_from_placement(
+                link.Placement.inverse() * fc_link.Placement,
+            ),
+        )
+        fc_link_sep.addChild(_coin_separator_from_object(fc_link))
+        sep.addChild(fc_link_sep)
     return sep
